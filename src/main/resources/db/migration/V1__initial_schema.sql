@@ -61,7 +61,7 @@ CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 -- Insert default admin user (password: admin)
 -- Password hash is bcrypt hash of "admin" with strength 10
 INSERT INTO users (email, password_hash, first_name, last_name, role, active)
-VALUES ('admin@timetrack.local', '$2a$10$N9qo8uLOickgx2ZMRZoMye.IjefVqMpjYZx3qRzPvr9qGVo8xOZZS', 'Admin', 'User', 'ADMIN', true);
+VALUES ('admin@timetrack.local', '$2y$10$oLXEVYy8KEMcp74EnETAKuIqItWgwaO11Oaw0HHy..s8vLrpt4QmG', 'Admin', 'User', 'ADMIN', true);
 
 -- Insert default working hours for admin (Monday-Friday: 8 hours, Weekend: 0 hours)
 INSERT INTO working_hours (user_id, weekday, hours, is_working_day)
