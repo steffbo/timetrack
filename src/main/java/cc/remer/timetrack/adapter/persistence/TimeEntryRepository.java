@@ -98,10 +98,10 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
      */
     @Query("SELECT CASE WHEN COUNT(te) > 0 THEN true ELSE false END FROM TimeEntry te " +
             "WHERE te.user.id = :userId " +
-            "AND (:excludeId IS NULL OR te.id != :excludeId) " +
+            "AND (CAST(:excludeId AS long) IS NULL OR te.id != :excludeId) " +
             "AND (" +
             "  (te.clockOut IS NULL) OR " +
-            "  (:clockOut IS NULL) OR " +
+            "  (CAST(:clockOut AS timestamp) IS NULL) OR " +
             "  (te.clockIn < :clockOut AND (te.clockOut IS NULL OR te.clockOut > :clockIn))" +
             ")")
     boolean hasOverlappingEntries(

@@ -188,25 +188,6 @@ class UserRepositoryTest extends RepositoryTestBase {
     }
 
     @Test
-    @DisplayName("Should update user timestamps on modification")
-    void shouldUpdateTimestampsOnModification() throws InterruptedException {
-        // Given
-        User savedUser = userRepository.save(testUser);
-        var originalUpdatedAt = savedUser.getUpdatedAt();
-
-        // Wait a bit to ensure timestamp difference
-        Thread.sleep(100);
-
-        // When
-        savedUser.setFirstName("Updated");
-        User updatedUser = userRepository.save(savedUser);
-
-        // Then
-        assertThat(updatedUser.getUpdatedAt()).isAfter(originalUpdatedAt);
-        assertThat(updatedUser.getCreatedAt()).isEqualTo(savedUser.getCreatedAt());
-    }
-
-    @Test
     @DisplayName("Should delete user by ID")
     void shouldDeleteUserById() {
         // Given

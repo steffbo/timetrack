@@ -5,12 +5,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Base class for repository integration tests using Testcontainers.
+ * Implements the "Shared Database Instance" pattern from Baeldung.
+ *
+ * The container is started once and shared across all test classes.
+ * Flyway migrations run automatically via Spring Boot's auto-configuration.
+ *
+ * @see <a href="https://www.baeldung.com/spring-boot-testcontainers-integration-test">Baeldung Testcontainers Guide</a>
  */
 @SpringBootTest
 @Import(TestSecurityConfig.class)
@@ -20,16 +25,5 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public abstract class RepositoryTestBase {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test")
-            .withReuse(true);
-
-    static {
-        postgres.start();
-        System.setProperty("DB_URL", postgres.getJdbcUrl());
-        System.setProperty("DB_USERNAME", postgres.getUsername());
-        System.setProperty("DB_PASSWORD", postgres.getPassword());
-    }
+    protected static final TimetrackPostgresContainer postgres = TimetrackPostgresContainer.getInstance();
 }
