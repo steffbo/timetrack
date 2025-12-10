@@ -36,6 +36,8 @@ build/
 application-local.yml
 application-dev.yml
 logs/
+.env
+.env.local
 
 ### Generated ###
 generated-sources/

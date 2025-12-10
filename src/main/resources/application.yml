@@ -3,9 +3,9 @@ spring:
     name: timetrack
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/timetrack
-    username: timetrack
-    password: timetrack
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/timetrack}
+    username: ${DB_USERNAME:timetrack}
+    password: ${DB_PASSWORD:timetrack}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -33,7 +33,7 @@ spring:
     fallback-to-system-locale: false
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
   servlet:
     context-path: /api
 
@@ -59,3 +59,16 @@ logging:
     root: INFO
     cc.remer.timetrack: DEBUG
     org.springframework.security: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    defaults:
+      enabled: true

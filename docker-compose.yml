@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: timetrack-db
+    environment:
+      POSTGRES_DB: ${DB_USERNAME:-timetrack}
+      POSTGRES_USER: ${DB_USERNAME:-timetrack}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-timetrack}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - timetrack-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-timetrack}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: timetrack-app
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_USERNAME:-timetrack}
+      DB_USERNAME: ${DB_USERNAME:-timetrack}
+      DB_PASSWORD: ${DB_PASSWORD:-timetrack}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-must-be-at-least-256-bits-long-for-HS256}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+      SERVER_PORT: ${SERVER_PORT:-8080}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - timetrack-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  timetrack-network:
+    driver: bridge

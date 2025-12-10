@@ -37,6 +37,9 @@ Building a time tracking API with Spring Boot 4, Java 25, and PostgreSQL followi
 - OpenAPI spec generates API interfaces
 - Continuous documentation in markdown
 - Semantic versioning on every commit
+- Integration tests required for every use case
+- Environment configuration via .env files
+- Docker Compose for development and deployment
 
 ## REST API Endpoints
 
@@ -340,6 +343,7 @@ The version in `pom.xml` will be automatically bumped by the GitHub Actions work
 - Create JPA repositories
 - Write Flyway migration scripts
 - Setup database configuration
+- Write integration tests for repositories
 - Add application.yml with database config
 
 ### Phase 3: Authentication & Security
@@ -348,6 +352,7 @@ The version in `pom.xml` will be automatically bumped by the GitHub Actions work
 - Configure Spring Security with JWT filter
 - Add security to OpenAPI spec
 - Implement password hashing
+- Write integration tests for authentication use cases
 
 ### Phase 4: User Management
 - Complete OpenAPI spec for user endpoints
