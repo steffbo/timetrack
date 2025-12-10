@@ -48,3 +48,5 @@ generated/
 
 ### Java ###
 *.log
+.pid files and log files
+*.log
