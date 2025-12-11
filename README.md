@@ -110,6 +110,7 @@ Or use your own PostgreSQL instance and update `.env` accordingly.
 #### Build and run the application
 
 ```bash
+cd backend
 ./mvnw clean install
 ./mvnw spring-boot:run
 ```
@@ -161,20 +162,28 @@ All endpoints (except login and refresh) require a JWT token.
 ## Project Structure
 
 ```
-cc.remer.timetrack/
-├── domain/              # Domain entities (User, TimeEntry, WorkingHours)
-├── usecase/             # Business logic organized by use cases
-│   ├── authentication/  # Login, logout, token refresh
-│   ├── user/            # User management
-│   ├── workinghours/    # Working hours configuration
-│   ├── timeentry/       # Time tracking operations
-│   └── statistics/      # Reports and statistics
-├── adapter/
-│   ├── web/             # REST controllers
-│   ├── persistence/     # JPA repositories
-│   └── security/        # Security configuration
-├── config/              # Application configuration
-└── exception/           # Exception handling
+timetrack/
+├── backend/             # Spring Boot backend application
+│   ├── src/
+│   │   └── main/java/cc/remer/timetrack/
+│   │       ├── domain/              # Domain entities (User, TimeEntry, WorkingHours)
+│   │       ├── usecase/             # Business logic organized by use cases
+│   │       │   ├── authentication/  # Login, logout, token refresh
+│   │       │   ├── user/            # User management
+│   │       │   ├── workinghours/    # Working hours configuration
+│   │       │   ├── timeentry/       # Time tracking operations
+│   │       │   └── statistics/      # Reports and statistics
+│   │       ├── adapter/
+│   │       │   ├── web/             # REST controllers
+│   │       │   ├── persistence/     # JPA repositories
+│   │       │   └── security/        # Security configuration
+│   │       ├── config/              # Application configuration
+│   │       └── exception/           # Exception handling
+│   ├── pom.xml
+│   └── Dockerfile
+├── frontend/            # Frontend application (to be implemented)
+├── docker-compose.yml
+└── README.md
 ```
 
 ## Development
@@ -184,17 +193,18 @@ cc.remer.timetrack/
 API interfaces and models are generated from the OpenAPI specification during the Maven build:
 
 ```bash
+cd backend
 ./mvnw generate-sources
 ```
 
-Generated code is located in `target/generated-sources/openapi/`
+Generated code is located in `backend/target/generated-sources/openapi/`
 
 ### Database Migrations
 
 Database schema is managed with Flyway. Migration scripts are in:
 
 ```
-src/main/resources/db/migration/
+backend/src/main/resources/db/migration/
 ```
 
 Migrations run automatically on application startup.
@@ -204,12 +214,14 @@ Migrations run automatically on application startup.
 Run all tests:
 
 ```bash
+cd backend
 ./mvnw test
 ```
 
 Run integration tests (uses Testcontainers):
 
 ```bash
+cd backend
 ./mvnw verify
 ```
 
@@ -231,7 +243,7 @@ git commit -m "feat: Add monthly statistics endpoint"
 ### Building Docker Image
 
 ```bash
-docker build -t timetrack:latest .
+docker build -t timetrack-backend:latest ./backend
 ```
 
 ### Environment Variables in Production
