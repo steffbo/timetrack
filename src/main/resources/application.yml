@@ -64,7 +64,6 @@ logging:
     cc.remer.timetrack: DEBUG
     org.springframework.security: DEBUG
     org.flywaydb: DEBUG
-    org.springframework.boot.autoconfigure: DEBUG
 
 management:
   endpoints:

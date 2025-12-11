@@ -8,7 +8,7 @@ info:
     email: stefan.remer@example.com
 
 servers:
-  - url: http://localhost:8080/api
+  - url: http://localhost:8080
     description: Local development server
 
 tags:
@@ -27,7 +27,7 @@ security:
   - bearerAuth: []
 
 paths:
-  /auth/login:
+  /api/auth/login:
     post:
       tags:
         - Authentication
@@ -55,7 +55,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /auth/refresh:
+  /api/auth/refresh:
     post:
       tags:
         - Authentication
@@ -83,7 +83,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /auth/logout:
+  /api/auth/logout:
     post:
       tags:
         - Authentication
@@ -96,7 +96,7 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
-  /users:
+  /api/users:
     post:
       tags:
         - Users
@@ -129,7 +129,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /users/me:
+  /api/users/me:
     get:
       tags:
         - Users
@@ -146,7 +146,7 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
-  /users/{id}:
+  /api/users/{id}:
     get:
       tags:
         - Users
