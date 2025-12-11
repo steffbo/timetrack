@@ -96,6 +96,148 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
+  /users:
+    post:
+      tags:
+        - Users
+      summary: Create new user
+      description: Create a new user (Admin only)
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      description: Get the profile of the authenticated user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      description: Get user details by ID (Admins can get any user, users can only get themselves)
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Users
+      summary: Update user
+      description: Update user details (Admins can update any user, users can only update themselves)
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      description: Delete user (Admin only)
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: User deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -183,6 +325,76 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    CreateUserRequest:
+      type: object
+      required:
+        - email
+        - password
+        - firstName
+        - lastName
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@timetrack.local
+        password:
+          type: string
+          format: password
+          minLength: 6
+          example: password123
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Max
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Mustermann
+        role:
+          type: string
+          enum: [ADMIN, USER]
+          example: USER
+        active:
+          type: boolean
+          default: true
+          example: true
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@timetrack.local
+        password:
+          type: string
+          format: password
+          minLength: 6
+          description: Only include if changing password
+          example: newpassword123
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Max
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Mustermann
+        role:
+          type: string
+          enum: [ADMIN, USER]
+          description: Only admins can change roles
+          example: USER
+        active:
+          type: boolean
+          description: Only admins can change active status
+          example: true
 
     ErrorResponse:
       type: object

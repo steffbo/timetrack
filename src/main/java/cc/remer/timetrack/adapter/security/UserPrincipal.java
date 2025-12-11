@@ -1,5 +1,6 @@
 package cc.remer.timetrack.adapter.security;
 
+import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,6 +21,7 @@ public class UserPrincipal implements UserDetails {
     private final Long id;
     private final String email;
     private final String password;
+    private final Role role;
     private final Collection<? extends GrantedAuthority> authorities;
     private final boolean active;
 
@@ -38,6 +40,7 @@ public class UserPrincipal implements UserDetails {
                 user.getId(),
                 user.getEmail(),
                 user.getPasswordHash(),
+                user.getRole(),
                 authorities,
                 user.getActive()
         );
