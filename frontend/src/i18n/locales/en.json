@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "workingHours": "Working Hours",
+    "adminUsers": "User Management",
+    "logout": "Logout"
+  },
+  "login": {
+    "title": "Login",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign In",
+    "error": "Login failed. Please check your credentials."
+  },
+  "profile": {
+    "title": "Profile",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "password": "New Password",
+    "passwordHint": "Leave empty to keep current password",
+    "role": "Role",
+    "active": "Active",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saveSuccess": "Profile saved successfully",
+    "saveError": "Error saving profile"
+  },
+  "workingHours": {
+    "title": "Configure Working Hours",
+    "weekdays": {
+      "MONDAY": "Monday",
+      "TUESDAY": "Tuesday",
+      "WEDNESDAY": "Wednesday",
+      "THURSDAY": "Thursday",
+      "FRIDAY": "Friday",
+      "SATURDAY": "Saturday",
+      "SUNDAY": "Sunday"
+    },
+    "hours": "Hours",
+    "isWorkingDay": "Working Day",
+    "save": "Save",
+    "saveSuccess": "Working hours saved successfully",
+    "saveError": "Error saving working hours"
+  },
+  "users": {
+    "title": "User Management",
+    "createUser": "New User",
+    "editUser": "Edit User",
+    "deleteUser": "Delete User",
+    "confirmDelete": "Do you really want to delete this user?",
+    "yes": "Yes",
+    "no": "No",
+    "createSuccess": "User created successfully",
+    "updateSuccess": "User updated successfully",
+    "deleteSuccess": "User deleted successfully",
+    "error": "An error occurred"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close"
+  },
+  "dashboard": {
+    "welcome": "Welcome, {name}!"
+  }
+}

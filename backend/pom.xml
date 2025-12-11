@@ -178,7 +178,7 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/openapi/api.yaml</inputSpec>
+              <inputSpec>${project.basedir}/../openapi.yaml</inputSpec>
               <generatorName>spring</generatorName>
               <apiPackage>cc.remer.timetrack.api</apiPackage>
               <modelPackage>cc.remer.timetrack.api.model</modelPackage>

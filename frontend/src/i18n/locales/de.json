@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "profile": "Profil",
+    "workingHours": "Arbeitszeiten",
+    "adminUsers": "Benutzerverwaltung",
+    "logout": "Abmelden"
+  },
+  "login": {
+    "title": "Anmelden",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "submit": "Anmelden",
+    "error": "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten."
+  },
+  "profile": {
+    "title": "Profil",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "email": "E-Mail",
+    "password": "Neues Passwort",
+    "passwordHint": "Leer lassen, um das aktuelle Passwort beizubehalten",
+    "role": "Rolle",
+    "active": "Aktiv",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "saveSuccess": "Profil erfolgreich gespeichert",
+    "saveError": "Fehler beim Speichern des Profils"
+  },
+  "workingHours": {
+    "title": "Arbeitszeiten konfigurieren",
+    "weekdays": {
+      "MONDAY": "Montag",
+      "TUESDAY": "Dienstag",
+      "WEDNESDAY": "Mittwoch",
+      "THURSDAY": "Donnerstag",
+      "FRIDAY": "Freitag",
+      "SATURDAY": "Samstag",
+      "SUNDAY": "Sonntag"
+    },
+    "hours": "Stunden",
+    "isWorkingDay": "Arbeitstag",
+    "save": "Speichern",
+    "saveSuccess": "Arbeitszeiten erfolgreich gespeichert",
+    "saveError": "Fehler beim Speichern der Arbeitszeiten"
+  },
+  "users": {
+    "title": "Benutzerverwaltung",
+    "createUser": "Neuer Benutzer",
+    "editUser": "Benutzer bearbeiten",
+    "deleteUser": "Benutzer löschen",
+    "confirmDelete": "Möchten Sie diesen Benutzer wirklich löschen?",
+    "yes": "Ja",
+    "no": "Nein",
+    "createSuccess": "Benutzer erfolgreich erstellt",
+    "updateSuccess": "Benutzer erfolgreich aktualisiert",
+    "deleteSuccess": "Benutzer erfolgreich gelöscht",
+    "error": "Ein Fehler ist aufgetreten"
+  },
+  "common": {
+    "loading": "Lädt...",
+    "error": "Fehler",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen"
+  },
+  "dashboard": {
+    "welcome": "Willkommen, {name}!"
+  }
+}

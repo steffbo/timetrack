@@ -1,0 +1,134 @@
+<template>
+  <div class="working-hours">
+    <Card>
+      <template #title>
+        {{ t('workingHours.title') }}
+      </template>
+      <template #content>
+        <DataTable :value="workingDays" :loading="isLoading">
+          <Column field="weekday" header="Tag">
+            <template #body="{ data }">
+              {{ getWeekdayName(data.weekday) }}
+            </template>
+          </Column>
+
+          <Column field="isWorkingDay" :header="t('workingHours.isWorkingDay')">
+            <template #body="{ data }">
+              <Checkbox v-model="data.isWorkingDay" :binary="true" />
+            </template>
+          </Column>
+
+          <Column field="hours" :header="t('workingHours.hours')">
+            <template #body="{ data }">
+              <InputNumber
+                v-model="data.hours"
+                :min="0"
+                :max="24"
+                :disabled="!data.isWorkingDay"
+                showButtons
+                fluid
+              />
+            </template>
+          </Column>
+        </DataTable>
+
+        <div class="button-group">
+          <Button
+            :label="t('workingHours.save')"
+            :loading="isSaving"
+            @click="handleSave"
+          />
+        </div>
+      </template>
+    </Card>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useToast } from 'primevue/usetoast'
+import Card from 'primevue/card'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Checkbox from 'primevue/checkbox'
+import InputNumber from 'primevue/inputnumber'
+import Button from 'primevue/button'
+import apiClient from '@/api/client'
+import { useAuth } from '@/composables/useAuth'
+import type { WorkingDayConfig } from '@/api/generated'
+
+const { t } = useI18n()
+const toast = useToast()
+const { currentUser } = useAuth()
+
+const isLoading = ref(false)
+const isSaving = ref(false)
+const workingDays = ref<WorkingDayConfig[]>([])
+
+// Map weekday number (1-7) to day name
+const weekdayMap = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
+
+function getWeekdayName(weekday: number): string {
+  return t(`workingHours.weekdays.${weekdayMap[weekday - 1]}`)
+}
+
+onMounted(async () => {
+  await loadWorkingHours()
+})
+
+async function loadWorkingHours() {
+  isLoading.value = true
+  try {
+    const response = await apiClient.get(
+      `/api/working-hours/${currentUser.value?.id}`
+    )
+    workingDays.value = response.data.workingDays
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('workingHours.saveError'),
+      life: 3000
+    })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handleSave() {
+  isSaving.value = true
+  try {
+    await apiClient.put(
+      `/api/working-hours`,
+      { workingDays: workingDays.value }
+    )
+
+    toast.add({
+      severity: 'success',
+      summary: t('workingHours.saveSuccess'),
+      life: 3000
+    })
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('workingHours.saveError'),
+      life: 3000
+    })
+  } finally {
+    isSaving.value = false
+  }
+}
+</script>
+
+<style scoped>
+.working-hours {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+</style>
