@@ -245,10 +245,140 @@ Phase 5: Working Hours
 
 ---
 
+---
+
+## Phase 6: Frontend Implementation ✅ COMPLETED
+
+**Date**: 2025-12-11
+
+### Completed Tasks
+- ✅ Moved OpenAPI spec to repository root (`/openapi.yaml`) - single source of truth
+- ✅ Updated backend pom.xml to reference `../openapi.yaml`
+- ✅ Fixed zsh configuration for nvm (removed lazy-loading issues)
+- ✅ Initialized Vite project with Vue 3 + TypeScript
+- ✅ Installed dependencies:
+  - vue-router@4 - Client-side routing
+  - axios@1.13.2 - HTTP client
+  - vue-i18n@9 - Internationalization
+  - primevue@4.5.3 - UI component library
+  - @primevue/themes@4.5.3 - PrimeVue 4 theming
+  - primeicons@7.0.0 - Icon library
+  - openapi-typescript-codegen@0.29.0 - API client generator
+- ✅ Configured Vite with:
+  - Path aliases (`@/*` → `./src/*`)
+  - Proxy to backend (`/api` → `http://localhost:8080`)
+  - Port 5173 for dev server
+- ✅ Configured TypeScript with strict mode and path aliases
+- ✅ Set up environment variables (development/production)
+- ✅ Generated TypeScript API client from OpenAPI spec
+- ✅ Created Axios client with JWT Authorization header interceptors:
+  - Automatic token injection
+  - 401 handling with automatic token refresh
+  - Redirect to login on refresh failure
+- ✅ Created authentication layer:
+  - `src/api/client.ts` - Axios instance with interceptors
+  - `src/api/auth.ts` - Auth API wrapper
+  - `src/composables/useAuth.ts` - Auth state management with localStorage persistence
+- ✅ Set up i18n with German (primary) and English:
+  - Complete translations for all UI strings
+  - PrimeVue locale support
+- ✅ Configured Vue Router with navigation guards:
+  - Auth check before protected routes
+  - Admin-only route protection
+  - Automatic redirect to login/dashboard
+- ✅ Set up PrimeVue 4 with Aura theme
+- ✅ Implemented all views:
+  - **LoginView**: JWT authentication form with email/password
+  - **DashboardView**: Welcome page with user greeting
+  - **ProfileView**: User profile editing (name, email, password change)
+  - **WorkingHoursView**: Weekly working hours configuration with inline DataTable editing
+  - **AdminUsersView**: Complete CRUD user management with Dialog and ConfirmDialog
+  - **AppLayout + AppNavbar**: Main layout with role-based navigation menu
+- ✅ All views tested and functional with backend API
+- ✅ Token persistence with localStorage (survives page reload)
+- ✅ Role-based UI (admin sees extra menu items)
+
+### Key Files Created
+- `/openapi.yaml` - OpenAPI spec (moved from backend, single source of truth)
+- `/frontend/.env.development` - Development environment config (empty base URL for proxy)
+- `/frontend/.env.production` - Production environment config
+- `/frontend/vite.config.ts` - Vite configuration with proxy and aliases
+- `/frontend/tsconfig.app.json` - TypeScript configuration
+- `/frontend/package.json` - Dependencies and scripts (includes `generate-api`)
+- `/frontend/src/main.ts` - App entry point with PrimeVue setup
+- `/frontend/src/App.vue` - Root component with RouterView
+- `/frontend/src/api/client.ts` - Axios client with JWT interceptors
+- `/frontend/src/api/auth.ts` - Authentication API wrapper
+- `/frontend/src/composables/useAuth.ts` - Auth state with localStorage
+- `/frontend/src/router/index.ts` - Router with auth guards
+- `/frontend/src/i18n/index.ts` - i18n configuration
+- `/frontend/src/i18n/locales/de.json` - German translations
+- `/frontend/src/i18n/locales/en.json` - English translations
+- `/frontend/src/views/LoginView.vue` - Login form
+- `/frontend/src/views/DashboardView.vue` - Dashboard page
+- `/frontend/src/views/ProfileView.vue` - Profile editing
+- `/frontend/src/views/WorkingHoursView.vue` - Working hours config
+- `/frontend/src/views/AdminUsersView.vue` - User management (admin)
+- `/frontend/src/components/layout/AppLayout.vue` - Main layout
+- `/frontend/src/components/layout/AppNavbar.vue` - Navigation bar
+
+### Git Status
+✅ Commit: `feat: Implement complete Vue 3 frontend with authentication and user management` (780f505)
+
+### Build Status
+✅ Frontend dev server runs on http://localhost:5173
+✅ Backend API runs on http://localhost:8080
+✅ Vite proxy forwards `/api` requests to backend
+✅ All authentication and CRUD operations working
+
+### Features Implemented
+- Complete JWT authentication flow (login, logout, token refresh)
+- Token persistence with localStorage (survives page reload)
+- Automatic token refresh on 401 with retry
+- Role-based access control (USER, ADMIN)
+- Role-based navigation (admin-only menu items)
+- German and English i18n support
+- Full user CRUD operations (admin only)
+- Profile editing (own user)
+- Working hours configuration with inline editing
+- Toast notifications for success/error feedback
+- Confirmation dialogs for destructive actions
+- Responsive design with PrimeVue components
+
+### Technology Stack
+- **Frontend**: Vue 3 (Composition API with `<script setup>`)
+- **Language**: TypeScript with strict mode
+- **Build Tool**: Vite 7
+- **UI Framework**: PrimeVue 4 with Aura theme
+- **Icons**: PrimeIcons
+- **Routing**: Vue Router 4
+- **HTTP Client**: Axios with interceptors
+- **i18n**: vue-i18n 9
+- **State Management**: Composables (no Pinia/Vuex)
+- **API Types**: Auto-generated from OpenAPI spec
+
+### Architecture Decisions
+- **Single Source of Truth**: OpenAPI spec at repository root
+- **Simple State Management**: Composables over Pinia/Vuex (lower complexity)
+- **Token Storage**: localStorage for persistence (XSS risk acknowledged)
+- **Authorization**: JWT in Authorization header (mobile-friendly)
+- **API Client**: Auto-generated TypeScript types from OpenAPI
+- **No Complex State**: Each view fetches its own data (low-traffic app)
+
+### Testing
+- Manual testing of all views and features
+- Login/logout flow verified
+- Token refresh verified (401 handling)
+- Page reload verified (localStorage persistence)
+- Role-based access verified
+- CRUD operations verified (users, profile, working hours)
+
+---
+
 ### Notes
 - Admin user credentials: admin@timetrack.local / admin (bcrypt hash included in migration)
 - Default working hours: Monday-Friday 8 hours, Weekend 0 hours
-- OpenAPI spec expanded with full user management endpoints
+- OpenAPI spec centralized at repository root (single source of truth)
 - JWT secret should be changed in production via JWT_SECRET environment variable
 - OpenAPI Generator successfully creates API interfaces in target/generated-sources/openapi
 - Build requires jackson-databind-nullable dependency for OpenAPI generated code
@@ -258,3 +388,6 @@ Phase 5: Working Hours
 - Method-level security enabled via @EnableMethodSecurity
 - UserPrincipal enhanced with role field for authorization checks
 - SecurityContextHolder used to retrieve authentication in controllers
+- Frontend uses localStorage for token persistence (survives page reload)
+- Vite proxy forwards `/api` requests to backend in development
+- PrimeVue 4 uses new theming system with @primevue/themes package

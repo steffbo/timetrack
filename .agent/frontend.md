@@ -689,32 +689,43 @@ Visit http://localhost:3000
 ### Backend Prerequisites
 - [x] Backend ready with Authorization header authentication
 - [x] GET /api/users endpoint added
+- [x] OpenAPI spec moved to repository root (single source of truth)
 
 ### Frontend Core
-- [ ] Initialize Vite project with Vue 3 + TypeScript
-- [ ] Install dependencies (vue-router, axios, vue-i18n, primevue)
-- [ ] Configure vite.config.ts with proxy
-- [ ] Generate API client from OpenAPI spec
-- [ ] Create Axios client with Authorization header interceptors
-- [ ] Create auth API wrapper
-- [ ] Create useAuth composable with token storage
-- [ ] Set up i18n with German and English translations
-- [ ] Configure Vue Router with auth guards
-- [ ] Set up PrimeVue in main.ts
+- [x] Initialize Vite project with Vue 3 + TypeScript
+- [x] Install dependencies (vue-router, axios, vue-i18n, primevue, @primevue/themes)
+- [x] Configure vite.config.ts with proxy and path aliases
+- [x] Generate API client from OpenAPI spec (auto-generated types)
+- [x] Create Axios client with Authorization header interceptors
+- [x] Create auth API wrapper
+- [x] Create useAuth composable with localStorage persistence
+- [x] Set up i18n with German and English translations
+- [x] Configure Vue Router with auth guards
+- [x] Set up PrimeVue 4 in main.ts (Aura theme)
 
 ### Views
-- [ ] LoginView
-- [ ] AppLayout + AppNavbar
-- [ ] DashboardView
-- [ ] ProfileView
-- [ ] WorkingHoursView
-- [ ] AdminUsersView
+- [x] LoginView - JWT authentication form
+- [x] AppLayout + AppNavbar - Main layout with role-based navigation
+- [x] DashboardView - Welcome page
+- [x] ProfileView - User profile editing with password change
+- [x] WorkingHoursView - Weekly working hours configuration (inline DataTable editing)
+- [x] AdminUsersView - Full CRUD user management (admin only)
+
+### Development Testing
+- [x] Login/logout flow working
+- [x] Token persistence with localStorage (survives page reload)
+- [x] Role-based navigation (admin sees extra menu items)
+- [x] All views functional with backend API
+- [x] German i18n active and working
 
 ### Docker
 - [ ] Create Dockerfile (multi-stage)
 - [ ] Create nginx.conf
 - [ ] Update docker-compose.yml
 - [ ] Test full stack deployment
+
+## Status: Development Complete ✅
+Frontend is fully functional in development mode. Docker deployment remaining.
 
 ## Key Decisions
 
