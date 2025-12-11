@@ -238,6 +238,79 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /api/working-hours:
+    get:
+      tags:
+        - Working Hours
+      summary: Get working hours configuration
+      description: Get the working hours configuration for the authenticated user
+      operationId: getWorkingHours
+      responses:
+        '200':
+          description: Working hours retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingHoursResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Working Hours
+      summary: Update working hours configuration
+      description: Update the working hours configuration for the authenticated user
+      operationId: updateWorkingHours
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkingHoursRequest'
+      responses:
+        '200':
+          description: Working hours updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingHoursResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/working-hours/{userId}:
+    get:
+      tags:
+        - Working Hours
+      summary: Get working hours for specific user
+      description: Get the working hours configuration for a specific user (Admin only)
+      operationId: getWorkingHoursByUserId
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Working hours retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingHoursResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -414,6 +487,94 @@ components:
         timestamp:
           type: string
           format: date-time
+
+    WorkingHoursResponse:
+      type: object
+      required:
+        - userId
+        - workingDays
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: ID of the user
+        workingDays:
+          type: array
+          description: Working hours configuration for each weekday
+          items:
+            $ref: '#/components/schemas/WorkingDayConfig'
+
+    WorkingDayConfig:
+      type: object
+      required:
+        - weekday
+        - hours
+        - isWorkingDay
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Working hours configuration ID
+        weekday:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: Day of week (1=Monday, 7=Sunday)
+          example: 1
+        dayName:
+          type: string
+          description: Name of the day
+          enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+          example: MONDAY
+        hours:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 24
+          description: Target hours for this weekday
+          example: 8.0
+        isWorkingDay:
+          type: boolean
+          description: Whether this is a working day
+          example: true
+
+    UpdateWorkingHoursRequest:
+      type: object
+      required:
+        - workingDays
+      properties:
+        workingDays:
+          type: array
+          description: Working hours configuration for each weekday (must contain all 7 days)
+          minItems: 7
+          maxItems: 7
+          items:
+            $ref: '#/components/schemas/UpdateWorkingDayConfig'
+
+    UpdateWorkingDayConfig:
+      type: object
+      required:
+        - weekday
+        - hours
+        - isWorkingDay
+      properties:
+        weekday:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: Day of week (1=Monday, 7=Sunday)
+          example: 1
+        hours:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 24
+          description: Target hours for this weekday
+          example: 8.0
+        isWorkingDay:
+          type: boolean
+          description: Whether this is a working day
+          example: true
 
   responses:
     UnauthorizedError:

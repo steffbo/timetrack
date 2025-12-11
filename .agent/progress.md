@@ -173,6 +173,78 @@ Phase 5: Working Hours
 
 ---
 
+---
+
+## Phase 5: Working Hours ✅ COMPLETED
+
+**Date**: 2025-12-11
+
+### Completed Tasks
+- ✅ Extended OpenAPI spec with working hours endpoints:
+  - `GET /api/working-hours` - Get working hours configuration for authenticated user
+  - `PUT /api/working-hours` - Update working hours configuration
+  - `GET /api/working-hours/{userId}` - Get working hours for specific user (Admin only)
+- ✅ Created request/response DTOs (UpdateWorkingHoursRequest, UpdateWorkingDayConfig, WorkingHoursResponse, WorkingDayConfig)
+- ✅ Implemented working hours use cases:
+  - GetWorkingHours (with admin override to view other users)
+  - UpdateWorkingHours (with comprehensive validation)
+- ✅ Created WorkingHoursMapper for entity-DTO conversion
+- ✅ Created WorkingHoursController implementing generated API
+- ✅ Implemented comprehensive validation:
+  - Exactly 7 weekdays required
+  - No duplicate weekdays
+  - Hours must be between 0-24
+  - Valid weekday values (1-7)
+  - All weekdays must be present
+- ✅ Created comprehensive integration tests (11 tests):
+  - Get working hours for authenticated user
+  - Admin get working hours for specific user
+  - User forbidden from viewing other users
+  - Update working hours successfully
+  - Validate exactly 7 days required
+  - Validate no duplicate weekdays
+  - Validate hours within valid range
+  - Validate negative hours not allowed
+  - Validate invalid weekday values
+  - Part-time working hours configuration
+  - Flexible working hours with different hours per day
+
+### Key Files Created/Modified
+- `/src/main/resources/openapi/api.yaml` - Working hours endpoints added
+- `/src/main/java/cc/remer/timetrack/usecase/workinghours/GetWorkingHours.java`
+- `/src/main/java/cc/remer/timetrack/usecase/workinghours/UpdateWorkingHours.java`
+- `/src/main/java/cc/remer/timetrack/usecase/workinghours/WorkingHoursMapper.java`
+- `/src/main/java/cc/remer/timetrack/adapter/web/WorkingHoursController.java`
+- `/src/test/java/cc/remer/timetrack/usecase/workinghours/WorkingHoursIntegrationTest.java`
+
+### Build Status
+✅ Project compiles successfully with `./mvnw clean compile`
+
+### Features Implemented
+- Get working hours configuration for current user
+- Admin can view any user's working hours
+- Update working hours per weekday
+- Support for flexible working hours (different hours per day)
+- Support for part-time configurations
+- Weekend/non-working day support
+- Comprehensive validation of working hours data
+- German error messages for validation failures
+
+### Authorization Rules
+- **Get Working Hours**: Any authenticated user can get their own working hours
+- **Get Working Hours by User ID**: Admin only
+- **Update Working Hours**: Any authenticated user can update their own working hours
+
+### Validation Rules
+- Must provide exactly 7 weekdays (Monday-Sunday)
+- No duplicate weekdays allowed
+- Hours must be between 0 and 24
+- Weekday values must be 1-7 (1=Monday, 7=Sunday)
+- isWorkingDay flag is required for each day
+- All weekdays must be present in update request
+
+---
+
 ### Notes
 - Admin user credentials: admin@timetrack.local / admin (bcrypt hash included in migration)
 - Default working hours: Monday-Friday 8 hours, Weekend 0 hours

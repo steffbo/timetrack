@@ -60,13 +60,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable configuration (.env.example)
 - Implementation plan with phases
 
+## [Unreleased] - 2025-12-11
+
+### Added
+- Working hours configuration endpoints
+  - `GET /api/working-hours` - Get working hours for current user
+  - `PUT /api/working-hours` - Update working hours configuration
+  - `GET /api/working-hours/{userId}` - Get working hours for specific user (Admin only)
+- Working hours DTOs: WorkingHoursResponse, WorkingDayConfig, UpdateWorkingHoursRequest, UpdateWorkingDayConfig
+- GetWorkingHours use case with admin override
+- UpdateWorkingHours use case with comprehensive validation
+- WorkingHoursMapper for entity-DTO conversion
+- WorkingHoursController implementing generated API
+- 11 comprehensive integration tests for working hours functionality
+
+### Features
+- Flexible working hours configuration (different hours per day)
+- Part-time working hours support
+- Weekend/non-working day support
+- Validation for working hours data (exactly 7 days, valid ranges, no duplicates)
+- German error messages for validation failures
+
 ## Implementation Status
 
 - ✅ Phase 1: Foundation
 - ✅ Phase 2: Domain & Persistence
 - ✅ Phase 3: Authentication & Security
-- ⏳ Phase 4: User Management
-- ⏳ Phase 5: Working Hours
+- ✅ Phase 4: User Management
+- ✅ Phase 5: Working Hours
 - ⏳ Phase 6: Time Tracking
 - ⏳ Phase 7: Statistics & Reports
 - ⏳ Phase 8: Polish & Deploy
