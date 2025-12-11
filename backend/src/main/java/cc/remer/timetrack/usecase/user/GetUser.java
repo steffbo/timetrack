@@ -13,6 +13,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Use case for getting user details.
  */
@@ -63,6 +66,20 @@ public class GetUser {
                 .orElseThrow(() -> new UserNotFoundException("Benutzer nicht gefunden"));
 
         return userMapper.toResponse(user);
+    }
+
+    /**
+     * Get all users (Admin only).
+     *
+     * @return list of all users
+     */
+    @Transactional(readOnly = true)
+    public List<UserResponse> getAllUsers() {
+        log.debug("Getting all users");
+
+        return userRepository.findAll().stream()
+                .map(userMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     /**

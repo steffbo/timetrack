@@ -1,21 +1,5 @@
-# Timetrack Frontend
+# Vue 3 + TypeScript + Vite
 
-This directory will contain the Vue 3 + TypeScript frontend application.
+This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
 
-## Planned Tech Stack
-
-- Vue 3 with Composition API
-- TypeScript
-- Vite
-- Vue Router
-- Auto-generated API client from OpenAPI spec
-
-## Next Steps
-
-1. Initialize Vue 3 project with Vite
-2. Set up TypeScript configuration
-3. Generate API client from backend OpenAPI spec
-4. Implement authentication flow
-5. Build core UI components
-
-See `.agent/frontend.md` for detailed implementation plan.
+Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).

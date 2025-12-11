@@ -17,6 +17,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * REST controller for user management operations.
  */
@@ -29,6 +31,14 @@ public class UserController implements UsersApi {
     private final GetUser getUser;
     private final UpdateUser updateUser;
     private final DeleteUser deleteUser;
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        log.info("GET /users - Getting all users");
+        List<UserResponse> response = getUser.getAllUsers();
+        return ResponseEntity.ok(response);
+    }
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
