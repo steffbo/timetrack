@@ -3,6 +3,11 @@ name: Docker - Build and Push
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'openapi.yaml'
+      - '.github/workflows/docker.yml'
   workflow_dispatch:
 
 env:

@@ -3,8 +3,16 @@ name: CI - Build and Test
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'openapi.yaml'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'backend/**'
+      - 'openapi.yaml'
+      - '.github/workflows/ci.yml'
 
 jobs:
   test:
