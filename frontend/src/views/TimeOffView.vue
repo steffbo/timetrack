@@ -57,7 +57,7 @@ const loadTimeOffs = async () => {
     const startDate = formatDateForApi(startDateFilter.value)
     const endDate = formatDateForApi(endDateFilter.value)
 
-    const response = await TimeOffService.getTimeOff(startDate, endDate)
+    const response = await TimeOffService.getTimeOffEntries(startDate, endDate)
     timeOffs.value = response
   } catch (error: any) {
     console.error('Failed to load time offs:', error)
