@@ -74,10 +74,17 @@
     </template>
   </Card>
 
+  <!-- Hover overlay panel for day details -->
+  <OverlayPanel ref="hoverPanel" :dismissable="false">
+    <div v-if="hoveredDay !== null" class="day-details">
+      <div class="day-details-content" v-html="formatDayDetailsHtml(hoveredDay)"></div>
+    </div>
+  </OverlayPanel>
+
   <!-- Sticky overlay panel for day details -->
-  <OverlayPanel ref="overlayPanel" :dismissable="true" @hide="handleOverlayHide">
-    <div v-if="selectedDay !== null" class="day-details">
-      <div class="day-details-content" v-html="formatDayDetailsHtml(selectedDay)"></div>
+  <OverlayPanel ref="stickyPanel" :dismissable="true" @hide="handleOverlayHide">
+    <div v-if="stickyDay !== null" class="day-details">
+      <div class="day-details-content" v-html="formatDayDetailsHtml(stickyDay)"></div>
     </div>
   </OverlayPanel>
 </template>
@@ -92,10 +99,11 @@ import type { DailySummaryResponse } from '@/api/generated'
 
 const { t } = useI18n()
 
-// State for sticky overlay
-const selectedDay = ref<number | null>(null) // Currently displayed day
+// State for hover and sticky overlays
+const hoveredDay = ref<number | null>(null) // Currently hovered day
 const stickyDay = ref<number | null>(null) // Day that is sticky (clicked)
-const overlayPanel = ref<InstanceType<typeof OverlayPanel> | null>(null)
+const hoverPanel = ref<InstanceType<typeof OverlayPanel> | null>(null)
+const stickyPanel = ref<InstanceType<typeof OverlayPanel> | null>(null)
 const dayRefs = ref<Map<number, HTMLElement>>(new Map())
 let hoverTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -183,7 +191,8 @@ const getDayClasses = (day: number) => {
     currentYear.value === today.getFullYear()
 
   return {
-    'is-today': isToday
+    'is-today': isToday,
+    'is-sticky': day === stickyDay.value
   }
 }
 
@@ -252,12 +261,17 @@ const handleDayHover = (day: number, event: MouseEvent) => {
     hoverTimeout = null
   }
 
+  // Skip hover panel if this day is already sticky
+  if (day === stickyDay.value) {
+    return
+  }
+
   // Show hover overlay with reduced delay (100ms)
   hoverTimeout = setTimeout(() => {
-    selectedDay.value = day
+    hoveredDay.value = day
     const targetElement = dayRefs.value.get(day)
-    if (targetElement && overlayPanel.value) {
-      overlayPanel.value.show(event, targetElement)
+    if (targetElement && hoverPanel.value) {
+      hoverPanel.value.show(event, targetElement)
     }
   }, 100)
 }
@@ -270,27 +284,9 @@ const handleDayLeave = () => {
     hoverTimeout = null
   }
 
-  // If there's a sticky day, restore its overlay
-  if (stickyDay.value !== null) {
-    // If we're leaving the sticky day itself, don't do anything
-    if (selectedDay.value === stickyDay.value) return
-
-    // We're leaving a different day, restore sticky day's overlay
-    selectedDay.value = stickyDay.value
-    const targetElement = dayRefs.value.get(stickyDay.value)
-    if (targetElement && overlayPanel.value) {
-      // Use a small timeout to avoid flickering
-      setTimeout(() => {
-        if (overlayPanel.value && targetElement) {
-          overlayPanel.value.show(new MouseEvent('click'), targetElement)
-        }
-      }, 50)
-    }
-  } else {
-    // No sticky day, just hide the overlay
-    overlayPanel.value?.hide()
-    selectedDay.value = null
-  }
+  // Hide the hover panel
+  hoverPanel.value?.hide()
+  hoveredDay.value = null
 }
 
 // Handle day click for sticky overlay
@@ -303,16 +299,24 @@ const handleDayClick = (day: number, event: MouseEvent) => {
 
   // If clicking the same day that is already sticky, toggle off
   if (day === stickyDay.value) {
-    overlayPanel.value?.hide()
-    selectedDay.value = null
+    stickyPanel.value?.hide()
     stickyDay.value = null
   } else {
-    // Make this day sticky (replacing any previous sticky day)
-    stickyDay.value = day
-    selectedDay.value = day
+    // Hide the previous sticky panel if it exists
+    if (stickyDay.value !== null) {
+      stickyPanel.value?.hide()
+    }
+
+    // Update the sticky day state and show the panel
     const targetElement = dayRefs.value.get(day)
-    if (targetElement && overlayPanel.value) {
-      overlayPanel.value.show(event, targetElement)
+    if (targetElement && stickyPanel.value) {
+      // Use a small delay to ensure the hide completes before updating state and showing the new one
+      setTimeout(() => {
+        stickyDay.value = day
+        if (stickyPanel.value && targetElement) {
+          stickyPanel.value.show(event, targetElement)
+        }
+      }, 50)
     }
   }
 }
@@ -320,7 +324,6 @@ const handleDayClick = (day: number, event: MouseEvent) => {
 // Handle overlay hide event
 const handleOverlayHide = () => {
   // If user manually dismissed the overlay (click outside, ESC, etc), unsticky it
-  selectedDay.value = null
   stickyDay.value = null
 }
 
@@ -442,7 +445,8 @@ const formatDayDetailsHtml = (day: number): string => {
   border: none;
 }
 
-.calendar-day:not(.empty):hover {
+.calendar-day:not(.empty):hover,
+.calendar-day.is-sticky {
   transform: scale(1.05);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   cursor: pointer;
