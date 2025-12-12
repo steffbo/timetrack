@@ -24,6 +24,14 @@ public interface RecurringOffDayRepository extends JpaRepository<RecurringOffDay
     List<RecurringOffDay> findByUserId(Long userId);
 
     /**
+     * Find all recurring off-days for a user, ordered by start date descending.
+     *
+     * @param userId the user ID
+     * @return list of recurring off-days
+     */
+    List<RecurringOffDay> findByUserIdOrderByStartDateDesc(Long userId);
+
+    /**
      * Find active recurring off-days for a user.
      *
      * @param userId the user ID

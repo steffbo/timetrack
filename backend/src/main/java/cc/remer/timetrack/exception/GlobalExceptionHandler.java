@@ -41,6 +41,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
+    @ExceptionHandler(RecurringOffDayNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRecurringOffDayNotFoundException(RecurringOffDayNotFoundException ex) {
+        log.warn("Recurring off-day not found: {}", ex.getMessage());
+        ErrorResponse error = createErrorResponse("RECURRING_OFF_DAY_NOT_FOUND", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(TimeOffNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTimeOffNotFoundException(TimeOffNotFoundException ex) {
+        log.warn("Time-off entry not found: {}", ex.getMessage());
+        ErrorResponse error = createErrorResponse("TIME_OFF_NOT_FOUND", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex) {
         log.warn("Bad credentials: {}", ex.getMessage());

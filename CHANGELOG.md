@@ -62,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2025-12-11
 
-### Added
+### Added - Working Hours Configuration
 - Working hours configuration endpoints
   - `GET /api/working-hours` - Get working hours for current user
   - `PUT /api/working-hours` - Update working hours configuration
@@ -74,12 +74,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WorkingHoursController implementing generated API
 - 11 comprehensive integration tests for working hours functionality
 
-### Features
+### Features - Working Hours
 - Flexible working hours configuration (different hours per day)
 - Part-time working hours support
 - Weekend/non-working day support
 - Validation for working hours data (exactly 7 days, valid ranges, no duplicates)
 - German error messages for validation failures
+
+## [Unreleased] - 2025-12-12
+
+### Added - Advanced Time Tracking Backend (Phase 7)
+
+#### Public Holidays API
+- `GET /api/public-holidays` - Get German public holidays for specific year and state
+- German public holidays calculator for Berlin and Brandenburg states
+- Support for fixed holidays (New Year, Labour Day, German Unity Day, Christmas)
+- Support for movable holidays based on Easter (Good Friday, Easter Monday, Ascension Day, Whit Monday)
+- State-specific holidays (International Women's Day for Berlin, Reformation Day for Brandenburg)
+- 5 integration tests for public holidays functionality
+
+#### Recurring Off-Days API
+- `GET /api/recurring-off-days` - Get all recurring off-day patterns
+- `POST /api/recurring-off-days` - Create new recurring off-day rule
+- `PUT /api/recurring-off-days/{id}` - Update recurring off-day rule
+- `DELETE /api/recurring-off-days/{id}` - Delete recurring off-day rule
+- Support for two pattern types:
+  - EVERY_NTH_WEEK - Every nth week (e.g., every 4th Monday)
+  - NTH_WEEKDAY_OF_MONTH - Nth weekday of month (e.g., 4th Monday of every month)
+- Complete use cases: GetRecurringOffDays, CreateRecurringOffDay, UpdateRecurringOffDay, DeleteRecurringOffDay
+- RecurringOffDayMapper for entity-DTO conversion
+- RecurringOffDaysController with full authorization
+- 11 integration tests for recurring off-days functionality
+
+#### Time-Off Tracking API
+- `GET /api/time-off` - Get all time-off entries with date range filtering
+- `POST /api/time-off` - Create new time-off entry
+- `PUT /api/time-off/{id}` - Update time-off entry
+- `DELETE /api/time-off/{id}` - Delete time-off entry
+- Support for four time-off types: VACATION, SICK, PERSONAL, PUBLIC_HOLIDAY
+- Optional custom hours-per-day override
+- Complete use cases: GetTimeOffEntries, CreateTimeOff, UpdateTimeOff, DeleteTimeOff
+- TimeOffMapper for entity-DTO conversion
+- TimeOffController with full authorization
+- 12 integration tests for time-off functionality
+
+#### Vacation Balance API
+- `GET /api/vacation-balance` - Get vacation balance for specific year
+- `PUT /api/vacation-balance` - Update vacation balance (Admin only)
+- Automatic calculation of remaining days
+- Support for annual allowance, carried-over days, adjustments, and used days
+- Complete use cases: GetVacationBalance, UpdateVacationBalance
+- VacationBalanceMapper for entity-DTO conversion
+- VacationBalanceController with admin-only update
+- 9 integration tests for vacation balance functionality
+
+### Database Schema (Phase 7)
+- `recurring_off_days` table with two pattern types support
+- `time_off` table with support for all time-off types
+- `vacation_balance` table with automatic remaining days calculation
+- Added `state` column to users table for German state (BERLIN, BRANDENBURG)
+- Optional `start_time` and `end_time` columns in working_hours table
+
+### Testing Infrastructure
+- Centralized test fixture methods in RepositoryTestBase
+- Fixture methods for users, working hours, recurring off-days, time-off, and vacation balance
+- Eliminated 100+ lines of repetitive test setup code
+- **99 integration tests passing** (37 new tests for Phase 7 features)
+- All tests use standardized fixtures for consistency
+
+### OpenAPI Specification
+- Extended with 4 new API endpoint groups
+- Comprehensive request/response models for all new features
+- Proper validation rules and error responses
+- TypeScript API client generated from updated spec
+
+### Features - Advanced Time Tracking
+- German public holidays calculation with state-specific support
+- Flexible recurring off-day patterns (weekly and monthly)
+- Multi-type time-off tracking (vacation, sick, personal, holidays)
+- Vacation balance management with automatic calculations
+- Date range filtering for time-off queries
+- User-owned data with proper authorization checks
+- German error messages for all validation failures
 
 ## Implementation Status
 
@@ -88,9 +164,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Phase 3: Authentication & Security
 - ✅ Phase 4: User Management
 - ✅ Phase 5: Working Hours
-- ⏳ Phase 6: Time Tracking
-- ⏳ Phase 7: Statistics & Reports
-- ⏳ Phase 8: Polish & Deploy
+- ✅ Phase 6: Vue.js Frontend (Basic)
+- ✅ Phase 7: Advanced Time Tracking (Backend Complete)
+- ⏳ Phase 8: Advanced Time Tracking (Frontend)
+- ⏳ Phase 9: Statistics & Reports
+- ⏳ Phase 10: Polish & Deploy
 
 [Unreleased]: https://github.com/username/timetrack/compare/v0.0.1...HEAD
 [0.0.1]: https://github.com/username/timetrack/releases/tag/v0.0.1

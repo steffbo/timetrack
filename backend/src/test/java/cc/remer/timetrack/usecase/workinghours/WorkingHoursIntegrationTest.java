@@ -32,15 +32,6 @@ import static org.assertj.core.api.Assertions.*;
 class WorkingHoursIntegrationTest extends RepositoryTestBase {
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private WorkingHoursRepository workingHoursRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
     private GetWorkingHours getWorkingHours;
 
     @Autowired
@@ -55,44 +46,12 @@ class WorkingHoursIntegrationTest extends RepositoryTestBase {
         workingHoursRepository.deleteAll();
         userRepository.deleteAll();
 
-        // Create test admin
-        testAdmin = User.builder()
-                .email("admin@test.local")
-                .passwordHash(passwordEncoder.encode("password"))
-                .firstName("Admin")
-                .lastName("User")
-                .role(Role.ADMIN)
-                .active(true)
-                .state(GermanState.BERLIN)
-                .build();
-        testAdmin = userRepository.save(testAdmin);
-
-        // Create test user
-        testUser = User.builder()
-                .email("user@test.local")
-                .passwordHash(passwordEncoder.encode("password"))
-                .firstName("Regular")
-                .lastName("User")
-                .role(Role.USER)
-                .active(true)
-                .state(GermanState.BERLIN)
-                .build();
-        testUser = userRepository.save(testUser);
+        // Create test users
+        testAdmin = createTestAdmin();
+        testUser = createTestUser();
 
         // Create default working hours for test user
         createDefaultWorkingHours(testUser);
-    }
-
-    private void createDefaultWorkingHours(User user) {
-        for (short weekday = 1; weekday <= 7; weekday++) {
-            WorkingHours workingHours = WorkingHours.builder()
-                    .user(user)
-                    .weekday(weekday)
-                    .hours(weekday <= 5 ? BigDecimal.valueOf(8.0) : BigDecimal.ZERO)
-                    .isWorkingDay(weekday <= 5)
-                    .build();
-            workingHoursRepository.save(workingHours);
-        }
     }
 
     @Test

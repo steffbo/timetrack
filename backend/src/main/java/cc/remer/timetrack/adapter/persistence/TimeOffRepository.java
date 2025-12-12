@@ -25,6 +25,14 @@ public interface TimeOffRepository extends JpaRepository<TimeOff, Long> {
     List<TimeOff> findByUserId(Long userId);
 
     /**
+     * Find all time off entries for a user, ordered by start date descending.
+     *
+     * @param userId the user ID
+     * @return list of time off entries
+     */
+    List<TimeOff> findByUserIdOrderByStartDateDesc(Long userId);
+
+    /**
      * Find time off entries for a user within a date range.
      *
      * @param userId the user ID

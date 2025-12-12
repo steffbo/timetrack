@@ -18,6 +18,14 @@ tags:
     description: User management operations
   - name: Working Hours
     description: Working hours configuration per weekday
+  - name: Recurring Off-Days
+    description: Recurring off-day patterns (e.g., every 4th Monday)
+  - name: Time Off
+    description: Time-off tracking (vacation, sick, personal days, holidays)
+  - name: Vacation Balance
+    description: Vacation balance management
+  - name: Public Holidays
+    description: German public holidays calculator
   - name: Time Entries
     description: Time tracking operations (clock in/out)
   - name: Statistics
@@ -330,6 +338,309 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /api/recurring-off-days:
+    get:
+      tags:
+        - Recurring Off-Days
+      summary: Get all recurring off-days
+      description: Get all recurring off-day rules for the authenticated user
+      operationId: getRecurringOffDays
+      responses:
+        '200':
+          description: Recurring off-days retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecurringOffDayResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Recurring Off-Days
+      summary: Create recurring off-day rule
+      description: Create a new recurring off-day rule
+      operationId: createRecurringOffDay
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecurringOffDayRequest'
+      responses:
+        '201':
+          description: Recurring off-day created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringOffDayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/recurring-off-days/{id}:
+    put:
+      tags:
+        - Recurring Off-Days
+      summary: Update recurring off-day rule
+      description: Update an existing recurring off-day rule
+      operationId: updateRecurringOffDay
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRecurringOffDayRequest'
+      responses:
+        '200':
+          description: Recurring off-day updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringOffDayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Recurring Off-Days
+      summary: Delete recurring off-day rule
+      description: Delete a recurring off-day rule
+      operationId: deleteRecurringOffDay
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Recurring off-day deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/time-off:
+    get:
+      tags:
+        - Time Off
+      summary: Get all time-off entries
+      description: Get all time-off entries for the authenticated user
+      operationId: getTimeOffEntries
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter entries starting from this date
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter entries up to this date
+      responses:
+        '200':
+          description: Time-off entries retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TimeOffResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Time Off
+      summary: Create time-off entry
+      description: Create a new time-off entry (vacation, sick, personal day, or holiday)
+      operationId: createTimeOff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTimeOffRequest'
+      responses:
+        '201':
+          description: Time-off entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeOffResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/time-off/{id}:
+    put:
+      tags:
+        - Time Off
+      summary: Update time-off entry
+      description: Update an existing time-off entry
+      operationId: updateTimeOff
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTimeOffRequest'
+      responses:
+        '200':
+          description: Time-off entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeOffResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Time Off
+      summary: Delete time-off entry
+      description: Delete a time-off entry
+      operationId: deleteTimeOff
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Time-off entry deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/vacation-balance:
+    get:
+      tags:
+        - Vacation Balance
+      summary: Get vacation balance
+      description: Get vacation balance for the authenticated user for a specific year
+      operationId: getVacationBalance
+      parameters:
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Year for vacation balance (defaults to current year)
+          example: 2025
+      responses:
+        '200':
+          description: Vacation balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationBalanceResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Vacation balance not found for the specified year
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Vacation Balance
+      summary: Update vacation balance
+      description: Update vacation balance (Admin only)
+      operationId: updateVacationBalance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVacationBalanceRequest'
+      responses:
+        '200':
+          description: Vacation balance updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationBalanceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /api/public-holidays:
+    get:
+      tags:
+        - Public Holidays
+      summary: Get public holidays
+      description: Get German public holidays for a specific year and state
+      operationId: getPublicHolidays
+      parameters:
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Year for public holidays (defaults to current year)
+          example: 2025
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [BERLIN, BRANDENBURG]
+          description: German state (defaults to user's state)
+          example: BERLIN
+      responses:
+        '200':
+          description: Public holidays retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicHolidayResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -614,6 +925,358 @@ components:
           format: time
           description: Optional end time (HH:mm format). When set with startTime, hours are calculated automatically
           example: "17:00"
+
+    RecurringOffDayResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - recurrencePattern
+        - weekday
+        - startDate
+        - isActive
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        recurrencePattern:
+          type: string
+          enum: [EVERY_NTH_WEEK, NTH_WEEKDAY_OF_MONTH]
+          description: Type of recurrence pattern
+        weekday:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: Day of week (1=Monday, 7=Sunday)
+        weekInterval:
+          type: integer
+          description: Week interval for EVERY_NTH_WEEK pattern (e.g., 4 for every 4 weeks)
+          example: 4
+        referenceDate:
+          type: string
+          format: date
+          description: Reference start date for EVERY_NTH_WEEK pattern
+          example: "2025-01-06"
+        weekOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Week of month for NTH_WEEKDAY_OF_MONTH pattern (1-5, where 5 means last)
+          example: 4
+        startDate:
+          type: string
+          format: date
+          description: Date when this rule becomes active
+        endDate:
+          type: string
+          format: date
+          description: Optional end date for this rule
+        isActive:
+          type: boolean
+          description: Whether this rule is currently active
+        description:
+          type: string
+          description: Optional description of this off-day rule
+          example: "Every 4th Monday"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateRecurringOffDayRequest:
+      type: object
+      required:
+        - recurrencePattern
+        - weekday
+        - startDate
+      properties:
+        recurrencePattern:
+          type: string
+          enum: [EVERY_NTH_WEEK, NTH_WEEKDAY_OF_MONTH]
+          description: Type of recurrence pattern
+        weekday:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: Day of week (1=Monday, 7=Sunday)
+        weekInterval:
+          type: integer
+          description: Required for EVERY_NTH_WEEK pattern (e.g., 4 for every 4 weeks)
+          example: 4
+        referenceDate:
+          type: string
+          format: date
+          description: Required for EVERY_NTH_WEEK pattern
+          example: "2025-01-06"
+        weekOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Required for NTH_WEEKDAY_OF_MONTH pattern (1-5, where 5 means last)
+          example: 4
+        startDate:
+          type: string
+          format: date
+          description: Date when this rule becomes active
+          example: "2025-01-01"
+        endDate:
+          type: string
+          format: date
+          description: Optional end date for this rule
+        description:
+          type: string
+          description: Optional description of this off-day rule
+          example: "Every 4th Monday"
+
+    UpdateRecurringOffDayRequest:
+      type: object
+      properties:
+        recurrencePattern:
+          type: string
+          enum: [EVERY_NTH_WEEK, NTH_WEEKDAY_OF_MONTH]
+          description: Type of recurrence pattern
+        weekday:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: Day of week (1=Monday, 7=Sunday)
+        weekInterval:
+          type: integer
+          description: Required for EVERY_NTH_WEEK pattern
+          example: 4
+        referenceDate:
+          type: string
+          format: date
+          description: Required for EVERY_NTH_WEEK pattern
+          example: "2025-01-06"
+        weekOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Required for NTH_WEEKDAY_OF_MONTH pattern
+          example: 4
+        startDate:
+          type: string
+          format: date
+          description: Date when this rule becomes active
+        endDate:
+          type: string
+          format: date
+          description: Optional end date for this rule
+        isActive:
+          type: boolean
+          description: Whether this rule is currently active
+        description:
+          type: string
+          description: Optional description of this off-day rule
+
+    TimeOffResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - startDate
+        - endDate
+        - timeOffType
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        startDate:
+          type: string
+          format: date
+          description: First day of time-off
+          example: "2025-07-01"
+        endDate:
+          type: string
+          format: date
+          description: Last day of time-off (inclusive)
+          example: "2025-07-15"
+        timeOffType:
+          type: string
+          enum: [VACATION, SICK, PERSONAL, PUBLIC_HOLIDAY]
+          description: Type of time-off
+        hoursPerDay:
+          type: number
+          format: double
+          description: Optional hours per day override (uses working hours if not set)
+          example: 8.0
+        notes:
+          type: string
+          description: Optional notes about this time-off
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateTimeOffRequest:
+      type: object
+      required:
+        - startDate
+        - endDate
+        - timeOffType
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: First day of time-off
+          example: "2025-07-01"
+        endDate:
+          type: string
+          format: date
+          description: Last day of time-off (inclusive)
+          example: "2025-07-15"
+        timeOffType:
+          type: string
+          enum: [VACATION, SICK, PERSONAL, PUBLIC_HOLIDAY]
+          description: Type of time-off
+        hoursPerDay:
+          type: number
+          format: double
+          description: Optional hours per day override
+          example: 8.0
+        notes:
+          type: string
+          description: Optional notes about this time-off
+          example: "Summer vacation"
+
+    UpdateTimeOffRequest:
+      type: object
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: First day of time-off
+        endDate:
+          type: string
+          format: date
+          description: Last day of time-off (inclusive)
+        timeOffType:
+          type: string
+          enum: [VACATION, SICK, PERSONAL, PUBLIC_HOLIDAY]
+          description: Type of time-off
+        hoursPerDay:
+          type: number
+          format: double
+          description: Optional hours per day override
+        notes:
+          type: string
+          description: Optional notes about this time-off
+
+    VacationBalanceResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - year
+        - annualAllowanceDays
+        - carriedOverDays
+        - adjustmentDays
+        - usedDays
+        - remainingDays
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        year:
+          type: integer
+          description: Calendar year
+          example: 2025
+        annualAllowanceDays:
+          type: number
+          format: double
+          description: Annual vacation allowance in days
+          example: 30.0
+        carriedOverDays:
+          type: number
+          format: double
+          description: Days carried over from previous year
+          example: 5.0
+        adjustmentDays:
+          type: number
+          format: double
+          description: Manual adjustments (bonus days, etc.)
+          example: 2.0
+        usedDays:
+          type: number
+          format: double
+          description: Vacation days used this year
+          example: 12.5
+        remainingDays:
+          type: number
+          format: double
+          description: Remaining vacation days
+          example: 24.5
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateVacationBalanceRequest:
+      type: object
+      required:
+        - userId
+        - year
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: User ID to update balance for
+        year:
+          type: integer
+          description: Calendar year
+          example: 2025
+        annualAllowanceDays:
+          type: number
+          format: double
+          description: Annual vacation allowance in days
+          example: 30.0
+        carriedOverDays:
+          type: number
+          format: double
+          description: Days carried over from previous year
+          example: 5.0
+        adjustmentDays:
+          type: number
+          format: double
+          description: Manual adjustments (bonus days, etc.)
+          example: 2.0
+
+    PublicHolidayResponse:
+      type: object
+      required:
+        - date
+        - name
+        - isStateSpecific
+      properties:
+        date:
+          type: string
+          format: date
+          description: Date of the holiday
+          example: "2025-12-25"
+        name:
+          type: string
+          description: Name of the holiday
+          example: "Weihnachten"
+        isStateSpecific:
+          type: boolean
+          description: Whether this holiday is state-specific
+          example: false
 
   responses:
     UnauthorizedError:
