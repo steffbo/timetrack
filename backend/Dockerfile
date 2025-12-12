@@ -33,6 +33,9 @@ COPY backend/.mvn .mvn
 COPY backend/mvnw .
 RUN ./mvnw dependency:go-offline -B
 
+# Copy OpenAPI spec (needed for backend code generation)
+COPY openapi.yaml ../openapi.yaml
+
 # Copy source code and build
 COPY backend/src ./src
 RUN ./mvnw clean package -DskipTests
