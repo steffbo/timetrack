@@ -235,8 +235,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Phase 6: Vue.js Frontend (Basic)
 - ✅ Phase 7: Advanced Time Tracking (Backend Complete)
 - ✅ Phase 8: Advanced Time Tracking (Frontend Complete)
-- ⏳ Phase 9: Statistics & Reports
-- ⏳ Phase 10: Polish & Deploy
+- 🔄 Phase 9: Time Entry API & Dashboard (Backend Complete, Frontend Pending)
+- ⏳ Phase 10: Statistics & Reports
+- ⏳ Phase 11: Polish & Deploy
 
 ---
 
@@ -297,6 +298,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Phase 8: Advanced Time Tracking - Frontend (2025-12-12)
 - **Public Holidays View**: Year/state filters, formatted dates
+
+### Phase 9: Time Entry API & Dashboard - Backend (2025-12-12)
+- **Time Entry API**: Complete clock in/out functionality
+  - `POST /api/time-entries/clock-in` - Start work session
+  - `POST /api/time-entries/clock-out` - End work session
+  - `GET /api/time-entries` - Get entries with date range filtering
+  - `GET /api/time-entries/daily-summary` - Compare actual vs expected hours
+  - `PUT /api/time-entries/{id}` - Update time entry
+  - `DELETE /api/time-entries/{id}` - Delete time entry
+- **Use Cases**: 6 use cases (ClockIn, ClockOut, GetEntries, GetDailySummary, Update, Delete)
+- **Daily Summary**: Calculates actual vs expected hours with status (NO_ENTRY, BELOW_EXPECTED, MATCHED, ABOVE_EXPECTED)
+- **Controller & Mapper**: TimeEntryController with LocalDateTime ↔ OffsetDateTime conversion
+- **Tests**: 23 integration tests covering all endpoints and edge cases
+- **Frontend Navigation**: Moved "Arbeitszeiten" under "Zeiterfassung" dropdown menu
 - **Recurring Off-Days View**: Full CRUD with dynamic pattern forms
 - **Time-Off View**: CRUD with date filtering, automatic days calculation
 - **Vacation Balance View**: Dashboard with progress indicator, admin editing

@@ -61,6 +61,9 @@ public abstract class RepositoryTestBase {
     @Autowired(required = false)
     protected VacationBalanceRepository vacationBalanceRepository;
 
+    @Autowired(required = false)
+    protected TimeEntryRepository timeEntryRepository;
+
     // ========== User Fixtures ==========
 
     /**

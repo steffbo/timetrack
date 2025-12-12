@@ -641,6 +641,198 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
+  /api/time-entries/clock-in:
+    post:
+      tags:
+        - Time Entries
+      summary: Clock in
+      description: Start a new work session by clocking in
+      operationId: clockIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClockInRequest'
+      responses:
+        '201':
+          description: Clocked in successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntryResponse'
+        '400':
+          description: Bad request (e.g., already clocked in)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/time-entries/clock-out:
+    post:
+      tags:
+        - Time Entries
+      summary: Clock out
+      description: End the current work session by clocking out
+      operationId: clockOut
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClockOutRequest'
+      responses:
+        '200':
+          description: Clocked out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntryResponse'
+        '400':
+          description: Bad request (e.g., not clocked in)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/time-entries:
+    get:
+      tags:
+        - Time Entries
+      summary: Get time entries
+      description: Get time entries for the authenticated user within a date range
+      operationId: getTimeEntries
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Start date for filtering (ISO 8601 format)
+          example: "2025-12-01"
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: End date for filtering (ISO 8601 format)
+          example: "2025-12-31"
+      responses:
+        '200':
+          description: Time entries retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TimeEntryResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/time-entries/daily-summary:
+    get:
+      tags:
+        - Time Entries
+      summary: Get daily summary
+      description: Get daily summaries with actual vs expected hours for the authenticated user
+      operationId: getDailySummary
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Start date for summary (ISO 8601 format)
+          example: "2025-12-01"
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          description: End date for summary (ISO 8601 format)
+          example: "2025-12-31"
+      responses:
+        '200':
+          description: Daily summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DailySummaryResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/time-entries/{id}:
+    put:
+      tags:
+        - Time Entries
+      summary: Update time entry
+      description: Update an existing time entry
+      operationId: updateTimeEntry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTimeEntryRequest'
+      responses:
+        '200':
+          description: Time entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Time entry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Time Entries
+      summary: Delete time entry
+      description: Delete a time entry
+      operationId: deleteTimeEntry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Time entry deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Time entry not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1277,6 +1469,129 @@ components:
           type: boolean
           description: Whether this holiday is state-specific
           example: false
+
+    ClockInRequest:
+      type: object
+      properties:
+        notes:
+          type: string
+          description: Optional notes for this work session
+
+    ClockOutRequest:
+      type: object
+      properties:
+        notes:
+          type: string
+          description: Optional notes for this work session
+
+    TimeEntryResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - entryDate
+        - clockIn
+        - entryType
+        - isActive
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        entryDate:
+          type: string
+          format: date
+          description: Date of the time entry
+          example: "2025-12-12"
+        clockIn:
+          type: string
+          format: date-time
+          description: Clock in timestamp
+          example: "2025-12-12T08:30:00"
+        clockOut:
+          type: string
+          format: date-time
+          description: Clock out timestamp (null if still active)
+          example: "2025-12-12T17:00:00"
+        entryType:
+          type: string
+          enum: [WORK, SICK, PTO, EVENT]
+          description: Type of time entry
+          example: "WORK"
+        hoursWorked:
+          type: number
+          format: double
+          description: Hours worked (null if still active)
+          example: 8.5
+        isActive:
+          type: boolean
+          description: Whether this entry is still active (not clocked out)
+          example: false
+        notes:
+          type: string
+          description: Optional notes
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateTimeEntryRequest:
+      type: object
+      required:
+        - clockIn
+        - entryType
+      properties:
+        clockIn:
+          type: string
+          format: date-time
+          description: Clock in timestamp
+        clockOut:
+          type: string
+          format: date-time
+          description: Clock out timestamp
+        entryType:
+          type: string
+          enum: [WORK, SICK, PTO, EVENT]
+        notes:
+          type: string
+
+    DailySummaryResponse:
+      type: object
+      required:
+        - date
+        - actualHours
+        - expectedHours
+        - status
+      properties:
+        date:
+          type: string
+          format: date
+          description: The date for this summary
+          example: "2025-12-12"
+        actualHours:
+          type: number
+          format: double
+          description: Total hours worked on this date
+          example: 8.5
+        expectedHours:
+          type: number
+          format: double
+          description: Expected hours for this date (from working hours config)
+          example: 8.0
+        status:
+          type: string
+          enum: [NO_ENTRY, BELOW_EXPECTED, MATCHED, ABOVE_EXPECTED]
+          description: Status comparing actual vs expected hours
+          example: "ABOVE_EXPECTED"
+        entries:
+          type: array
+          description: List of time entries for this date
+          items:
+            $ref: '#/components/schemas/TimeEntryResponse'
 
   responses:
     UnauthorizedError:
