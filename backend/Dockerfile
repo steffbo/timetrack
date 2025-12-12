@@ -2,6 +2,9 @@
 FROM node:20-alpine AS frontend-build
 WORKDIR /frontend
 
+# Configure npm to use public registry (override any local config)
+RUN npm config set registry https://registry.npmjs.org/
+
 # Copy frontend package files
 COPY frontend/package*.json ./
 
