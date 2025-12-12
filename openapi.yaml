@@ -556,6 +556,16 @@ components:
           type: boolean
           description: Whether this is a working day
           example: true
+        startTime:
+          type: string
+          format: time
+          description: Optional start time (HH:mm format). When set with endTime, hours are calculated automatically
+          example: "09:00"
+        endTime:
+          type: string
+          format: time
+          description: Optional end time (HH:mm format). When set with startTime, hours are calculated automatically
+          example: "17:00"
 
     UpdateWorkingHoursRequest:
       type: object
@@ -588,12 +598,22 @@ components:
           format: double
           minimum: 0
           maximum: 24
-          description: Target hours for this weekday
+          description: Target hours for this weekday. If startTime and endTime are provided, this will be calculated automatically
           example: 8.0
         isWorkingDay:
           type: boolean
           description: Whether this is a working day
           example: true
+        startTime:
+          type: string
+          format: time
+          description: Optional start time (HH:mm format). When set with endTime, hours are calculated automatically
+          example: "09:00"
+        endTime:
+          type: string
+          format: time
+          description: Optional end time (HH:mm format). When set with startTime, hours are calculated automatically
+          example: "17:00"
 
   responses:
     UnauthorizedError:

@@ -7,6 +7,7 @@ import cc.remer.timetrack.api.model.UpdateWorkingDayConfig;
 import cc.remer.timetrack.api.model.UpdateWorkingHoursRequest;
 import cc.remer.timetrack.api.model.WorkingDayConfig;
 import cc.remer.timetrack.api.model.WorkingHoursResponse;
+import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.workinghours.WorkingHours;
@@ -62,6 +63,7 @@ class WorkingHoursIntegrationTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.ADMIN)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
         testAdmin = userRepository.save(testAdmin);
 
@@ -73,6 +75,7 @@ class WorkingHoursIntegrationTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.USER)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
         testUser = userRepository.save(testUser);
 
@@ -393,5 +396,175 @@ class WorkingHoursIntegrationTest extends RepositoryTestBase {
                 .filter(day -> day.getWeekday() == weekday)
                 .findFirst()
                 .orElseThrow();
+    }
+
+    @Test
+    @DisplayName("Should calculate hours from start and end time")
+    void shouldCalculateHoursFromStartAndEndTime() {
+        // Given - create request with time values
+        UpdateWorkingHoursRequest request = new UpdateWorkingHoursRequest();
+        List<UpdateWorkingDayConfig> workingDays = new ArrayList<>();
+
+        // Monday: 09:00 - 17:00 (8 hours)
+        UpdateWorkingDayConfig monday = new UpdateWorkingDayConfig();
+        monday.setWeekday(1);
+        monday.setHours(0.0); // This should be overridden by time calculation
+        monday.setIsWorkingDay(true);
+        monday.setStartTime("09:00");
+        monday.setEndTime("17:00");
+        workingDays.add(monday);
+
+        // Tuesday: 08:00 - 16:30 (8.5 hours)
+        UpdateWorkingDayConfig tuesday = new UpdateWorkingDayConfig();
+        tuesday.setWeekday(2);
+        tuesday.setHours(0.0);
+        tuesday.setIsWorkingDay(true);
+        tuesday.setStartTime("08:00");
+        tuesday.setEndTime("16:30");
+        workingDays.add(tuesday);
+
+        // Rest of the week without times
+        for (int i = 3; i <= 7; i++) {
+            UpdateWorkingDayConfig dayConfig = new UpdateWorkingDayConfig();
+            dayConfig.setWeekday(i);
+            dayConfig.setHours(i <= 5 ? 8.0 : 0.0);
+            dayConfig.setIsWorkingDay(i <= 5);
+            workingDays.add(dayConfig);
+        }
+
+        request.setWorkingDays(workingDays);
+
+        // When
+        WorkingHoursResponse response = updateWorkingHours.execute(testUser.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+
+        WorkingDayConfig mondayResult = findDay(response, 1);
+        assertThat(mondayResult.getHours()).isEqualTo(8.0);
+        assertThat(mondayResult.getStartTime()).isEqualTo("09:00");
+        assertThat(mondayResult.getEndTime()).isEqualTo("17:00");
+
+        WorkingDayConfig tuesdayResult = findDay(response, 2);
+        assertThat(tuesdayResult.getHours()).isEqualTo(8.5);
+        assertThat(tuesdayResult.getStartTime()).isEqualTo("08:00");
+        assertThat(tuesdayResult.getEndTime()).isEqualTo("16:30");
+    }
+
+    @Test
+    @DisplayName("Should validate that both start and end time must be set together")
+    void shouldValidateBothTimesRequired() {
+        // Given - create request with only start time
+        UpdateWorkingHoursRequest request = new UpdateWorkingHoursRequest();
+        List<UpdateWorkingDayConfig> workingDays = new ArrayList<>();
+
+        UpdateWorkingDayConfig monday = new UpdateWorkingDayConfig();
+        monday.setWeekday(1);
+        monday.setHours(8.0);
+        monday.setIsWorkingDay(true);
+        monday.setStartTime("09:00");
+        // endTime is not set
+        workingDays.add(monday);
+
+        for (int i = 2; i <= 7; i++) {
+            UpdateWorkingDayConfig dayConfig = new UpdateWorkingDayConfig();
+            dayConfig.setWeekday(i);
+            dayConfig.setHours(i <= 5 ? 8.0 : 0.0);
+            dayConfig.setIsWorkingDay(i <= 5);
+            workingDays.add(dayConfig);
+        }
+
+        request.setWorkingDays(workingDays);
+
+        // When/Then
+        assertThatThrownBy(() -> updateWorkingHours.execute(testUser.getId(), request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Start- und Endzeit müssen beide angegeben werden oder beide leer sein");
+    }
+
+    @Test
+    @DisplayName("Should validate that end time is after start time")
+    void shouldValidateEndTimeAfterStartTime() {
+        // Given - create request with end time before start time
+        UpdateWorkingHoursRequest request = new UpdateWorkingHoursRequest();
+        List<UpdateWorkingDayConfig> workingDays = new ArrayList<>();
+
+        UpdateWorkingDayConfig monday = new UpdateWorkingDayConfig();
+        monday.setWeekday(1);
+        monday.setHours(8.0);
+        monday.setIsWorkingDay(true);
+        monday.setStartTime("17:00");
+        monday.setEndTime("09:00"); // End before start
+        workingDays.add(monday);
+
+        for (int i = 2; i <= 7; i++) {
+            UpdateWorkingDayConfig dayConfig = new UpdateWorkingDayConfig();
+            dayConfig.setWeekday(i);
+            dayConfig.setHours(i <= 5 ? 8.0 : 0.0);
+            dayConfig.setIsWorkingDay(i <= 5);
+            workingDays.add(dayConfig);
+        }
+
+        request.setWorkingDays(workingDays);
+
+        // When/Then
+        assertThatThrownBy(() -> updateWorkingHours.execute(testUser.getId(), request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Endzeit muss nach Startzeit liegen");
+    }
+
+    @Test
+    @DisplayName("Should allow mixed configuration with and without times")
+    void shouldAllowMixedConfiguration() {
+        // Given - some days with times, some without
+        UpdateWorkingHoursRequest request = new UpdateWorkingHoursRequest();
+        List<UpdateWorkingDayConfig> workingDays = new ArrayList<>();
+
+        // Monday with times
+        UpdateWorkingDayConfig monday = new UpdateWorkingDayConfig();
+        monday.setWeekday(1);
+        monday.setHours(0.0);
+        monday.setIsWorkingDay(true);
+        monday.setStartTime("09:00");
+        monday.setEndTime("17:00");
+        workingDays.add(monday);
+
+        // Tuesday-Friday without times
+        for (int i = 2; i <= 5; i++) {
+            UpdateWorkingDayConfig dayConfig = new UpdateWorkingDayConfig();
+            dayConfig.setWeekday(i);
+            dayConfig.setHours(7.5);
+            dayConfig.setIsWorkingDay(true);
+            workingDays.add(dayConfig);
+        }
+
+        // Weekend
+        for (int i = 6; i <= 7; i++) {
+            UpdateWorkingDayConfig dayConfig = new UpdateWorkingDayConfig();
+            dayConfig.setWeekday(i);
+            dayConfig.setHours(0.0);
+            dayConfig.setIsWorkingDay(false);
+            workingDays.add(dayConfig);
+        }
+
+        request.setWorkingDays(workingDays);
+
+        // When
+        WorkingHoursResponse response = updateWorkingHours.execute(testUser.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+
+        // Monday should have calculated hours and times
+        WorkingDayConfig mondayResult = findDay(response, 1);
+        assertThat(mondayResult.getHours()).isEqualTo(8.0);
+        assertThat(mondayResult.getStartTime()).isNotNull();
+        assertThat(mondayResult.getEndTime()).isNotNull();
+
+        // Tuesday should have manual hours and no times
+        WorkingDayConfig tuesdayResult = findDay(response, 2);
+        assertThat(tuesdayResult.getHours()).isEqualTo(7.5);
+        assertThat(tuesdayResult.getStartTime()).isNull();
+        assertThat(tuesdayResult.getEndTime()).isNull();
     }
 }

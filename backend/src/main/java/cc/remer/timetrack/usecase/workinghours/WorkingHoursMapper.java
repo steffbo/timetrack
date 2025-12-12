@@ -58,6 +58,14 @@ public class WorkingHoursMapper {
         config.setHours(workingHours.getHours().doubleValue());
         config.setIsWorkingDay(workingHours.getIsWorkingDay());
 
+        // Set optional time fields
+        if (workingHours.getStartTime() != null) {
+            config.setStartTime(workingHours.getStartTime().toString());
+        }
+        if (workingHours.getEndTime() != null) {
+            config.setEndTime(workingHours.getEndTime().toString());
+        }
+
         // Set day name from weekday
         DayOfWeek dayOfWeek = workingHours.getDayOfWeek();
         config.setDayName(WorkingDayConfig.DayNameEnum.fromValue(dayOfWeek.name()));

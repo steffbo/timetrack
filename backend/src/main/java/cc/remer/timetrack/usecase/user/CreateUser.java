@@ -4,6 +4,7 @@ import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.adapter.persistence.WorkingHoursRepository;
 import cc.remer.timetrack.api.model.CreateUserRequest;
 import cc.remer.timetrack.api.model.UserResponse;
+import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.workinghours.WorkingHours;
@@ -54,6 +55,7 @@ public class CreateUser {
                 .lastName(request.getLastName())
                 .role(Role.valueOf(request.getRole().getValue()))
                 .active(request.getActive() != null ? request.getActive() : true)
+                .state(GermanState.BERLIN)  // Default state for new users
                 .build();
 
         // Save user

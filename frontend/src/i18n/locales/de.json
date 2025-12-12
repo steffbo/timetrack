@@ -39,6 +39,8 @@
       "SUNDAY": "Sonntag"
     },
     "hours": "Stunden",
+    "startTime": "Startzeit",
+    "endTime": "Endzeit",
     "isWorkingDay": "Arbeitstag",
     "save": "Speichern",
     "saveSuccess": "Arbeitszeiten erfolgreich gespeichert",

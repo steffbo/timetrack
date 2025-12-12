@@ -1,5 +1,6 @@
 package cc.remer.timetrack.adapter.persistence;
 
+import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.domain.user.RefreshToken;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
@@ -42,6 +43,7 @@ class RefreshTokenRepositoryTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.USER)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
         testUser = userRepository.save(testUser);
 
@@ -274,6 +276,7 @@ class RefreshTokenRepositoryTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.USER)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
         anotherUser = userRepository.save(anotherUser);
 

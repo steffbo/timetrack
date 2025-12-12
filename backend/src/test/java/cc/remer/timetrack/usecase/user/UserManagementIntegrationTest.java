@@ -8,6 +8,7 @@ import cc.remer.timetrack.adapter.security.UserPrincipal;
 import cc.remer.timetrack.api.model.CreateUserRequest;
 import cc.remer.timetrack.api.model.UpdateUserRequest;
 import cc.remer.timetrack.api.model.UserResponse;
+import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.exception.DuplicateEmailException;
@@ -70,6 +71,7 @@ class UserManagementIntegrationTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.ADMIN)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
         testAdmin = userRepository.save(testAdmin);
 
@@ -81,6 +83,7 @@ class UserManagementIntegrationTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.USER)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
         testUser = userRepository.save(testUser);
 

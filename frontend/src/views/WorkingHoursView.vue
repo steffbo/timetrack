@@ -18,13 +18,37 @@
             </template>
           </Column>
 
+          <Column field="startTime" :header="t('workingHours.startTime')">
+            <template #body="{ data }">
+              <InputText
+                v-model="data.startTime"
+                type="time"
+                :disabled="!data.isWorkingDay"
+                @change="handleTimeChange(data)"
+                fluid
+              />
+            </template>
+          </Column>
+
+          <Column field="endTime" :header="t('workingHours.endTime')">
+            <template #body="{ data }">
+              <InputText
+                v-model="data.endTime"
+                type="time"
+                :disabled="!data.isWorkingDay"
+                @change="handleTimeChange(data)"
+                fluid
+              />
+            </template>
+          </Column>
+
           <Column field="hours" :header="t('workingHours.hours')">
             <template #body="{ data }">
               <InputNumber
                 v-model="data.hours"
                 :min="0"
                 :max="24"
-                :disabled="!data.isWorkingDay"
+                :disabled="!data.isWorkingDay || hasTimeValues(data)"
                 showButtons
                 fluid
               />
@@ -53,6 +77,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Checkbox from 'primevue/checkbox'
 import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import apiClient from '@/api/client'
 import { useAuth } from '@/composables/useAuth'
@@ -71,6 +96,30 @@ const weekdayMap = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SAT
 
 function getWeekdayName(weekday: number): string {
   return t(`workingHours.weekdays.${weekdayMap[weekday - 1]}`)
+}
+
+function hasTimeValues(data: WorkingDayConfig): boolean {
+  return !!(data.startTime && data.endTime)
+}
+
+function handleTimeChange(data: WorkingDayConfig) {
+  // Calculate hours from start and end time if both are set
+  if (data.startTime && data.endTime) {
+    const start = parseTime(data.startTime)
+    const end = parseTime(data.endTime)
+
+    if (start && end && end > start) {
+      const diffMinutes = (end - start) / (1000 * 60)
+      data.hours = Math.round((diffMinutes / 60) * 100) / 100
+    }
+  }
+}
+
+function parseTime(timeStr: string): number | null {
+  if (!timeStr) return null
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  if (isNaN(hours) || isNaN(minutes)) return null
+  return new Date(1970, 0, 1, hours, minutes).getTime()
 }
 
 onMounted(async () => {

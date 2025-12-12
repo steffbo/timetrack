@@ -14,6 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -54,8 +57,19 @@ public class UpdateWorkingHours {
         // Update or create working hours for each day
         for (UpdateWorkingDayConfig dayConfig : request.getWorkingDays()) {
             Short weekday = dayConfig.getWeekday().shortValue();
-            BigDecimal hours = BigDecimal.valueOf(dayConfig.getHours());
             Boolean isWorkingDay = dayConfig.getIsWorkingDay();
+
+            // Parse optional time fields
+            LocalTime startTime = dayConfig.getStartTime() != null ? LocalTime.parse(dayConfig.getStartTime()) : null;
+            LocalTime endTime = dayConfig.getEndTime() != null ? LocalTime.parse(dayConfig.getEndTime()) : null;
+
+            // Calculate hours from times if both are provided, otherwise use the hours field
+            BigDecimal hours;
+            if (startTime != null && endTime != null) {
+                hours = calculateHoursFromTimes(startTime, endTime);
+            } else {
+                hours = BigDecimal.valueOf(dayConfig.getHours());
+            }
 
             WorkingHours workingHours = workingHoursMap.get(weekday);
             if (workingHours == null) {
@@ -65,11 +79,15 @@ public class UpdateWorkingHours {
                         .weekday(weekday)
                         .hours(hours)
                         .isWorkingDay(isWorkingDay)
+                        .startTime(startTime)
+                        .endTime(endTime)
                         .build();
             } else {
                 // Update existing entry
                 workingHours.setHours(hours);
                 workingHours.setIsWorkingDay(isWorkingDay);
+                workingHours.setStartTime(startTime);
+                workingHours.setEndTime(endTime);
             }
 
             workingHoursRepository.save(workingHours);
@@ -81,6 +99,19 @@ public class UpdateWorkingHours {
         log.info("Successfully updated working hours for user ID: {}", userId);
 
         return mapper.toResponse(userId, updatedWorkingHours);
+    }
+
+    /**
+     * Calculate hours from start and end times.
+     *
+     * @param startTime the start time
+     * @param endTime the end time
+     * @return the hours as BigDecimal (rounded to 2 decimal places)
+     */
+    private BigDecimal calculateHoursFromTimes(LocalTime startTime, LocalTime endTime) {
+        long minutes = ChronoUnit.MINUTES.between(startTime, endTime);
+        BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+        return hours;
     }
 
     /**
@@ -109,6 +140,28 @@ public class UpdateWorkingHours {
                 throw new IllegalArgumentException("Doppelter Wochentag: " + dayConfig.getWeekday());
             }
             weekdaysSeen.add(dayConfig.getWeekday());
+
+            // Validate time fields consistency
+            boolean hasStartTime = dayConfig.getStartTime() != null && !dayConfig.getStartTime().isEmpty();
+            boolean hasEndTime = dayConfig.getEndTime() != null && !dayConfig.getEndTime().isEmpty();
+
+            if (hasStartTime != hasEndTime) {
+                throw new IllegalArgumentException("Start- und Endzeit müssen beide angegeben werden oder beide leer sein für Wochentag " + dayConfig.getWeekday());
+            }
+
+            // Validate times if provided
+            if (hasStartTime && hasEndTime) {
+                try {
+                    LocalTime startTime = LocalTime.parse(dayConfig.getStartTime());
+                    LocalTime endTime = LocalTime.parse(dayConfig.getEndTime());
+
+                    if (!endTime.isAfter(startTime)) {
+                        throw new IllegalArgumentException("Endzeit muss nach Startzeit liegen für Wochentag " + dayConfig.getWeekday());
+                    }
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Ungültiges Zeitformat für Wochentag " + dayConfig.getWeekday() + ": " + e.getMessage());
+                }
+            }
 
             if (dayConfig.getHours() == null || dayConfig.getHours() < 0 || dayConfig.getHours() > 24) {
                 throw new IllegalArgumentException("Ungültige Stundenanzahl für Wochentag " + dayConfig.getWeekday() + ": " + dayConfig.getHours());

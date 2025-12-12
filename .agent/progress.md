@@ -391,3 +391,199 @@ Phase 5: Working Hours
 - Frontend uses localStorage for token persistence (survives page reload)
 - Vite proxy forwards `/api` requests to backend in development
 - PrimeVue 4 uses new theming system with @primevue/themes package
+
+---
+
+## Phase 7: Advanced Time Tracking Features - Backend Foundation ✅ COMPLETED
+
+**Date**: 2025-12-12
+
+### Completed Tasks
+
+#### 1. Optional Start/End Times for Working Hours ✅
+- ✅ Created migration V3 to add `start_time` and `end_time` columns to `working_hours` table
+- ✅ Added database constraints: both times must be set together, end_time > start_time
+- ✅ Updated WorkingHours domain entity with LocalTime fields
+- ✅ Extended OpenAPI spec with optional `startTime` and `endTime` fields (HH:mm format)
+- ✅ Implemented automatic hours calculation from time difference in UpdateWorkingHours use case
+- ✅ Updated WorkingHoursMapper to map time fields
+- ✅ Enhanced validation: time consistency, time order, format validation
+- ✅ Added integration tests for time-based functionality (4 new tests)
+- ✅ Updated frontend WorkingHoursView.vue with time input fields and auto-calculation
+- ✅ Added German/English translations for "Startzeit"/"Start Time" and "Endzeit"/"End Time"
+- ✅ All 16 working hours tests passing
+
+#### 2. Recurring Off-Days System ✅
+- ✅ Created migration V4 for `recurring_off_days` table
+- ✅ Implemented two recurrence patterns:
+  - `EVERY_NTH_WEEK`: e.g., every 4 weeks starting from reference date
+  - `NTH_WEEKDAY_OF_MONTH`: e.g., 4th Monday of every month
+- ✅ Created RecurringOffDay domain entity with pattern validation
+- ✅ Created RecurringOffDayRepository with date-based queries
+- ✅ Added RecurrencePattern enum (EVERY_NTH_WEEK, NTH_WEEKDAY_OF_MONTH)
+- ✅ Database constraints ensure correct fields for each pattern type
+- ✅ Support for active/inactive rules and optional end dates
+
+#### 3. Time-Off Tracking System ✅
+- ✅ Created migration V5 for `time_off` table
+- ✅ Implemented TimeOff domain entity with date ranges
+- ✅ Created TimeOffRepository with range and type-based queries
+- ✅ Added TimeOffType enum: VACATION, SICK, PERSONAL, PUBLIC_HOLIDAY
+- ✅ Support for optional hours_per_day override
+- ✅ Database constraint: end_date >= start_date
+
+#### 4. Vacation Balance Tracking ✅
+- ✅ Created migration V6 for `vacation_balance` table
+- ✅ Added `state` field to users table (GermanState enum: BERLIN, BRANDENBURG)
+- ✅ Implemented VacationBalance domain entity with:
+  - Tracking in **days** (not hours)
+  - Default **30 days** annual allowance
+  - Carryover from previous year support
+  - Manual adjustment support (bonus days)
+  - Automatic used_days and remaining_days calculation
+- ✅ Created VacationBalanceRepository with year-based queries
+- ✅ Automatic balance initialization for existing users (2025, 30 days)
+
+#### 5. German Public Holidays Calculator ✅
+- ✅ Implemented GermanPublicHolidays component with Easter calculation (Computus algorithm)
+- ✅ Support for Berlin-specific holidays:
+  - International Women's Day (March 8)
+- ✅ Support for Brandenburg-specific holidays:
+  - Reformation Day (October 31)
+- ✅ Common holidays for all states:
+  - New Year's Day, Labour Day, German Unity Day
+  - Good Friday, Easter Monday, Ascension Day, Whit Monday
+  - Christmas Day, Boxing Day
+- ✅ State stored on User entity for holiday calculation
+
+#### 6. All Tests Updated and Passing ✅
+- ✅ Fixed all test fixtures to include required `state` field
+- ✅ Updated UserRepositoryTest (9 tests)
+- ✅ Updated UserManagementIntegrationTest (16 tests)
+- ✅ Updated WorkingHoursIntegrationTest (16 tests including 4 new time-based tests)
+- ✅ Updated RefreshTokenRepositoryTest (9 tests)
+- ✅ Updated TimeEntryRepositoryTest (12 tests)
+- ✅ Updated CreateUser use case with default state (BERLIN)
+- ✅ **All 62 tests passing** ✅
+
+### Database Schema Changes
+
+```sql
+-- V3: Working Hours Time Fields
+ALTER TABLE working_hours
+    ADD COLUMN start_time TIME,
+    ADD COLUMN end_time TIME;
+
+-- V4: Recurring Off-Days
+CREATE TABLE recurring_off_days (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    recurrence_pattern VARCHAR(50) NOT NULL,  -- EVERY_NTH_WEEK | NTH_WEEKDAY_OF_MONTH
+    weekday SMALLINT NOT NULL,                -- 1=Monday, 7=Sunday
+    week_interval INTEGER,                     -- For EVERY_NTH_WEEK
+    reference_date DATE,                       -- For EVERY_NTH_WEEK
+    week_of_month SMALLINT,                    -- For NTH_WEEKDAY_OF_MONTH (1-5)
+    start_date DATE NOT NULL,
+    end_date DATE,
+    is_active BOOLEAN DEFAULT true,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- V5: Time Off
+CREATE TABLE time_off (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    time_off_type VARCHAR(20) NOT NULL,       -- VACATION | SICK | PERSONAL | PUBLIC_HOLIDAY
+    hours_per_day DECIMAL(4,2),               -- Optional override
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- V6: Vacation Balance + User State
+ALTER TABLE users ADD COLUMN state VARCHAR(50) NOT NULL DEFAULT 'BERLIN';
+
+CREATE TABLE vacation_balance (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    year INTEGER NOT NULL,
+    annual_allowance_days DECIMAL(5,1) NOT NULL DEFAULT 30.0,
+    carried_over_days DECIMAL(5,1) DEFAULT 0.0,
+    adjustment_days DECIMAL(5,1) DEFAULT 0.0,
+    used_days DECIMAL(5,1) DEFAULT 0.0,
+    remaining_days DECIMAL(5,1),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (user_id, year)
+);
+```
+
+### Priority System Design
+
+When determining effective working hours for a date:
+1. **time_off** (highest priority) - Vacation, sick days override everything
+2. **recurring_off_days** (medium priority) - Regular exceptions like "4th Monday off"
+3. **working_hours** (lowest priority) - Default weekly baseline pattern
+
+### Key Files Created
+- `/backend/src/main/resources/db/migration/V3__add_working_hours_time_fields.sql`
+- `/backend/src/main/resources/db/migration/V4__add_recurring_off_days.sql`
+- `/backend/src/main/resources/db/migration/V5__add_time_off.sql`
+- `/backend/src/main/resources/db/migration/V6__add_vacation_balance_and_state.sql`
+- `/backend/src/main/java/cc/remer/timetrack/domain/recurringoffday/RecurringOffDay.java`
+- `/backend/src/main/java/cc/remer/timetrack/domain/recurringoffday/RecurrencePattern.java`
+- `/backend/src/main/java/cc/remer/timetrack/domain/timeoff/TimeOff.java`
+- `/backend/src/main/java/cc/remer/timetrack/domain/timeoff/TimeOffType.java`
+- `/backend/src/main/java/cc/remer/timetrack/domain/vacationbalance/VacationBalance.java`
+- `/backend/src/main/java/cc/remer/timetrack/domain/user/GermanState.java`
+- `/backend/src/main/java/cc/remer/timetrack/domain/publicholiday/GermanPublicHolidays.java`
+- `/backend/src/main/java/cc/remer/timetrack/adapter/persistence/RecurringOffDayRepository.java`
+- `/backend/src/main/java/cc/remer/timetrack/adapter/persistence/TimeOffRepository.java`
+- `/backend/src/main/java/cc/remer/timetrack/adapter/persistence/VacationBalanceRepository.java`
+- `/frontend/src/views/WorkingHoursView.vue` - Updated with time inputs
+
+### Build Status
+✅ Backend compiles successfully with `./mvnw clean compile`
+✅ All 62 tests passing (0 failures, 0 errors)
+✅ Frontend builds successfully with `npm run build`
+
+### Features Implemented (Backend Foundation)
+- ✅ Optional start/end times for working hours with automatic calculation
+- ✅ Database structure for recurring off-days (two pattern types)
+- ✅ Database structure for time-off tracking (vacation, sick, personal, holidays)
+- ✅ Vacation balance tracking in days (default 30/year)
+- ✅ German public holidays calculator (Berlin & Brandenburg)
+- ✅ User state field for regional public holiday calculation
+- ✅ All domain entities and repositories ready
+- ✅ All migrations tested and validated
+
+### Next Steps (Phase 8: API & Frontend)
+- Extend OpenAPI spec with new endpoints:
+  - Recurring off-days CRUD
+  - Time-off CRUD with vacation balance integration
+  - Vacation balance GET/PUT
+  - Public holidays GET
+  - Effective hours calculation endpoint
+- Implement use cases for new features
+- Create controllers for new endpoints
+- Build frontend views:
+  - Calendar view with all rules visualized
+  - Recurring patterns management
+  - Time-off request form
+  - Vacation balance dashboard
+- Add integration tests for all new use cases
+
+### Design Decisions
+- **Vacation Tracking**: Days (not hours) for simplicity
+- **Default Allowance**: 30 days/year (German standard)
+- **Sick Days**: Don't count against vacation balance
+- **Public Holidays**: State-specific (Berlin/Brandenburg)
+- **Recurring Patterns**: Flexible (Nth week OR Nth weekday of month)
+- **Priority**: time_off > recurring_off_days > working_hours
+- **User State**: Required field with default BERLIN value
+
+---

@@ -2,6 +2,7 @@ package cc.remer.timetrack.adapter.persistence;
 
 import cc.remer.timetrack.domain.timeentry.EntryType;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
+import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,7 @@ class TimeEntryRepositoryTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.USER)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
         testUser = userRepository.save(testUser);
 

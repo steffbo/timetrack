@@ -39,6 +39,8 @@
       "SUNDAY": "Sunday"
     },
     "hours": "Hours",
+    "startTime": "Start Time",
+    "endTime": "End Time",
     "isWorkingDay": "Working Day",
     "save": "Save",
     "saveSuccess": "Working hours saved successfully",

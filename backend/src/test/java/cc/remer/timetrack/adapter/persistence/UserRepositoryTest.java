@@ -1,5 +1,6 @@
 package cc.remer.timetrack.adapter.persistence;
 
+import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,7 @@ class UserRepositoryTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.USER)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
     }
 
@@ -106,6 +108,7 @@ class UserRepositoryTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.ADMIN)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
         userRepository.save(adminUser);
 
@@ -133,6 +136,7 @@ class UserRepositoryTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.USER)
                 .active(false)
+                .state(GermanState.BERLIN)
                 .build();
         userRepository.save(inactiveUser);
 
@@ -160,6 +164,7 @@ class UserRepositoryTest extends RepositoryTestBase {
                 .lastName("Regular")
                 .role(Role.USER)
                 .active(false)
+                .state(GermanState.BERLIN)
                 .build();
         userRepository.save(inactiveRegularUser);
 
@@ -170,6 +175,7 @@ class UserRepositoryTest extends RepositoryTestBase {
                 .lastName("Admin")
                 .role(Role.ADMIN)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
         userRepository.save(activeAdmin);
 
@@ -227,6 +233,7 @@ class UserRepositoryTest extends RepositoryTestBase {
                 .lastName("User")
                 .role(Role.ADMIN)
                 .active(true)
+                .state(GermanState.BERLIN)
                 .build();
         User savedAdmin = userRepository.save(adminUser);
 

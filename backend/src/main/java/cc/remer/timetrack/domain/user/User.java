@@ -43,6 +43,13 @@ public class User {
     @Column(nullable = false)
     private Boolean active;
 
+    /**
+     * German state for public holiday calculation.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private GermanState state;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
