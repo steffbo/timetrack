@@ -51,10 +51,23 @@ public class SecurityConfig {
                                 "/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/actuator/**"
+                                "/actuator/**",
+                                // Allow static resources (frontend)
+                                "/",
+                                "/index.html",
+                                "/assets/**",
+                                "/*.js",
+                                "/*.css",
+                                "/*.png",
+                                "/*.jpg",
+                                "/*.svg",
+                                "/*.ico",
+                                "/vite.svg"
                         ).permitAll()
-                        // All other endpoints require authentication
-                        .anyRequest().authenticated()
+                        // All API endpoints require authentication
+                        .requestMatchers("/api/**").authenticated()
+                        // All other requests (for SPA routing fallback)
+                        .anyRequest().permitAll()
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
