@@ -369,7 +369,13 @@ const formatDayDetailsHtml = (day: number): string => {
     summary.timeOffEntries!.forEach(timeOff => {
       const typeLabel = t(`timeOff.type.${timeOff.timeOffType}`)
       const emoji = getTimeOffEmoji(timeOff.timeOffType)
-      parts.push(`<div class="detail-row">${emoji} <strong>${typeLabel}</strong></div>`)
+
+      // For public holidays, show the holiday name (stored in notes)
+      if (timeOff.timeOffType === 'PUBLIC_HOLIDAY' && timeOff.notes) {
+        parts.push(`<div class="detail-row">${emoji} <strong>${timeOff.notes}</strong></div>`)
+      } else {
+        parts.push(`<div class="detail-row">${emoji} <strong>${typeLabel}</strong></div>`)
+      }
     })
   }
 
@@ -381,9 +387,9 @@ const formatDayDetailsHtml = (day: number): string => {
     })
   }
 
-  // Hours info - only show if expected hours > 0 OR if it's not a PTO/recurring off day
-  const shouldShowHours = summary.expectedHours > 0 || (!hasPTOEntries && !(summary.recurringOffDays && summary.recurringOffDays.length > 0))
-  if (shouldShowHours) {
+  // Hours info - only show if it's NOT an absence day (no PTO and no recurring off-days)
+  const isAbsenceDay = hasPTOEntries || (summary.recurringOffDays && summary.recurringOffDays.length > 0)
+  if (!isAbsenceDay) {
     parts.push(`<div class="detail-row">⏱️ ${summary.actualHours.toFixed(1)}h / ${summary.expectedHours.toFixed(1)}h</div>`)
   }
 

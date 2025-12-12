@@ -31,6 +31,7 @@ public class UserMapper {
         response.setLastName(user.getLastName());
         response.setRole(UserResponse.RoleEnum.fromValue(user.getRole().name()));
         response.setActive(user.getActive());
+        response.setState(UserResponse.StateEnum.fromValue(user.getState().name()));
 
         if (user.getCreatedAt() != null) {
             response.setCreatedAt(OffsetDateTime.of(user.getCreatedAt(), ZoneOffset.UTC));

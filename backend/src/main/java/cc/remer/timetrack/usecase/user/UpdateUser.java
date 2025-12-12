@@ -4,6 +4,7 @@ import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.adapter.security.UserPrincipal;
 import cc.remer.timetrack.api.model.UpdateUserRequest;
 import cc.remer.timetrack.api.model.UserResponse;
+import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.exception.DuplicateEmailException;
@@ -74,6 +75,11 @@ public class UpdateUser {
 
         if (request.getLastName() != null) {
             user.setLastName(request.getLastName());
+        }
+
+        // Update state (all users can update their own state)
+        if (request.getState() != null) {
+            user.setState(GermanState.valueOf(request.getState().getValue()));
         }
 
         // Only admins can update role and active status

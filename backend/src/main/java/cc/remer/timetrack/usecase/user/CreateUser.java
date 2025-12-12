@@ -48,6 +48,11 @@ public class CreateUser {
         }
 
         // Create user entity
+        GermanState state = GermanState.BERLIN; // Default state
+        if (request.getState() != null) {
+            state = GermanState.valueOf(request.getState().getValue());
+        }
+
         User user = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
@@ -55,7 +60,7 @@ public class CreateUser {
                 .lastName(request.getLastName())
                 .role(Role.valueOf(request.getRole().getValue()))
                 .active(request.getActive() != null ? request.getActive() : true)
-                .state(GermanState.BERLIN)  // Default state for new users
+                .state(state)
                 .build();
 
         // Save user

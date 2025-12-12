@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **State Selection**: Users can now select their German state (Bundesland) in their profile settings
+  - State dropdown in profile view with Berlin and Brandenburg options
+  - State field exposed in user API (UserResponse, CreateUserRequest, UpdateUserRequest)
+  - Public holidays will be correctly applied based on user's selected state
+  - Backend: State stored in database and included in user model
+  - Frontend: State selector with i18n translations (German and English)
+  - Default state for new users: Berlin
+
+- **Public Holidays in Dashboard Calendar**: Public holidays now appear automatically in the monthly calendar
+  - Public holidays fetched based on user's selected state (Berlin or Brandenburg)
+  - Holidays displayed with orange background color (highest visual precedence)
+  - Holiday names shown in day details overlay (e.g., "Weihnachten", "Neujahr")
+  - Automatic integration with daily summaries
+
+### Fixed
+- **Profile View**: Fixed firstName and lastName not loading correctly
+  - Profile data now fetched fresh from API on page load
+  - User data in localStorage updated after successful profile save
+  - Added proper error handling for profile load failures
+
 ## [1.0.0] - 2025-12-12
 
 ### Added - Deployment & Production Infrastructure

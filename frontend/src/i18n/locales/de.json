@@ -26,12 +26,18 @@
     "email": "E-Mail",
     "password": "Neues Passwort",
     "passwordHint": "Leer lassen, um das aktuelle Passwort beizubehalten",
+    "state": "Bundesland",
     "role": "Rolle",
     "active": "Aktiv",
     "save": "Speichern",
     "cancel": "Abbrechen",
     "saveSuccess": "Profil erfolgreich gespeichert",
-    "saveError": "Fehler beim Speichern des Profils"
+    "saveError": "Fehler beim Speichern des Profils",
+    "loadError": "Fehler beim Laden des Profils"
+  },
+  "states": {
+    "BERLIN": "Berlin",
+    "BRANDENBURG": "Brandenburg"
   },
   "workingHours": {
     "title": "Arbeitszeiten konfigurieren",

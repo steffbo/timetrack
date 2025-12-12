@@ -50,6 +50,19 @@
             />
           </div>
 
+          <div class="field">
+            <label for="state">{{ t('profile.state') }}</label>
+            <Select
+              id="state"
+              v-model="formData.state"
+              :options="stateOptions"
+              option-label="label"
+              option-value="value"
+              :disabled="isLoading"
+              fluid
+            />
+          </div>
+
           <div class="button-group">
             <Button
               type="submit"
@@ -64,12 +77,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
+import Select from 'primevue/select'
 import Button from 'primevue/button'
 import apiClient from '@/api/client'
 import { useAuth } from '@/composables/useAuth'
@@ -83,16 +97,34 @@ const isLoading = ref(false)
 const formData = ref<UpdateUserRequest & { password?: string }>({
   firstName: '',
   lastName: '',
-  email: ''
+  email: '',
+  state: 'BERLIN'
 })
 
+const stateOptions = computed(() => [
+  { value: 'BERLIN', label: t('states.BERLIN') },
+  { value: 'BRANDENBURG', label: t('states.BRANDENBURG') }
+])
+
 onMounted(async () => {
-  if (currentUser.value) {
+  try {
+    // Fetch fresh user data from API
+    const response = await apiClient.get('/api/users/me')
+    const userData = response.data
+
     formData.value = {
-      firstName: currentUser.value.firstName!,
-      lastName: currentUser.value.lastName!,
-      email: currentUser.value.email!
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
+      email: userData.email || '',
+      state: userData.state || 'BERLIN'
     }
+  } catch (error) {
+    console.error('Failed to load user profile:', error)
+    toast.add({
+      severity: 'error',
+      summary: t('profile.loadError'),
+      life: 3000
+    })
   }
 })
 
@@ -102,7 +134,8 @@ async function handleSave() {
     const updateData: UpdateUserRequest = {
       firstName: formData.value.firstName,
       lastName: formData.value.lastName,
-      email: formData.value.email
+      email: formData.value.email,
+      state: formData.value.state as any
     }
 
     if (formData.value.password) {
@@ -110,6 +143,10 @@ async function handleSave() {
     }
 
     await apiClient.put(`/api/users/${currentUser.value?.id}`, updateData)
+
+    // Refresh user data in localStorage
+    const updatedUserResponse = await apiClient.get('/api/users/me')
+    localStorage.setItem('timetrack_user', JSON.stringify(updatedUserResponse.data))
 
     toast.add({
       severity: 'success',

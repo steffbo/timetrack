@@ -34,8 +34,8 @@ import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
 import { useAuth } from '@/composables/useAuth'
 import MonthlyCalendar from '@/components/dashboard/MonthlyCalendar.vue'
-import { TimeEntriesService } from '@/api/generated'
-import type { DailySummaryResponse } from '@/api/generated'
+import { TimeEntriesService, PublicHolidaysService } from '@/api/generated'
+import type { DailySummaryResponse, PublicHolidayResponse, TimeOffResponse } from '@/api/generated'
 
 const { t } = useI18n()
 const { currentUser } = useAuth()
@@ -58,8 +58,39 @@ const loadDailySummaries = async () => {
     const startDateStr = startDate.toISOString().split('T')[0]
     const endDateStr = endDate.toISOString().split('T')[0]
 
-    const response = await TimeEntriesService.getDailySummary(startDateStr, endDateStr)
-    dailySummaries.value = response
+    // Fetch daily summaries and public holidays in parallel
+    const [summaries, publicHolidays] = await Promise.all([
+      TimeEntriesService.getDailySummary(startDateStr, endDateStr),
+      PublicHolidaysService.getPublicHolidays(year)
+    ])
+
+    // Merge public holidays into daily summaries
+    const summariesWithHolidays = summaries.map(summary => {
+      // Check if this date is a public holiday
+      const holiday = publicHolidays.find(h => h.date === summary.date)
+
+      if (holiday) {
+        // Create a time-off entry for the public holiday
+        const holidayTimeOff: TimeOffResponse = {
+          id: 0, // Dummy ID for display purposes
+          userId: currentUser.value?.id || 0,
+          startDate: holiday.date!,
+          endDate: holiday.date!,
+          timeOffType: 'PUBLIC_HOLIDAY' as any,
+          notes: holiday.name
+        }
+
+        // Add the holiday to the beginning of timeOffEntries (highest precedence)
+        return {
+          ...summary,
+          timeOffEntries: [holidayTimeOff, ...(summary.timeOffEntries || [])]
+        }
+      }
+
+      return summary
+    })
+
+    dailySummaries.value = summariesWithHolidays
   } catch (error) {
     toast.add({
       severity: 'error',

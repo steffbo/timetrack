@@ -26,12 +26,18 @@
     "email": "Email",
     "password": "New Password",
     "passwordHint": "Leave empty to keep current password",
+    "state": "State",
     "role": "Role",
     "active": "Active",
     "save": "Save",
     "cancel": "Cancel",
     "saveSuccess": "Profile saved successfully",
-    "saveError": "Error saving profile"
+    "saveError": "Error saving profile",
+    "loadError": "Error loading profile"
+  },
+  "states": {
+    "BERLIN": "Berlin",
+    "BRANDENBURG": "Brandenburg"
   },
   "workingHours": {
     "title": "Configure Working Hours",
