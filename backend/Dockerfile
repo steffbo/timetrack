@@ -11,8 +11,14 @@ COPY frontend/package*.json ./
 # Install dependencies
 RUN npm ci
 
+# Copy OpenAPI spec (needed for API client generation)
+COPY openapi.yaml ../openapi.yaml
+
 # Copy frontend source
 COPY frontend/ ./
+
+# Generate API client from OpenAPI spec
+RUN npm run generate-api
 
 # Build frontend for production
 RUN npm run build
