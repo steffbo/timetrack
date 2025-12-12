@@ -160,8 +160,19 @@ const getPrimaryEntryType = (day: number): string => {
   const summary = getSummaryForDay(day)
   if (!summary) return 'NO_ENTRY'
 
-  // Priority: TIME_OFF > SICK > PTO > EVENT > WORK
+  // Priority: TIME_OFF (specific types) > RECURRING_OFF > SICK > PTO > EVENT > WORK
   if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
+    // Check for specific time off types
+    const publicHoliday = summary.timeOffEntries.find(e => e.timeOffType === 'PUBLIC_HOLIDAY')
+    if (publicHoliday) return 'PUBLIC_HOLIDAY'
+
+    const vacation = summary.timeOffEntries.find(e => e.timeOffType === 'VACATION')
+    if (vacation) return 'VACATION'
+
+    const sick = summary.timeOffEntries.find(e => e.timeOffType === 'SICK')
+    if (sick) return 'SICK_LEAVE'
+
+    // Generic time off
     return 'TIME_OFF'
   }
   if (summary.recurringOffDays && summary.recurringOffDays.length > 0) {
@@ -205,8 +216,11 @@ const getDayStyle = (day: number) => {
     'SICK': 'var(--p-red-50)',
     'PTO': 'var(--p-blue-50)',
     'EVENT': 'var(--p-purple-50)',
+    'VACATION': 'var(--p-cyan-50)',
+    'SICK_LEAVE': 'var(--p-red-50)',
+    'PUBLIC_HOLIDAY': 'var(--p-orange-50)',
     'TIME_OFF': 'var(--p-amber-50)',
-    'RECURRING_OFF': 'var(--p-amber-100)',
+    'RECURRING_OFF': 'var(--p-gray-100)',
     'NO_ENTRY': 'var(--p-surface-0)'
   }
 
@@ -338,35 +352,56 @@ const formatDayDetailsHtml = (day: number): string => {
   const dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   parts.push(`<div class="detail-row"><strong>📅 ${dateStr}</strong></div>`)
 
-  // Hours info
-  parts.push(`<div class="detail-row">⏱️ ${summary.actualHours.toFixed(1)}h / ${summary.expectedHours.toFixed(1)}h</div>`)
-
-  // Time entries
-  if (summary.entries && summary.entries.length > 0) {
-    parts.push(`<div class="detail-section"><strong>${t('dashboard.calendar.timeEntries')}:</strong></div>`)
-    summary.entries.forEach(entry => {
-      const typeLabel = t(`timeEntries.type.${entry.entryType}`)
-      const startTime = entry.clockIn ? new Date(entry.clockIn).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : ''
-      const endTime = entry.clockOut ? new Date(entry.clockOut).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : t('dashboard.calendar.active')
-      parts.push(`<div class="detail-item">• ${typeLabel}: ${startTime} - ${endTime}</div>`)
-    })
+  // Get emoji for time off type
+  const getTimeOffEmoji = (timeOffType: string): string => {
+    const emojiMap: Record<string, string> = {
+      'VACATION': '🏝️',
+      'SICK': '😵‍💫',
+      'PUBLIC_HOLIDAY': '🎊',
+      'PERSONAL': '🏠'
+    }
+    return emojiMap[timeOffType] || '📅'
   }
 
-  // Time off
-  if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
-    parts.push(`<div class="detail-section"><strong>${t('dashboard.calendar.timeOff')}:</strong></div>`)
-    summary.timeOffEntries.forEach(timeOff => {
+  // Time off - show first for PTO days
+  const hasPTOEntries = summary.timeOffEntries && summary.timeOffEntries.length > 0
+  if (hasPTOEntries) {
+    summary.timeOffEntries!.forEach(timeOff => {
       const typeLabel = t(`timeOff.type.${timeOff.timeOffType}`)
-      parts.push(`<div class="detail-item">• ${typeLabel}</div>`)
+      const emoji = getTimeOffEmoji(timeOff.timeOffType)
+      parts.push(`<div class="detail-row">${emoji} <strong>${typeLabel}</strong></div>`)
     })
   }
 
   // Recurring off-days
   if (summary.recurringOffDays && summary.recurringOffDays.length > 0) {
-    parts.push(`<div class="detail-section"><strong>${t('dashboard.calendar.recurringOffDays')}:</strong></div>`)
     summary.recurringOffDays.forEach(offDay => {
       const description = offDay.description || t('dashboard.calendar.recurringOffDay')
-      parts.push(`<div class="detail-item">• ${description}</div>`)
+      parts.push(`<div class="detail-row">📴 <strong>${description}</strong></div>`)
+    })
+  }
+
+  // Hours info - only show if expected hours > 0 OR if it's not a PTO/recurring off day
+  const shouldShowHours = summary.expectedHours > 0 || (!hasPTOEntries && !(summary.recurringOffDays && summary.recurringOffDays.length > 0))
+  if (shouldShowHours) {
+    parts.push(`<div class="detail-row">⏱️ ${summary.actualHours.toFixed(1)}h / ${summary.expectedHours.toFixed(1)}h</div>`)
+  }
+
+  // Time entries
+  if (summary.entries && summary.entries.length > 0) {
+    parts.push(`<div class="detail-section"><strong>⏰ ${t('dashboard.calendar.timeEntries')}:</strong></div>`)
+    summary.entries.forEach(entry => {
+      const typeLabel = t(`timeEntries.type.${entry.entryType}`)
+      const startTime = entry.clockIn ? new Date(entry.clockIn).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : ''
+      const endTime = entry.clockOut ? new Date(entry.clockOut).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : t('dashboard.calendar.active')
+
+      // Get entry type emoji
+      const entryEmoji = entry.entryType === 'WORK' ? '💼' :
+                        entry.entryType === 'SICK' ? '🤒' :
+                        entry.entryType === 'PTO' ? '🏖️' :
+                        entry.entryType === 'EVENT' ? '📅' : '•'
+
+      parts.push(`<div class="detail-item">${entryEmoji} ${typeLabel}: ${startTime} - ${endTime}</div>`)
     })
   }
 
