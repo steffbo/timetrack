@@ -240,11 +240,29 @@ git commit -m "feat: Add monthly statistics endpoint"
 
 ## Deployment
 
-### Building Docker Image
+For comprehensive deployment instructions, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
-```bash
-docker build -t timetrack-backend:latest ./backend
-```
+### Quick Production Overview
+
+The application is designed for production deployment at **zeit.remer.cc** with:
+
+- **Single Docker Image**: Frontend and backend bundled together
+- **GitHub Container Registry**: Automated image builds via GitHub Actions
+- **Caddy Reverse Proxy**: Automatic HTTPS with Let's Encrypt
+- **PostgreSQL**: Persistent database with Docker volumes
+- **Manual Deployment**: Pull images and restart containers on the server
+
+Key files:
+- `docker-compose.prod.yml` - Production Docker Compose configuration
+- `.env.example.prod` - Production environment template
+- `Caddyfile.example` - Caddy reverse proxy configuration
+- `DEPLOYMENT.md` - Complete deployment guide
+
+### CI/CD Pipeline
+
+GitHub Actions automatically:
+1. **CI Workflow** (`.github/workflows/ci.yml`): Runs tests on every push and PR
+2. **Docker Workflow** (`.github/workflows/docker.yml`): Builds and publishes Docker images to ghcr.io on main branch push
 
 ### Environment Variables in Production
 

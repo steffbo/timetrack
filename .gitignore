@@ -38,6 +38,8 @@ application-dev.yml
 logs/
 .env
 .env.local
+.env.prod
+docker-compose.prod.override.yml
 
 ### Generated ###
 generated-sources/

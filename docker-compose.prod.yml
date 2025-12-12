@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: timetrack-db-prod
+    environment:
+      POSTGRES_DB: ${DB_NAME:-timetrack}
+      POSTGRES_USER: ${DB_USERNAME:-timetrack}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - timetrack-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-timetrack}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    image: ghcr.io/stefan-remer/timetrack:latest
+    container_name: timetrack-app-prod
+    environment:
+      # Database configuration
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-timetrack}
+      DB_USERNAME: ${DB_USERNAME:-timetrack}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      # JWT configuration
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+
+      # Server configuration
+      SERVER_PORT: 8811
+      SPRING_PROFILES_ACTIVE: prod
+
+      # CORS configuration (set to your domain)
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://zeit.remer.cc}
+
+      # Logging
+      LOGGING_LEVEL_ROOT: ${LOGGING_LEVEL_ROOT:-INFO}
+      LOGGING_LEVEL_CC_REMER_TIMETRACK: ${LOGGING_LEVEL_APP:-INFO}
+    ports:
+      # Only expose to localhost - Caddy will proxy requests
+      - "127.0.0.1:8811:8811"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - timetrack-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8811/api/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  timetrack-network:
+    driver: bridge

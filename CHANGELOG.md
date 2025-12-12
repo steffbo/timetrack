@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-12-12
+
+### Added - Deployment & Production Infrastructure
+- **Complete CI/CD Pipeline**: GitHub Actions workflows for continuous integration and Docker image building
+  - Maven CI workflow: Automated testing on push and pull requests
+  - Docker workflow: Automated Docker image building and publishing to GitHub Container Registry (ghcr.io)
+- **Production-Ready Docker Setup**: Single-image architecture with frontend bundled into backend
+  - Multi-stage Dockerfile: Builds both frontend (Node.js) and backend (Maven) in one unified image
+  - Spring Boot serves both API endpoints and static frontend files
+  - Optimized layer caching for faster builds
+- **Production Configuration Files**:
+  - `docker-compose.prod.yml`: Production-ready Docker Compose configuration
+  - `.env.example.prod`: Environment variable template for production
+  - `application-prod.yml`: Spring Boot production profile with security hardening
+  - `Caddyfile.example`: Caddy reverse proxy configuration with automatic HTTPS
+- **Web MVC Configuration**: SPA routing fallback for Vue.js frontend (WebMvcConfig.java)
+- **Comprehensive Deployment Guide**: DEPLOYMENT.md with step-by-step instructions including:
+  - Server prerequisites and setup
+  - GitHub Container Registry authentication
+  - Production deployment procedures
+  - Backup and restore procedures
+  - Troubleshooting guide
+  - Security best practices
+  - Maintenance tasks checklist
+- **Version 1.0.0**: Updated package versions for initial production release
+
+### Changed
+- Backend Dockerfile: Enhanced with multi-stage build to include frontend static files
+- .gitignore: Added production environment files (.env.prod, docker-compose.prod.override.yml)
+- Package versions: Updated from 0.0.1-SNAPSHOT to 1.0.0 (both backend and frontend)
+
+### Security - Production Hardening
+- Flyway clean disabled in production (prevents accidental data loss)
+- SQL logging disabled in production
+- Error messages sanitized (no stack traces exposed)
+- Security headers configured in Caddy (HSTS, X-Frame-Options, CSP, etc.)
+- CORS restricted to production domain only
+- Database not exposed publicly (only accessible within Docker network)
+- Application runs as non-root user in container
+- Response compression enabled for performance
+
+### Infrastructure
+- Domain: zeit.remer.cc
+- Registry: GitHub Container Registry (ghcr.io)
+- Deployment: Manual pull and restart (no automated CD)
+- HTTPS: Automatic SSL/TLS via Caddy and Let's Encrypt
+- Database: PostgreSQL 17 with persistent named volumes
+
 ## [0.0.1] - 2025-12-10
 
 ### Added

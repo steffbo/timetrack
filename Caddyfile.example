@@ -1,0 +1,48 @@
+# Caddy configuration for zeit.remer.cc
+# Copy this configuration to your Caddy configuration directory
+# Typically: /etc/caddy/Caddyfile or use Caddy's API
+
+zeit.remer.cc {
+    # Reverse proxy all requests to Spring Boot application
+    # Spring Boot serves both API endpoints and frontend static files
+    reverse_proxy localhost:8811
+
+    # Enable gzip compression
+    encode gzip
+
+    # Security headers
+    header {
+        # Prevent browsers from interpreting files as a different MIME type
+        X-Content-Type-Options "nosniff"
+
+        # Prevent clickjacking attacks
+        X-Frame-Options "DENY"
+
+        # Control referrer information
+        Referrer-Policy "strict-origin-when-cross-origin"
+
+        # Enable HSTS (HTTP Strict Transport Security)
+        # Tells browsers to always use HTTPS for this site
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+        # Disable older browser features that can be exploited
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    }
+
+    # Logging (optional, adjust path as needed)
+    log {
+        output file /var/log/caddy/zeit.remer.cc.log
+        format console
+        level INFO
+    }
+
+    # Health check endpoint for monitoring (optional)
+    handle /health {
+        reverse_proxy localhost:8811
+    }
+}
+
+# Optional: Redirect www to non-www
+www.zeit.remer.cc {
+    redir https://zeit.remer.cc{uri} permanent
+}
