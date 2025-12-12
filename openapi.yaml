@@ -1592,6 +1592,16 @@ components:
           description: List of time entries for this date
           items:
             $ref: '#/components/schemas/TimeEntryResponse'
+        timeOffEntries:
+          type: array
+          description: List of time-off entries that cover this date
+          items:
+            $ref: '#/components/schemas/TimeOffResponse'
+        recurringOffDays:
+          type: array
+          description: List of recurring off-days that apply to this date
+          items:
+            $ref: '#/components/schemas/RecurringOffDayResponse'
 
   responses:
     UnauthorizedError:

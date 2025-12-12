@@ -1,9 +1,14 @@
 package cc.remer.timetrack.adapter.web.mapper;
 
 import cc.remer.timetrack.api.model.DailySummaryResponse;
+import cc.remer.timetrack.api.model.RecurringOffDayResponse;
 import cc.remer.timetrack.api.model.TimeEntryResponse;
+import cc.remer.timetrack.api.model.TimeOffResponse;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
+import cc.remer.timetrack.usecase.recurringoffday.RecurringOffDayMapper;
 import cc.remer.timetrack.usecase.timeentry.model.DailySummary;
+import cc.remer.timetrack.usecase.timeoff.TimeOffMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -16,9 +21,13 @@ import java.util.stream.Collectors;
  * Mapper for TimeEntry entities to DTOs.
  */
 @Component
+@RequiredArgsConstructor
 public class TimeEntryMapper {
 
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
+
+    private final TimeOffMapper timeOffMapper;
+    private final RecurringOffDayMapper recurringOffDayMapper;
 
     /**
      * Convert LocalDateTime to OffsetDateTime.
@@ -65,11 +74,27 @@ public class TimeEntryMapper {
         response.setExpectedHours(summary.getExpectedHours());
         response.setStatus(DailySummaryResponse.StatusEnum.fromValue(summary.getStatus().name()));
 
-        // Map entries
+        // Map time entries
         List<TimeEntryResponse> entryResponses = summary.getEntries().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
         response.setEntries(entryResponses);
+
+        // Map time-off entries
+        if (summary.getTimeOffEntries() != null) {
+            List<TimeOffResponse> timeOffResponses = summary.getTimeOffEntries().stream()
+                    .map(timeOffMapper::toResponse)
+                    .collect(Collectors.toList());
+            response.setTimeOffEntries(timeOffResponses);
+        }
+
+        // Map recurring off-days
+        if (summary.getRecurringOffDays() != null) {
+            List<RecurringOffDayResponse> recurringOffDayResponses = summary.getRecurringOffDays().stream()
+                    .map(recurringOffDayMapper::toResponse)
+                    .collect(Collectors.toList());
+            response.setRecurringOffDays(recurringOffDayResponses);
+        }
 
         return response;
     }

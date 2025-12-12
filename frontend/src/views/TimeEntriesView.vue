@@ -458,6 +458,23 @@ onMounted(() => {
             <Tag :value="t(`timeEntries.status.${data.status}`)" :severity="getSummaryStatusSeverity(data.status)" />
           </template>
         </Column>
+        <Column :header="t('timeEntries.notes')">
+          <template #body="{ data }">
+            <div v-if="data.timeOffEntries && data.timeOffEntries.length > 0" class="mb-2">
+              <div v-for="timeOff in data.timeOffEntries" :key="timeOff.id" class="mb-1">
+                <Tag :value="t(`timeOff.type.${timeOff.timeOffType}`)" severity="success" class="mr-2" />
+                <span v-if="timeOff.notes" class="text-sm">{{ timeOff.notes }}</span>
+              </div>
+            </div>
+            <div v-if="data.recurringOffDays && data.recurringOffDays.length > 0">
+              <div v-for="rod in data.recurringOffDays" :key="rod.id" class="mb-1">
+                <Tag value="Recurring Off-Day" severity="secondary" class="mr-2" />
+                <span v-if="rod.description" class="text-sm">{{ rod.description }}</span>
+              </div>
+            </div>
+            <span v-if="(!data.timeOffEntries || data.timeOffEntries.length === 0) && (!data.recurringOffDays || data.recurringOffDays.length === 0)">-</span>
+          </template>
+        </Column>
       </DataTable>
     </div>
 

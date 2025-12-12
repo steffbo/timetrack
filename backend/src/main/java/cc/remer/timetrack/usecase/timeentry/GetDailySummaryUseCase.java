@@ -1,10 +1,15 @@
 package cc.remer.timetrack.usecase.timeentry;
 
+import cc.remer.timetrack.adapter.persistence.RecurringOffDayRepository;
 import cc.remer.timetrack.adapter.persistence.TimeEntryRepository;
+import cc.remer.timetrack.adapter.persistence.TimeOffRepository;
 import cc.remer.timetrack.adapter.persistence.WorkingHoursRepository;
+import cc.remer.timetrack.domain.recurringoffday.RecurringOffDay;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
+import cc.remer.timetrack.domain.timeoff.TimeOff;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.workinghours.WorkingHours;
+import cc.remer.timetrack.usecase.recurringoffday.RecurringOffDayEvaluator;
 import cc.remer.timetrack.usecase.timeentry.model.DailySummary;
 import cc.remer.timetrack.usecase.timeentry.model.DailySummaryStatus;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +34,10 @@ import java.util.stream.Collectors;
 public class GetDailySummaryUseCase {
 
     private final TimeEntryRepository timeEntryRepository;
+    private final TimeOffRepository timeOffRepository;
+    private final RecurringOffDayRepository recurringOffDayRepository;
     private final WorkingHoursRepository workingHoursRepository;
+    private final RecurringOffDayEvaluator recurringOffDayEvaluator;
 
     private static final double TOLERANCE = 0.1; // 6 minutes tolerance for "matched"
 
@@ -61,6 +69,14 @@ public class GetDailySummaryUseCase {
         List<TimeEntry> entries = timeEntryRepository.findByUserIdAndEntryDateBetween(
                 user.getId(), startDate, endDate);
 
+        // Get time-off entries for the date range
+        List<TimeOff> timeOffEntries = timeOffRepository.findByUserIdAndDateRange(
+                user.getId(), startDate, endDate);
+
+        // Get active recurring off-days for the user
+        List<RecurringOffDay> allRecurringOffDays = recurringOffDayRepository
+                .findByUserIdAndIsActiveTrue(user.getId());
+
         // Group entries by date
         Map<LocalDate, List<TimeEntry>> entriesByDate = entries.stream()
                 .collect(Collectors.groupingBy(TimeEntry::getEntryDate));
@@ -71,17 +87,27 @@ public class GetDailySummaryUseCase {
 
         while (!currentDate.isAfter(endDate)) {
             List<TimeEntry> dayEntries = entriesByDate.getOrDefault(currentDate, List.of());
+
+            // Find time-off entries for this date
+            List<TimeOff> dayTimeOffEntries = findTimeOffForDate(timeOffEntries, currentDate);
+
+            // Find recurring off-days that apply to this date
+            List<RecurringOffDay> dayRecurringOffDays = findRecurringOffDaysForDate(
+                    allRecurringOffDays, currentDate);
+
             double expectedHours = getExpectedHoursForDate(currentDate, hoursPerWeekday);
             double actualHours = calculateActualHours(dayEntries);
             DailySummaryStatus status = determineStatus(actualHours, expectedHours);
 
-            DailySummary summary = new DailySummary(
-                    currentDate,
-                    actualHours,
-                    expectedHours,
-                    status,
-                    dayEntries
-            );
+            DailySummary summary = DailySummary.builder()
+                    .date(currentDate)
+                    .actualHours(actualHours)
+                    .expectedHours(expectedHours)
+                    .status(status)
+                    .entries(dayEntries)
+                    .timeOffEntries(dayTimeOffEntries)
+                    .recurringOffDays(dayRecurringOffDays)
+                    .build();
 
             summaries.add(summary);
             currentDate = currentDate.plusDays(1);
@@ -129,5 +155,25 @@ public class GetDailySummaryUseCase {
         } else {
             return DailySummaryStatus.ABOVE_EXPECTED;
         }
+    }
+
+    /**
+     * Find time-off entries that cover a specific date.
+     */
+    private List<TimeOff> findTimeOffForDate(List<TimeOff> timeOffEntries, LocalDate date) {
+        return timeOffEntries.stream()
+                .filter(timeOff -> !date.isBefore(timeOff.getStartDate())
+                        && !date.isAfter(timeOff.getEndDate()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Find recurring off-days that apply to a specific date.
+     */
+    private List<RecurringOffDay> findRecurringOffDaysForDate(
+            List<RecurringOffDay> recurringOffDays, LocalDate date) {
+        return recurringOffDays.stream()
+                .filter(rod -> recurringOffDayEvaluator.appliesToDate(rod, date))
+                .collect(Collectors.toList());
     }
 }
