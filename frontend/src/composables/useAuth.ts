@@ -78,7 +78,7 @@ export function useAuth() {
       throw new Error('No refresh token available')
     }
 
-    const response = await authApi.refreshToken(refreshTokenValue.value)
+    const response = await authApi.refreshToken({ refreshToken: refreshTokenValue.value })
     accessTokenValue.value = response.accessToken!
     refreshTokenValue.value = response.refreshToken!
     if (response.user) {
@@ -106,17 +106,23 @@ export function useAuth() {
       currentUser.value = user
       localStorage.setItem(USER_KEY, JSON.stringify(user))
       return true
-    } catch (error) {
-      accessTokenValue.value = null
-      refreshTokenValue.value = null
-      currentUser.value = null
+    } catch (error: any) {
+      // If 401 and we have a refresh token, the interceptor will handle refresh
+      // Only clear auth if it's not a 401 or if refresh also failed
+      if (error.response?.status === 401 && refreshTokenValue.value) {
+        // The interceptor should have already tried to refresh
+        // If we still got here, refresh failed
+        accessTokenValue.value = null
+        refreshTokenValue.value = null
+        currentUser.value = null
 
-      // Clear localStorage
-      localStorage.removeItem(ACCESS_TOKEN_KEY)
-      localStorage.removeItem(REFRESH_TOKEN_KEY)
-      localStorage.removeItem(USER_KEY)
+        // Clear localStorage
+        localStorage.removeItem(ACCESS_TOKEN_KEY)
+        localStorage.removeItem(REFRESH_TOKEN_KEY)
+        localStorage.removeItem(USER_KEY)
 
-      setAccessToken(null)
+        setAccessToken(null)
+      }
       return false
     }
   }
