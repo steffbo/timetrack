@@ -118,7 +118,7 @@ function handleTimeChange(data: WorkingDayConfig) {
 function parseTime(timeStr: string): number | null {
   if (!timeStr) return null
   const [hours, minutes] = timeStr.split(':').map(Number)
-  if (isNaN(hours) || isNaN(minutes)) return null
+  if (isNaN(hours) || isNaN(minutes) || hours === undefined || minutes === undefined) return null
   return new Date(1970, 0, 1, hours, minutes).getTime()
 }
 

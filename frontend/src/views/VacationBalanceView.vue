@@ -14,7 +14,7 @@ import type { VacationBalanceResponse, UpdateVacationBalanceRequest } from '@/ap
 
 const { t } = useI18n()
 const toast = useToast()
-const { user } = useAuth()
+const { currentUser } = useAuth()
 
 const balance = ref<VacationBalanceResponse | null>(null)
 const loading = ref(false)
@@ -23,6 +23,8 @@ const selectedYear = ref(new Date().getFullYear())
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i - 2)
 
 const editForm = ref<UpdateVacationBalanceRequest>({
+  userId: currentUser.value?.id || 0,
+  year: new Date().getFullYear(),
   annualAllowanceDays: 30.0,
   carriedOverDays: 0.0,
   adjustmentDays: 0.0
@@ -71,9 +73,11 @@ const loadBalance = async () => {
 }
 
 const openEditDialog = () => {
-  if (!balance.value) return
+  if (!balance.value || !currentUser.value) return
 
   editForm.value = {
+    userId: currentUser.value.id,
+    year: selectedYear.value,
     annualAllowanceDays: balance.value.annualAllowanceDays,
     carriedOverDays: balance.value.carriedOverDays,
     adjustmentDays: balance.value.adjustmentDays
@@ -83,7 +87,7 @@ const openEditDialog = () => {
 
 const saveBalance = async () => {
   try {
-    await VacationBalanceService.updateVacationBalance(selectedYear.value, editForm.value)
+    await VacationBalanceService.updateVacationBalance(editForm.value)
     toast.add({
       severity: 'success',
       summary: t('success'),
