@@ -2,6 +2,9 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Select from 'primevue/select'
 import { PublicHolidaysService } from '@/api/generated'
 import type { PublicHolidayResponse } from '@/api/generated'
 
@@ -110,6 +113,13 @@ const formatDate = (dateStr: string) => {
 <style scoped>
 .public-holidays-view {
   padding: 2rem;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
 }
 
 .filters {

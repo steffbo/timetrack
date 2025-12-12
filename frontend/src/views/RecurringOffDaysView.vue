@@ -2,6 +2,16 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Calendar from 'primevue/calendar'
+import Dialog from 'primevue/dialog'
+import Select from 'primevue/select'
+import Textarea from 'primevue/textarea'
+import Tag from 'primevue/tag'
+import InputNumber from 'primevue/inputnumber'
+import Checkbox from 'primevue/checkbox'
 import { RecurringOffDaysService } from '@/api/generated'
 import type { RecurringOffDayResponse, CreateRecurringOffDayRequest, UpdateRecurringOffDayRequest } from '@/api/generated'
 
@@ -92,10 +102,40 @@ const openEditDialog = (offDay: RecurringOffDayResponse) => {
 
 const saveOffDay = async () => {
   try {
-    if (editMode.value && currentOffDay.value.id) {
+    // Prepare the request data based on pattern type
+    const requestData = { ...currentOffDay.value }
+
+    // Convert Date objects to ISO date strings (YYYY-MM-DD) without timezone shifts
+    const formatDate = (date: any) => {
+      if (!date) return undefined
+      if (typeof date === 'string') return date
+      if (date instanceof Date) {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+      return date
+    }
+
+    requestData.startDate = formatDate(requestData.startDate)
+    requestData.endDate = formatDate(requestData.endDate)
+    requestData.referenceDate = formatDate(requestData.referenceDate)
+
+    // Clean up fields based on pattern type to satisfy database constraints
+    if (requestData.recurrencePattern === 'EVERY_NTH_WEEK') {
+      // For EVERY_NTH_WEEK: week_interval and reference_date required, week_of_month must be null
+      delete requestData.weekOfMonth
+    } else if (requestData.recurrencePattern === 'NTH_WEEKDAY_OF_MONTH') {
+      // For NTH_WEEKDAY_OF_MONTH: week_of_month required, week_interval and reference_date must be null
+      delete requestData.weekInterval
+      delete requestData.referenceDate
+    }
+
+    if (editMode.value && requestData.id) {
       await RecurringOffDaysService.updateRecurringOffDay(
-        currentOffDay.value.id,
-        currentOffDay.value as UpdateRecurringOffDayRequest
+        requestData.id,
+        requestData as UpdateRecurringOffDayRequest
       )
       toast.add({
         severity: 'success',
@@ -105,7 +145,7 @@ const saveOffDay = async () => {
       })
     } else {
       await RecurringOffDaysService.createRecurringOffDay(
-        currentOffDay.value as CreateRecurringOffDayRequest
+        requestData as CreateRecurringOffDayRequest
       )
       toast.add({
         severity: 'success',
@@ -393,6 +433,13 @@ onMounted(() => {
 <style scoped>
 .recurring-off-days-view {
   padding: 2rem;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
 }
 
 .field {

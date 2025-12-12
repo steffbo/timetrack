@@ -2,6 +2,12 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
+import Button from 'primevue/button'
+import Card from 'primevue/card'
+import Dialog from 'primevue/dialog'
+import Select from 'primevue/select'
+import InputNumber from 'primevue/inputnumber'
+import Knob from 'primevue/knob'
 import { useAuth } from '@/composables/useAuth'
 import { VacationBalanceService } from '@/api/generated'
 import type { VacationBalanceResponse, UpdateVacationBalanceRequest } from '@/api/generated'
@@ -287,6 +293,13 @@ onMounted(() => {
 <style scoped>
 .vacation-balance-view {
   padding: 2rem;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
 }
 
 .balance-summary {

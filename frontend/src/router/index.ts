@@ -31,6 +31,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/WorkingHoursView.vue')
       },
       {
+        path: 'time-entries',
+        name: 'time-entries',
+        component: () => import('@/views/TimeEntriesView.vue')
+      },
+      {
         path: 'time-off',
         name: 'time-off',
         component: () => import('@/views/TimeOffView.vue')

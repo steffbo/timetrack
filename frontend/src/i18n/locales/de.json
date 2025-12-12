@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "profile": "Profil",
     "timeTracking": "Zeiterfassung",
+    "timeEntries": "Zeiteinträge",
     "timeOff": "Abwesenheiten",
     "recurringOffDays": "Wiederkehrende Freitage",
     "vacationBalance": "Urlaubskonto",
@@ -16,7 +17,7 @@
     "email": "E-Mail",
     "password": "Passwort",
     "submit": "Anmelden",
-    "error": "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Zugangsdaten."
+    "error": "Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten."
   },
   "profile": {
     "title": "Profil",
@@ -56,7 +57,7 @@
     "createUser": "Neuer Benutzer",
     "editUser": "Benutzer bearbeiten",
     "deleteUser": "Benutzer löschen",
-    "confirmDelete": "Möchten Sie diesen Benutzer wirklich löschen?",
+    "confirmDelete": "Möchtest du diesen Benutzer wirklich löschen?",
     "yes": "Ja",
     "no": "Nein",
     "createSuccess": "Benutzer erfolgreich erstellt",
@@ -121,7 +122,7 @@
     "updateError": "Fehler beim Aktualisieren des freien Tags",
     "deleteSuccess": "Freier Tag erfolgreich gelöscht",
     "deleteError": "Fehler beim Löschen des freien Tags",
-    "deleteConfirm": "Möchten Sie diesen wiederkehrenden freien Tag wirklich löschen?"
+    "deleteConfirm": "Möchtest du diesen wiederkehrenden freien Tag wirklich löschen?"
   },
   "timeOff": {
     "title": "Abwesenheiten",
@@ -148,7 +149,7 @@
     "updateError": "Fehler beim Aktualisieren der Abwesenheit",
     "deleteSuccess": "Abwesenheit erfolgreich gelöscht",
     "deleteError": "Fehler beim Löschen der Abwesenheit",
-    "deleteConfirm": "Möchten Sie diese Abwesenheit wirklich löschen?"
+    "deleteConfirm": "Möchtest du diese Abwesenheit wirklich löschen?"
   },
   "vacationBalance": {
     "title": "Urlaubskonto",
@@ -172,6 +173,51 @@
     "updateError": "Fehler beim Aktualisieren des Urlaubskontos",
     "userInfo": "Nur Administratoren können das Urlaubskonto bearbeiten",
     "usedDaysAutoCalculated": "Die verbrauchten Tage werden automatisch aus den Urlaubs-Abwesenheiten berechnet"
+  },
+  "timeEntries": {
+    "title": "Zeiteinträge",
+    "clockIn": "Einstempeln",
+    "clockOut": "Ausstempeln",
+    "activeSession": "Aktive Arbeitssitzung",
+    "clockedInAt": "Eingestempelt um",
+    "viewEntries": "Einträge",
+    "viewSummary": "Zusammenfassung",
+    "startDate": "Von",
+    "endDate": "Bis",
+    "date": "Datum",
+    "hoursWorked": "Gearbeitete Stunden",
+    "actualHours": "Ist-Stunden",
+    "expectedHours": "Soll-Stunden",
+    "type": {
+      "label": "Typ",
+      "WORK": "Arbeit",
+      "SICK": "Krank",
+      "PTO": "Urlaub",
+      "EVENT": "Ereignis"
+    },
+    "status": {
+      "NO_ENTRY": "Kein Eintrag",
+      "BELOW_EXPECTED": "Unter Soll",
+      "MATCHED": "Soll erfüllt",
+      "ABOVE_EXPECTED": "Über Soll"
+    },
+    "notes": "Notizen",
+    "notesPlaceholder": "Optional: Notizen zu dieser Arbeitssitzung...",
+    "edit": "Eintrag bearbeiten",
+    "deleteConfirmTitle": "Eintrag löschen",
+    "deleteConfirmMessage": "Möchtest du diesen Zeiteintrag wirklich löschen?",
+    "noEntries": "Keine Zeiteinträge im gewählten Zeitraum",
+    "noSummaries": "Keine Zusammenfassung für den gewählten Zeitraum",
+    "loadError": "Fehler beim Laden der Zeiteinträge",
+    "summaryLoadError": "Fehler beim Laden der Zusammenfassung",
+    "clockInSuccess": "Erfolgreich eingestempelt",
+    "clockInError": "Fehler beim Einstempeln",
+    "clockOutSuccess": "Erfolgreich ausgestempelt",
+    "clockOutError": "Fehler beim Ausstempeln",
+    "updateSuccess": "Zeiteintrag erfolgreich aktualisiert",
+    "updateError": "Fehler beim Aktualisieren des Zeiteintrags",
+    "deleteSuccess": "Zeiteintrag erfolgreich gelöscht",
+    "deleteError": "Fehler beim Löschen des Zeiteintrags"
   },
   "weekday": {
     "monday": "Montag",
@@ -197,5 +243,6 @@
   "error": "Fehler",
   "success": "Erfolg",
   "info": "Information",
-  "filter": "Filtern"
+  "filter": "Filtern",
+  "locale": "de-DE"
 }

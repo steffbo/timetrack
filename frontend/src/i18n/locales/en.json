@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "profile": "Profile",
     "timeTracking": "Time Tracking",
+    "timeEntries": "Time Entries",
     "timeOff": "Time Off",
     "recurringOffDays": "Recurring Off-Days",
     "vacationBalance": "Vacation Balance",
@@ -173,6 +174,51 @@
     "userInfo": "Only administrators can edit the vacation balance",
     "usedDaysAutoCalculated": "Used days are automatically calculated from vacation time-off entries"
   },
+  "timeEntries": {
+    "title": "Time Entries",
+    "clockIn": "Clock In",
+    "clockOut": "Clock Out",
+    "activeSession": "Active Work Session",
+    "clockedInAt": "Clocked in at",
+    "viewEntries": "Entries",
+    "viewSummary": "Summary",
+    "startDate": "From",
+    "endDate": "To",
+    "date": "Date",
+    "hoursWorked": "Hours Worked",
+    "actualHours": "Actual Hours",
+    "expectedHours": "Expected Hours",
+    "type": {
+      "label": "Type",
+      "WORK": "Work",
+      "SICK": "Sick",
+      "PTO": "PTO",
+      "EVENT": "Event"
+    },
+    "status": {
+      "NO_ENTRY": "No Entry",
+      "BELOW_EXPECTED": "Below Expected",
+      "MATCHED": "Matched",
+      "ABOVE_EXPECTED": "Above Expected"
+    },
+    "notes": "Notes",
+    "notesPlaceholder": "Optional: Notes for this work session...",
+    "edit": "Edit Entry",
+    "deleteConfirmTitle": "Delete Entry",
+    "deleteConfirmMessage": "Do you really want to delete this time entry?",
+    "noEntries": "No time entries in selected period",
+    "noSummaries": "No summary available for selected period",
+    "loadError": "Error loading time entries",
+    "summaryLoadError": "Error loading summary",
+    "clockInSuccess": "Clocked in successfully",
+    "clockInError": "Error clocking in",
+    "clockOutSuccess": "Clocked out successfully",
+    "clockOutError": "Error clocking out",
+    "updateSuccess": "Time entry updated successfully",
+    "updateError": "Error updating time entry",
+    "deleteSuccess": "Time entry deleted successfully",
+    "deleteError": "Error deleting time entry"
+  },
   "weekday": {
     "monday": "Monday",
     "tuesday": "Tuesday",
@@ -197,5 +243,6 @@
   "error": "Error",
   "success": "Success",
   "info": "Information",
-  "filter": "Filter"
+  "filter": "Filter",
+  "locale": "en-US"
 }

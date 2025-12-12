@@ -7,16 +7,18 @@ import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
 import { OpenAPI } from './api/generated'
-import { getAccessToken } from './api/client'
 
 // PrimeIcons CSS
 import 'primeicons/primeicons.css'
 import './style.css'
 
+// Storage keys
+const ACCESS_TOKEN_KEY = 'timetrack_access_token'
+
 // Configure OpenAPI client to use authentication token
 OpenAPI.BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 OpenAPI.TOKEN = () => {
-  const token = getAccessToken()
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY)
   return token || ''
 }
 

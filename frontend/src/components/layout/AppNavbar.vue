@@ -49,6 +49,11 @@ const menuItems = computed<MenuItem[]>(() => {
           command: () => router.push('/working-hours')
         },
         {
+          label: t('nav.timeEntries'),
+          icon: 'pi pi-play-circle',
+          command: () => router.push('/time-entries')
+        },
+        {
           label: t('nav.timeOff'),
           icon: 'pi pi-calendar-times',
           command: () => router.push('/time-off')

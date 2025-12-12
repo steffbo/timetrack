@@ -219,11 +219,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 1. **Dashboard** - Welcome screen
 2. **Profile** - User profile management
 3. **Working Hours** - Weekly hours configuration with time inputs
-4. **Time Off** - Absence tracking with filtering
-5. **Recurring Off-Days** - Recurring pattern management
-6. **Vacation Balance** - Holiday allowance overview
-7. **Public Holidays** - State-specific German holidays
-8. **Admin Users** - User management (admin only)
+4. **Time Entries** - Clock in/out with daily summaries and CRUD operations
+5. **Time Off** - Absence tracking with filtering
+6. **Recurring Off-Days** - Recurring pattern management
+7. **Vacation Balance** - Holiday allowance overview
+8. **Public Holidays** - State-specific German holidays
+9. **Admin Users** - User management (admin only)
 
 ### Implementation Status
 
@@ -235,7 +236,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Phase 6: Vue.js Frontend (Basic)
 - ✅ Phase 7: Advanced Time Tracking (Backend Complete)
 - ✅ Phase 8: Advanced Time Tracking (Frontend Complete)
-- 🔄 Phase 9: Time Entry API & Dashboard (Backend Complete, Frontend Pending)
+- ✅ Phase 9: Time Entry API & Frontend (Complete)
 - ⏳ Phase 10: Statistics & Reports
 - ⏳ Phase 11: Polish & Deploy
 
@@ -298,8 +299,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Phase 8: Advanced Time Tracking - Frontend (2025-12-12)
 - **Public Holidays View**: Year/state filters, formatted dates
+- **Recurring Off-Days View**: Full CRUD with dynamic pattern forms
+- **Time-Off View**: CRUD with date filtering, automatic days calculation
+- **Vacation Balance View**: Dashboard with progress indicator, admin editing
+- **Navigation**: Added "Time Tracking" submenu with 5 items
+- **i18n**: 150+ German and 150+ English translations
+- **API Integration**: Configured OpenAPI client with automatic token injection
 
-### Phase 9: Time Entry API & Dashboard - Backend (2025-12-12)
+### Phase 9: Time Entry API & Frontend - Complete (2025-12-12)
 - **Time Entry API**: Complete clock in/out functionality
   - `POST /api/time-entries/clock-in` - Start work session
   - `POST /api/time-entries/clock-out` - End work session
@@ -311,14 +318,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Daily Summary**: Calculates actual vs expected hours with status (NO_ENTRY, BELOW_EXPECTED, MATCHED, ABOVE_EXPECTED)
 - **Controller & Mapper**: TimeEntryController with LocalDateTime ↔ OffsetDateTime conversion
 - **Tests**: 23 integration tests covering all endpoints and edge cases
-- **Frontend Navigation**: Moved "Arbeitszeiten" under "Zeiterfassung" dropdown menu
-- **Recurring Off-Days View**: Full CRUD with dynamic pattern forms
-- **Time-Off View**: CRUD with date filtering, automatic days calculation
-- **Vacation Balance View**: Dashboard with progress indicator, admin editing
-- **Navigation**: Added "Time Tracking" submenu with 4 items
-- **i18n**: 150+ German and 150+ English translations
-- **API Integration**: Configured OpenAPI client with automatic token injection
-- **Tests**: Manual testing of all views completed
+- **Time Entries View**: Complete frontend implementation
+  - Clock in/out buttons with real-time session tracking
+  - Active session indicator with animated card
+  - Two view modes: Entries (detailed) and Summary (daily overview)
+  - Date range filtering for both views
+  - CRUD operations: Edit and delete entries (disabled for active entries)
+  - Entry type badges (WORK, SICK, PTO, EVENT) with color coding
+  - Daily summary with status indicators (NO_ENTRY, BELOW_EXPECTED, MATCHED, ABOVE_EXPECTED)
+  - Notes support for work sessions
+  - Responsive PrimeVue DataTable layout
+  - Confirmation dialogs for delete operations
+- **i18n**: 60+ new German and English translations for time entries
+- **Navigation**: Added "Time Entries" item to "Time Tracking" submenu (now 6 items total)
+- **Manual Testing**: All features tested and verified working
+- **Fixed**: Critical Phase 8/9 frontend issues
+  - JWT authentication: main.ts now reads token directly from localStorage (was broken via getAccessToken())
+  - PrimeVue imports: Added missing component imports across all views (Button, DataTable, Calendar, Select, etc.)
+  - Date handling: Manual date formatting to prevent timezone shifts (Calendar Date objects → ISO strings)
+  - Database constraints: RecurringOffDaysView now cleans up pattern-specific fields before API calls
+  - Component naming: Changed Dropdown imports to Select (PrimeVue 4 component name)
+  - Headline visibility: Changed h1 color from var(--text-color) to explicit dark color (#1f2937)
+  - UX improvements: Redesigned filter sections with proper alignment and responsive layout
+  - Translation keys: Fixed raw key display in TimeEntriesView (filter, type.label)
+  - Date filters: Removed auto-triggering @date-select handlers, added explicit Filter button
+  - i18n formality: Changed all German translations from formal "Sie" to informal "du"
 
 ### Key Architecture Decisions
 - **Use-case driven architecture** (not controller/service/repository layers)

@@ -2,6 +2,15 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Calendar from 'primevue/calendar'
+import Dialog from 'primevue/dialog'
+import Select from 'primevue/select'
+import Textarea from 'primevue/textarea'
+import Tag from 'primevue/tag'
+import InputNumber from 'primevue/inputnumber'
 import { TimeOffService } from '@/api/generated'
 import type { TimeOffResponse, CreateTimeOffRequest, UpdateTimeOffRequest } from '@/api/generated'
 
@@ -32,14 +41,31 @@ const timeOffTypeOptions = [
 const loadTimeOffs = async () => {
   loading.value = true
   try {
-    const response = await TimeOffService.getTimeOff(startDateFilter.value, endDateFilter.value)
+    // Convert Date objects to strings if needed
+    const formatDateForApi = (date: any) => {
+      if (!date) return undefined
+      if (typeof date === 'string') return date
+      if (date instanceof Date) {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+      return undefined
+    }
+
+    const startDate = formatDateForApi(startDateFilter.value)
+    const endDate = formatDateForApi(endDateFilter.value)
+
+    const response = await TimeOffService.getTimeOff(startDate, endDate)
     timeOffs.value = response
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Failed to load time offs:', error)
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: t('timeOff.loadError'),
-      life: 3000
+      detail: error?.body?.message || t('timeOff.loadError'),
+      life: 5000
     })
   } finally {
     loading.value = false
@@ -48,7 +74,7 @@ const loadTimeOffs = async () => {
 
 const openCreateDialog = () => {
   editMode.value = false
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date()
   currentTimeOff.value = {
     timeOffType: 'VACATION',
     startDate: today,
@@ -72,10 +98,29 @@ const openEditDialog = (timeOff: TimeOffResponse) => {
 
 const saveTimeOff = async () => {
   try {
-    if (editMode.value && currentTimeOff.value.id) {
+    // Convert Date objects to ISO date strings (YYYY-MM-DD) without timezone shifts
+    const formatDate = (date: any) => {
+      if (!date) return undefined
+      if (typeof date === 'string') return date
+      if (date instanceof Date) {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+      return date
+    }
+
+    const requestData = {
+      ...currentTimeOff.value,
+      startDate: formatDate(currentTimeOff.value.startDate),
+      endDate: formatDate(currentTimeOff.value.endDate)
+    }
+
+    if (editMode.value && requestData.id) {
       await TimeOffService.updateTimeOff(
-        currentTimeOff.value.id,
-        currentTimeOff.value as UpdateTimeOffRequest
+        requestData.id,
+        requestData as UpdateTimeOffRequest
       )
       toast.add({
         severity: 'success',
@@ -85,7 +130,7 @@ const saveTimeOff = async () => {
       })
     } else {
       await TimeOffService.createTimeOff(
-        currentTimeOff.value as CreateTimeOffRequest
+        requestData as CreateTimeOffRequest
       )
       toast.add({
         severity: 'success',
@@ -96,12 +141,13 @@ const saveTimeOff = async () => {
     }
     dialogVisible.value = false
     await loadTimeOffs()
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Failed to save time off:', error)
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: editMode.value ? t('timeOff.updateError') : t('timeOff.createError'),
-      life: 3000
+      detail: error?.body?.message || (editMode.value ? t('timeOff.updateError') : t('timeOff.createError')),
+      life: 5000
     })
   }
 }
@@ -179,33 +225,31 @@ onMounted(() => {
       </div>
 
       <div class="filters mb-4">
-        <div class="p-fluid">
-          <div class="flex gap-3">
-            <div class="flex-1">
-              <label for="startDateFilter">{{ t('timeOff.startDate') }}</label>
-              <Calendar
-                id="startDateFilter"
-                v-model="startDateFilter"
-                date-format="yy-mm-dd"
-                @date-select="loadTimeOffs"
-              />
-            </div>
-            <div class="flex-1">
-              <label for="endDateFilter">{{ t('timeOff.endDate') }}</label>
-              <Calendar
-                id="endDateFilter"
-                v-model="endDateFilter"
-                date-format="yy-mm-dd"
-                @date-select="loadTimeOffs"
-              />
-            </div>
-            <div class="flex align-items-end">
-              <Button
-                :label="t('filter')"
-                icon="pi pi-filter"
-                @click="loadTimeOffs"
-              />
-            </div>
+        <div class="flex gap-3 align-items-end">
+          <div class="flex-1">
+            <label for="startDateFilter">{{ t('timeOff.startDate') }}</label>
+            <Calendar
+              id="startDateFilter"
+              v-model="startDateFilter"
+              date-format="yy-mm-dd"
+              show-icon
+            />
+          </div>
+          <div class="flex-1">
+            <label for="endDateFilter">{{ t('timeOff.endDate') }}</label>
+            <Calendar
+              id="endDateFilter"
+              v-model="endDateFilter"
+              date-format="yy-mm-dd"
+              show-icon
+            />
+          </div>
+          <div>
+            <Button
+              :label="t('filter')"
+              icon="pi pi-filter"
+              @click="loadTimeOffs"
+            />
           </div>
         </div>
       </div>
@@ -252,16 +296,22 @@ onMounted(() => {
         </Column>
         <Column :header="t('actions')">
           <template #body="{ data }">
-            <Button
-              icon="pi pi-pencil"
-              class="p-button-text p-button-sm"
-              @click="openEditDialog(data)"
-            />
-            <Button
-              icon="pi pi-trash"
-              class="p-button-text p-button-danger p-button-sm"
-              @click="confirmDelete(data)"
-            />
+            <div class="flex gap-2">
+              <Button
+                icon="pi pi-pencil"
+                text
+                rounded
+                severity="info"
+                @click="openEditDialog(data)"
+              />
+              <Button
+                icon="pi pi-trash"
+                text
+                rounded
+                severity="danger"
+                @click="confirmDelete(data)"
+              />
+            </div>
           </template>
         </Column>
       </DataTable>
@@ -378,6 +428,13 @@ onMounted(() => {
 <style scoped>
 .time-off-view {
   padding: 2rem;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
 }
 
 .filters label {
