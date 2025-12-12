@@ -131,7 +131,7 @@ onMounted(() => {
             class="w-auto"
           />
           <Button
-            v-if="balance && user?.role === 'ADMIN'"
+            v-if="balance"
             :label="t('edit')"
             icon="pi pi-pencil"
             @click="openEditDialog"
