@@ -2,6 +2,11 @@
   "nav": {
     "dashboard": "Dashboard",
     "profile": "Profil",
+    "timeTracking": "Zeiterfassung",
+    "timeOff": "Abwesenheiten",
+    "recurringOffDays": "Wiederkehrende Freitage",
+    "vacationBalance": "Urlaubskonto",
+    "publicHolidays": "Feiertage",
     "workingHours": "Arbeitszeiten",
     "adminUsers": "Benutzerverwaltung",
     "logout": "Abmelden"
@@ -70,5 +75,127 @@
   },
   "dashboard": {
     "welcome": "Willkommen, {name}!"
-  }
+  },
+  "publicHolidays": {
+    "title": "Gesetzliche Feiertage",
+    "year": "Jahr",
+    "state": "Bundesland",
+    "date": "Datum",
+    "name": "Feiertag",
+    "noData": "Keine Feiertage gefunden",
+    "loadError": "Fehler beim Laden der Feiertage"
+  },
+  "recurringOffDays": {
+    "title": "Wiederkehrende freie Tage",
+    "create": "Neuer freier Tag",
+    "edit": "Freien Tag bearbeiten",
+    "active": "Aktiv",
+    "pattern": {
+      "label": "Muster",
+      "EVERY_NTH_WEEK": "Alle N Wochen",
+      "NTH_WEEKDAY_OF_MONTH": "N-ter Wochentag im Monat"
+    },
+    "patternDesc": {
+      "everyNthWeek": "Alle {n} Wochen am {weekday}",
+      "nthWeekdayOfMonth": "{n}. {weekday} jeden Monats"
+    },
+    "weekday": "Wochentag",
+    "weekInterval": "Wochen-Intervall",
+    "referenceDate": "Referenzdatum",
+    "weekOfMonth": {
+      "label": "Woche im Monat",
+      "1": "Erste",
+      "2": "Zweite",
+      "3": "Dritte",
+      "4": "Vierte",
+      "5": "Fünfte"
+    },
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "description": "Beschreibung",
+    "noData": "Keine wiederkehrenden freien Tage konfiguriert",
+    "loadError": "Fehler beim Laden der freien Tage",
+    "createSuccess": "Freier Tag erfolgreich erstellt",
+    "createError": "Fehler beim Erstellen des freien Tags",
+    "updateSuccess": "Freier Tag erfolgreich aktualisiert",
+    "updateError": "Fehler beim Aktualisieren des freien Tags",
+    "deleteSuccess": "Freier Tag erfolgreich gelöscht",
+    "deleteError": "Fehler beim Löschen des freien Tags",
+    "deleteConfirm": "Möchten Sie diesen wiederkehrenden freien Tag wirklich löschen?"
+  },
+  "timeOff": {
+    "title": "Abwesenheiten",
+    "create": "Neue Abwesenheit",
+    "edit": "Abwesenheit bearbeiten",
+    "type": {
+      "label": "Typ",
+      "VACATION": "Urlaub",
+      "SICK": "Krank",
+      "PERSONAL": "Persönlich",
+      "PUBLIC_HOLIDAY": "Feiertag"
+    },
+    "startDate": "Von",
+    "endDate": "Bis",
+    "days": "Tage",
+    "hoursPerDay": "Stunden/Tag",
+    "hoursPerDayHint": "Optional: Überschreibt die Standard-Arbeitsstunden",
+    "notes": "Notizen",
+    "noData": "Keine Abwesenheiten im gewählten Zeitraum",
+    "loadError": "Fehler beim Laden der Abwesenheiten",
+    "createSuccess": "Abwesenheit erfolgreich erstellt",
+    "createError": "Fehler beim Erstellen der Abwesenheit",
+    "updateSuccess": "Abwesenheit erfolgreich aktualisiert",
+    "updateError": "Fehler beim Aktualisieren der Abwesenheit",
+    "deleteSuccess": "Abwesenheit erfolgreich gelöscht",
+    "deleteError": "Fehler beim Löschen der Abwesenheit",
+    "deleteConfirm": "Möchten Sie diese Abwesenheit wirklich löschen?"
+  },
+  "vacationBalance": {
+    "title": "Urlaubskonto",
+    "summary": "Übersicht",
+    "usage": "Verbrauch",
+    "edit": "Bearbeiten",
+    "annualAllowanceDays": "Jahresanspruch",
+    "carriedOverDays": "Übertrag Vorjahr",
+    "carriedOverDaysHint": "Urlaubstage aus dem Vorjahr",
+    "adjustmentDays": "Anpassungen",
+    "adjustmentDaysHint": "Manuelle Korrekturen (z.B. Bonus-Urlaubstage)",
+    "totalAvailable": "Gesamt verfügbar",
+    "usedDays": "Verbraucht",
+    "remainingDays": "Verbleibend",
+    "days": "Tage",
+    "used": "verbraucht",
+    "noData": "Kein Urlaubskonto für dieses Jahr vorhanden",
+    "noDataForYear": "Kein Urlaubskonto für das gewählte Jahr gefunden",
+    "loadError": "Fehler beim Laden des Urlaubskontos",
+    "updateSuccess": "Urlaubskonto erfolgreich aktualisiert",
+    "updateError": "Fehler beim Aktualisieren des Urlaubskontos",
+    "userInfo": "Nur Administratoren können das Urlaubskonto bearbeiten",
+    "usedDaysAutoCalculated": "Die verbrauchten Tage werden automatisch aus den Urlaubs-Abwesenheiten berechnet"
+  },
+  "weekday": {
+    "monday": "Montag",
+    "tuesday": "Dienstag",
+    "wednesday": "Mittwoch",
+    "thursday": "Donnerstag",
+    "friday": "Freitag",
+    "saturday": "Samstag",
+    "sunday": "Sonntag"
+  },
+  "state": {
+    "BERLIN": "Berlin",
+    "BRANDENBURG": "Brandenburg"
+  },
+  "actions": "Aktionen",
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "edit": "Bearbeiten",
+  "delete": "Löschen",
+  "confirm": "Bestätigen",
+  "yes": "Ja",
+  "no": "Nein",
+  "error": "Fehler",
+  "success": "Erfolg",
+  "info": "Information",
+  "filter": "Filtern"
 }

@@ -2,6 +2,11 @@
   "nav": {
     "dashboard": "Dashboard",
     "profile": "Profile",
+    "timeTracking": "Time Tracking",
+    "timeOff": "Time Off",
+    "recurringOffDays": "Recurring Off-Days",
+    "vacationBalance": "Vacation Balance",
+    "publicHolidays": "Public Holidays",
     "workingHours": "Working Hours",
     "adminUsers": "User Management",
     "logout": "Logout"
@@ -70,5 +75,127 @@
   },
   "dashboard": {
     "welcome": "Welcome, {name}!"
-  }
+  },
+  "publicHolidays": {
+    "title": "Public Holidays",
+    "year": "Year",
+    "state": "State",
+    "date": "Date",
+    "name": "Holiday",
+    "noData": "No public holidays found",
+    "loadError": "Error loading public holidays"
+  },
+  "recurringOffDays": {
+    "title": "Recurring Off-Days",
+    "create": "New Off-Day",
+    "edit": "Edit Off-Day",
+    "active": "Active",
+    "pattern": {
+      "label": "Pattern",
+      "EVERY_NTH_WEEK": "Every Nth Week",
+      "NTH_WEEKDAY_OF_MONTH": "Nth Weekday of Month"
+    },
+    "patternDesc": {
+      "everyNthWeek": "Every {n} weeks on {weekday}",
+      "nthWeekdayOfMonth": "{n} {weekday} of every month"
+    },
+    "weekday": "Weekday",
+    "weekInterval": "Week Interval",
+    "referenceDate": "Reference Date",
+    "weekOfMonth": {
+      "label": "Week of Month",
+      "1": "First",
+      "2": "Second",
+      "3": "Third",
+      "4": "Fourth",
+      "5": "Fifth"
+    },
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "description": "Description",
+    "noData": "No recurring off-days configured",
+    "loadError": "Error loading off-days",
+    "createSuccess": "Off-day created successfully",
+    "createError": "Error creating off-day",
+    "updateSuccess": "Off-day updated successfully",
+    "updateError": "Error updating off-day",
+    "deleteSuccess": "Off-day deleted successfully",
+    "deleteError": "Error deleting off-day",
+    "deleteConfirm": "Do you really want to delete this recurring off-day?"
+  },
+  "timeOff": {
+    "title": "Time Off",
+    "create": "New Time Off",
+    "edit": "Edit Time Off",
+    "type": {
+      "label": "Type",
+      "VACATION": "Vacation",
+      "SICK": "Sick",
+      "PERSONAL": "Personal",
+      "PUBLIC_HOLIDAY": "Public Holiday"
+    },
+    "startDate": "From",
+    "endDate": "To",
+    "days": "Days",
+    "hoursPerDay": "Hours/Day",
+    "hoursPerDayHint": "Optional: Overrides default working hours",
+    "notes": "Notes",
+    "noData": "No time off entries in selected period",
+    "loadError": "Error loading time off entries",
+    "createSuccess": "Time off created successfully",
+    "createError": "Error creating time off",
+    "updateSuccess": "Time off updated successfully",
+    "updateError": "Error updating time off",
+    "deleteSuccess": "Time off deleted successfully",
+    "deleteError": "Error deleting time off",
+    "deleteConfirm": "Do you really want to delete this time off entry?"
+  },
+  "vacationBalance": {
+    "title": "Vacation Balance",
+    "summary": "Summary",
+    "usage": "Usage",
+    "edit": "Edit",
+    "annualAllowanceDays": "Annual Allowance",
+    "carriedOverDays": "Carried Over",
+    "carriedOverDaysHint": "Vacation days from previous year",
+    "adjustmentDays": "Adjustments",
+    "adjustmentDaysHint": "Manual corrections (e.g., bonus vacation days)",
+    "totalAvailable": "Total Available",
+    "usedDays": "Used",
+    "remainingDays": "Remaining",
+    "days": "days",
+    "used": "used",
+    "noData": "No vacation balance for this year",
+    "noDataForYear": "No vacation balance found for selected year",
+    "loadError": "Error loading vacation balance",
+    "updateSuccess": "Vacation balance updated successfully",
+    "updateError": "Error updating vacation balance",
+    "userInfo": "Only administrators can edit the vacation balance",
+    "usedDaysAutoCalculated": "Used days are automatically calculated from vacation time-off entries"
+  },
+  "weekday": {
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday"
+  },
+  "state": {
+    "BERLIN": "Berlin",
+    "BRANDENBURG": "Brandenburg"
+  },
+  "actions": "Actions",
+  "save": "Save",
+  "cancel": "Cancel",
+  "edit": "Edit",
+  "delete": "Delete",
+  "confirm": "Confirm",
+  "yes": "Yes",
+  "no": "No",
+  "error": "Error",
+  "success": "Success",
+  "info": "Information",
+  "filter": "Filter"
 }

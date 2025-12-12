@@ -157,7 +157,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - User-owned data with proper authorization checks
 - German error messages for all validation failures
 
-## Implementation Status
+## [Unreleased] - 2025-12-12 (Phase 8)
+
+### Added - Advanced Time Tracking Frontend
+
+#### New Views
+- **PublicHolidaysView** - Display German public holidays by year and state
+  - Year and state selection filters
+  - Formatted date display with weekday names
+  - German localization
+- **RecurringOffDaysView** - Complete CRUD for recurring off-day patterns
+  - Create/Edit/Delete recurring patterns
+  - Support for EVERY_NTH_WEEK pattern (e.g., every 4 weeks)
+  - Support for NTH_WEEKDAY_OF_MONTH pattern (e.g., 4th Monday)
+  - Active/inactive toggle
+  - Start/End date configuration
+- **TimeOffView** - Time-off entry management
+  - Create/Edit/Delete time-off entries
+  - Four types: VACATION, SICK, PERSONAL, PUBLIC_HOLIDAY
+  - Date range filtering (default: current year)
+  - Optional hours-per-day override
+  - Automatic days calculation
+  - Color-coded type badges
+- **VacationBalanceView** - Vacation balance dashboard
+  - Year selector
+  - Summary card with allowance breakdown
+  - Visual progress indicator (Knob component)
+  - Admin-only editing capability
+  - Automatic remaining days calculation
+
+#### Navigation & UX
+- Added "Time Tracking" submenu in navigation with 4 items
+- Integrated new routes in Vue Router
+- Responsive PrimeVue DataTable layouts
+- Toast notifications for all CRUD operations
+- Confirmation dialogs for delete operations
+
+#### Internationalization
+- Added 150+ German translations
+- Added 150+ English translations
+- Complete translation coverage for:
+  - Navigation menu items
+  - Form labels and hints
+  - Validation messages
+  - Success/error notifications
+  - Weekday and state enumerations
+
+#### API Integration
+- Configured OpenAPI client to use authentication tokens
+- Token-based authorization for all new endpoints
+- Automatic token injection via OpenAPI.TOKEN resolver
+- Error handling with toast notifications
+
+#### Technical Improvements
+- Generated TypeScript API client from OpenAPI spec
+- Type-safe service calls for all new endpoints
+- Consistent error handling across all views
+- Reusable components (DataTable, Dialog, Calendar, etc.)
+
+### Frontend Views Summary
+1. **Dashboard** - Welcome screen
+2. **Profile** - User profile management
+3. **Working Hours** - Weekly hours configuration with time inputs
+4. **Time Off** - Absence tracking with filtering
+5. **Recurring Off-Days** - Recurring pattern management
+6. **Vacation Balance** - Holiday allowance overview
+7. **Public Holidays** - State-specific German holidays
+8. **Admin Users** - User management (admin only)
+
+### Implementation Status
 
 - ✅ Phase 1: Foundation
 - ✅ Phase 2: Domain & Persistence
@@ -166,9 +234,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Phase 5: Working Hours
 - ✅ Phase 6: Vue.js Frontend (Basic)
 - ✅ Phase 7: Advanced Time Tracking (Backend Complete)
-- ⏳ Phase 8: Advanced Time Tracking (Frontend)
+- ✅ Phase 8: Advanced Time Tracking (Frontend Complete)
 - ⏳ Phase 9: Statistics & Reports
 - ⏳ Phase 10: Polish & Deploy
+
+---
+
+## Development History
+
+### Phase 1: Foundation (2025-12-10)
+- Initialized Spring Boot 4 + Java 25 + PostgreSQL 17 project
+- Set up OpenAPI-first architecture with code generation
+- Created Flyway migrations and use-case driven package structure
+- Configured Docker Compose for development
+- **Tests**: Repository integration tests with Testcontainers
+
+### Phase 2: Domain & Persistence (2025-12-10)
+- Implemented domain entities: User, TimeEntry, WorkingHours, RefreshToken
+- Created JPA repositories with custom queries
+- **Tests**: 37 integration tests passing
+
+### Phase 3: Authentication & Security (2025-12-10)
+- JWT authentication with access + refresh tokens (HS384)
+- Spring Security configuration with stateless sessions
+- Login/Logout/Refresh use cases
+- BCrypt password encoding
+- **Tests**: All auth endpoints verified
+
+### Phase 4: User Management (2025-12-10)
+- Complete CRUD for users with role-based access control (ADMIN, USER)
+- Admin can create/edit/delete users
+- Users can edit own profile
+- Automatic working hours initialization on user creation
+- German error messages via GlobalExceptionHandler
+- **Tests**: 16 user management integration tests
+
+### Phase 5: Working Hours (2025-12-11)
+- Per-weekday working hours configuration
+- Optional start/end times with automatic hours calculation
+- Support for part-time and flexible schedules
+- Comprehensive validation (exactly 7 days, no duplicates, valid ranges)
+- **Tests**: 16 working hours integration tests
+
+### Phase 6: Vue.js Frontend - Basic (2025-12-11)
+- Vue 3 + TypeScript + Vite setup
+- PrimeVue 4 UI components with Aura theme
+- JWT Authorization header authentication with Axios interceptors
+- Automatic token refresh on 401
+- German + English i18n (vue-i18n)
+- Views: Login, Dashboard, Profile, Working Hours, Admin Users
+- Vue Router with navigation guards
+- **Monorepo**: Moved backend to `/backend`, OpenAPI spec to root
+
+### Phase 7: Advanced Time Tracking - Backend (2025-12-12)
+- **Recurring Off-Days**: Two pattern types (EVERY_NTH_WEEK, NTH_WEEKDAY_OF_MONTH)
+- **Time-Off Tracking**: Four types (VACATION, SICK, PERSONAL, PUBLIC_HOLIDAY)
+- **Vacation Balance**: Days-based tracking with automatic calculations
+- **Public Holidays**: German holidays calculator (Berlin & Brandenburg)
+- **Database**: 4 new tables (recurring_off_days, time_off, vacation_balance, users.state)
+- **Tests**: 99 integration tests passing (37 new tests)
+- Centralized test fixtures in RepositoryTestBase
+
+### Phase 8: Advanced Time Tracking - Frontend (2025-12-12)
+- **Public Holidays View**: Year/state filters, formatted dates
+- **Recurring Off-Days View**: Full CRUD with dynamic pattern forms
+- **Time-Off View**: CRUD with date filtering, automatic days calculation
+- **Vacation Balance View**: Dashboard with progress indicator, admin editing
+- **Navigation**: Added "Time Tracking" submenu with 4 items
+- **i18n**: 150+ German and 150+ English translations
+- **API Integration**: Configured OpenAPI client with automatic token injection
+- **Tests**: Manual testing of all views completed
+
+### Key Architecture Decisions
+- **Use-case driven architecture** (not controller/service/repository layers)
+- **OpenAPI-first design**: Single spec generates both backend interfaces and frontend TypeScript client
+- **Integration testing**: Every use case requires integration test with Testcontainers
+- **No frontend state management**: Simple composables over Pinia/Vuex
+- **Token storage**: localStorage for persistence (XSS risk acknowledged)
+- **Vacation tracking**: Days not hours for simplicity
+- **Priority system**: time_off > recurring_off_days > working_hours
+
+### Testing Infrastructure
+- **Pattern**: Shared singleton PostgreSQL 17 container (Testcontainers)
+- **Migrations**: Flyway runs automatically on container start
+- **Base Class**: RepositoryTestBase with @Transactional rollback per test
+- **Fixtures**: Centralized test data creation methods
+- **Coverage**: 99 backend integration tests, manual frontend testing
+
+---
 
 [Unreleased]: https://github.com/username/timetrack/compare/v0.0.1...HEAD
 [0.0.1]: https://github.com/username/timetrack/releases/tag/v0.0.1

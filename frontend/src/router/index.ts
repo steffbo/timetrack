@@ -31,6 +31,26 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/WorkingHoursView.vue')
       },
       {
+        path: 'time-off',
+        name: 'time-off',
+        component: () => import('@/views/TimeOffView.vue')
+      },
+      {
+        path: 'recurring-off-days',
+        name: 'recurring-off-days',
+        component: () => import('@/views/RecurringOffDaysView.vue')
+      },
+      {
+        path: 'vacation-balance',
+        name: 'vacation-balance',
+        component: () => import('@/views/VacationBalanceView.vue')
+      },
+      {
+        path: 'public-holidays',
+        name: 'public-holidays',
+        component: () => import('@/views/PublicHolidaysView.vue')
+      },
+      {
         path: 'admin/users',
         name: 'admin-users',
         component: () => import('@/views/AdminUsersView.vue'),

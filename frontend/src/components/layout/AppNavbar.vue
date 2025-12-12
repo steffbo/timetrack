@@ -40,6 +40,32 @@ const menuItems = computed<MenuItem[]>(() => {
       command: () => router.push('/profile')
     },
     {
+      label: t('nav.timeTracking'),
+      icon: 'pi pi-calendar',
+      items: [
+        {
+          label: t('nav.timeOff'),
+          icon: 'pi pi-calendar-times',
+          command: () => router.push('/time-off')
+        },
+        {
+          label: t('nav.recurringOffDays'),
+          icon: 'pi pi-refresh',
+          command: () => router.push('/recurring-off-days')
+        },
+        {
+          label: t('nav.vacationBalance'),
+          icon: 'pi pi-chart-bar',
+          command: () => router.push('/vacation-balance')
+        },
+        {
+          label: t('nav.publicHolidays'),
+          icon: 'pi pi-sun',
+          command: () => router.push('/public-holidays')
+        }
+      ]
+    },
+    {
       label: t('nav.workingHours'),
       icon: 'pi pi-clock',
       command: () => router.push('/working-hours')
