@@ -5,8 +5,10 @@ import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.api.model.CreateTimeOffRequest;
 import cc.remer.timetrack.api.model.TimeOffResponse;
 import cc.remer.timetrack.domain.timeoff.TimeOff;
+import cc.remer.timetrack.domain.timeoff.TimeOffType;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.exception.UserNotFoundException;
+import cc.remer.timetrack.usecase.vacationbalance.VacationBalanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ public class CreateTimeOff {
     private final TimeOffRepository timeOffRepository;
     private final UserRepository userRepository;
     private final TimeOffMapper mapper;
+    private final VacationBalanceService vacationBalanceService;
 
     /**
      * Execute the use case to create a time-off entry.
@@ -53,6 +56,18 @@ public class CreateTimeOff {
         // Save
         TimeOff saved = timeOffRepository.save(entity);
         log.info("Created time-off entry with ID: {}", saved.getId());
+
+        // Recalculate vacation balance if this is a vacation entry
+        if (saved.getTimeOffType() == TimeOffType.VACATION) {
+            int year = saved.getStartDate().getYear();
+            vacationBalanceService.recalculateVacationBalance(userId, year);
+
+            // If entry spans multiple years, recalculate for end year too
+            int endYear = saved.getEndDate().getYear();
+            if (endYear != year) {
+                vacationBalanceService.recalculateVacationBalance(userId, endYear);
+            }
+        }
 
         return mapper.toResponse(saved);
     }

@@ -22,11 +22,13 @@ public class GetVacationBalance {
     private final VacationBalanceRepository vacationBalanceRepository;
     private final UserRepository userRepository;
     private final VacationBalanceMapper mapper;
+    private final VacationBalanceService vacationBalanceService;
 
     private static final BigDecimal DEFAULT_ANNUAL_ALLOWANCE_DAYS = new BigDecimal("30.0");
 
     /**
      * Execute the use case to get vacation balance.
+     * Always recalculates used days from time-off entries to ensure accuracy.
      *
      * @param userId the user ID
      * @param year the year (if null, uses current year)
@@ -36,8 +38,17 @@ public class GetVacationBalance {
         int targetYear = year != null ? year : java.time.Year.now().getValue();
         log.info("Getting vacation balance for user ID: {} and year: {}", userId, targetYear);
 
+        // Get or create balance
         VacationBalance balance = vacationBalanceRepository.findByUserIdAndYear(userId, targetYear)
                 .orElseGet(() -> createDefaultBalance(userId, targetYear));
+
+        // Always recalculate used days from time-off entries to ensure accuracy
+        // This handles both new and historical vacation entries
+        vacationBalanceService.recalculateVacationBalance(userId, targetYear);
+
+        // Reload the balance after recalculation
+        balance = vacationBalanceRepository.findByUserIdAndYear(userId, targetYear)
+                .orElseThrow(() -> new IllegalStateException("Balance should exist after recalculation"));
 
         return mapper.toResponse(balance);
     }

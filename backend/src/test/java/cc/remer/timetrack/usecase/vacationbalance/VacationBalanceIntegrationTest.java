@@ -3,12 +3,16 @@ package cc.remer.timetrack.usecase.vacationbalance;
 import cc.remer.timetrack.adapter.persistence.RepositoryTestBase;
 import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.adapter.persistence.VacationBalanceRepository;
+import cc.remer.timetrack.api.model.CreateTimeOffRequest;
+import cc.remer.timetrack.api.model.TimeOffResponse;
 import cc.remer.timetrack.api.model.UpdateVacationBalanceRequest;
 import cc.remer.timetrack.api.model.VacationBalanceResponse;
 import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.vacationbalance.VacationBalance;
+import cc.remer.timetrack.usecase.timeoff.CreateTimeOff;
+import cc.remer.timetrack.usecase.timeoff.DeleteTimeOff;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.Year;
 
 import static org.assertj.core.api.Assertions.*;
@@ -32,10 +37,17 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
     @Autowired
     private UpdateVacationBalance updateVacationBalance;
 
+    @Autowired
+    private CreateTimeOff createTimeOff;
+
+    @Autowired
+    private DeleteTimeOff deleteTimeOff;
+
     private User testUser;
 
     @BeforeEach
     void setUp() {
+        timeOffRepository.deleteAll();
         vacationBalanceRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -47,7 +59,20 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
     void shouldGetVacationBalanceForCurrentYear() {
         // Arrange
         int currentYear = Year.now().getValue();
-        createVacationBalance(testUser, currentYear, 30.0, 5.0, 2.0, 12.0);
+        createVacationBalance(testUser, currentYear, 30.0, 5.0, 2.0, 0.0);
+
+        // Create vacation time-off entries totaling 12 days
+        CreateTimeOffRequest vacation1 = new CreateTimeOffRequest();
+        vacation1.setStartDate(LocalDate.of(currentYear, 3, 10));
+        vacation1.setEndDate(LocalDate.of(currentYear, 3, 14)); // 5 days
+        vacation1.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), vacation1);
+
+        CreateTimeOffRequest vacation2 = new CreateTimeOffRequest();
+        vacation2.setStartDate(LocalDate.of(currentYear, 7, 1));
+        vacation2.setEndDate(LocalDate.of(currentYear, 7, 7)); // 7 days
+        vacation2.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), vacation2);
 
         // Act
         VacationBalanceResponse response = getVacationBalance.execute(testUser.getId(), null);
@@ -59,7 +84,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         assertThat(response.getAnnualAllowanceDays()).isEqualTo(30.0);
         assertThat(response.getCarriedOverDays()).isEqualTo(5.0);
         assertThat(response.getAdjustmentDays()).isEqualTo(2.0);
-        assertThat(response.getUsedDays()).isEqualTo(12.0);
+        assertThat(response.getUsedDays()).isEqualTo(12.0); // 5 + 7 = 12
         assertThat(response.getRemainingDays()).isEqualTo(25.0); // 30 + 5 + 2 - 12 = 25
     }
 
@@ -78,12 +103,17 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
     }
 
     @Test
-    @DisplayName("Should fail to get non-existent balance")
-    void shouldFailToGetNonExistentBalance() {
-        // Act & Assert
-        assertThatThrownBy(() -> getVacationBalance.execute(testUser.getId(), 2024))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Urlaubssaldo für Jahr 2024 nicht gefunden");
+    @DisplayName("Should auto-create vacation balance if not exists")
+    void shouldAutoCreateVacationBalanceIfNotExists() {
+        // Act - Request balance for 2024 which doesn't exist yet
+        VacationBalanceResponse response = getVacationBalance.execute(testUser.getId(), 2024);
+
+        // Assert - Should create a new balance with defaults
+        assertThat(response).isNotNull();
+        assertThat(response.getYear()).isEqualTo(2024);
+        assertThat(response.getAnnualAllowanceDays()).isEqualTo(30.0);
+        assertThat(response.getUsedDays()).isEqualTo(0.0);
+        assertThat(response.getRemainingDays()).isEqualTo(30.0);
     }
 
     @Test
@@ -204,6 +234,119 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Assert - 30 + 0 + (-5) - 0 = 25
         assertThat(response.getAdjustmentDays()).isEqualTo(-5.0);
         assertThat(response.getRemainingDays()).isEqualTo(25.0);
+    }
+
+    @Test
+    @DisplayName("Should automatically update vacation balance when creating vacation time-off")
+    void shouldAutoUpdateVacationBalanceWhenCreatingVacation() {
+        // Arrange - Create vacation balance for 2025
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create a 5-day vacation (Jan 6-10, 2025)
+        CreateTimeOffRequest request = new CreateTimeOffRequest();
+        request.setStartDate(LocalDate.of(2025, 1, 6));
+        request.setEndDate(LocalDate.of(2025, 1, 10));
+        request.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+
+        // Act
+        createTimeOff.execute(testUser.getId(), request);
+
+        // Assert - Vacation balance should be updated
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balance.getUsedDays()).isEqualTo(5.0); // 5 days used
+        assertThat(balance.getRemainingDays()).isEqualTo(25.0); // 30 - 5 = 25
+    }
+
+    @Test
+    @DisplayName("Should automatically update vacation balance when deleting vacation time-off")
+    void shouldAutoUpdateVacationBalanceWhenDeletingVacation() {
+        // Arrange - Create vacation balance and time-off
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        CreateTimeOffRequest request = new CreateTimeOffRequest();
+        request.setStartDate(LocalDate.of(2025, 1, 6));
+        request.setEndDate(LocalDate.of(2025, 1, 10));
+        request.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+
+        TimeOffResponse timeOff = createTimeOff.execute(testUser.getId(), request);
+
+        // Verify vacation was deducted
+        VacationBalanceResponse balanceAfterCreate = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balanceAfterCreate.getUsedDays()).isEqualTo(5.0);
+
+        // Act - Delete the time-off
+        deleteTimeOff.execute(testUser.getId(), timeOff.getId());
+
+        // Assert - Vacation balance should be restored
+        VacationBalanceResponse balanceAfterDelete = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balanceAfterDelete.getUsedDays()).isEqualTo(0.0);
+        assertThat(balanceAfterDelete.getRemainingDays()).isEqualTo(30.0);
+    }
+
+    @Test
+    @DisplayName("Should handle multiple vacation entries in the same year")
+    void shouldHandleMultipleVacationEntriesInSameYear() {
+        // Arrange - Create vacation balance for 2025
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create first vacation (3 days)
+        CreateTimeOffRequest request1 = new CreateTimeOffRequest();
+        request1.setStartDate(LocalDate.of(2025, 3, 10));
+        request1.setEndDate(LocalDate.of(2025, 3, 12));
+        request1.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), request1);
+
+        // Create second vacation (5 days)
+        CreateTimeOffRequest request2 = new CreateTimeOffRequest();
+        request2.setStartDate(LocalDate.of(2025, 7, 1));
+        request2.setEndDate(LocalDate.of(2025, 7, 5));
+        request2.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), request2);
+
+        // Assert - Total used days should be 8
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balance.getUsedDays()).isEqualTo(8.0); // 3 + 5 = 8
+        assertThat(balance.getRemainingDays()).isEqualTo(22.0); // 30 - 8 = 22
+    }
+
+    @Test
+    @DisplayName("Should not update vacation balance for non-vacation time-off types")
+    void shouldNotUpdateVacationBalanceForNonVacationTypes() {
+        // Arrange - Create vacation balance for 2025
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create sick leave (should not affect vacation balance)
+        CreateTimeOffRequest request = new CreateTimeOffRequest();
+        request.setStartDate(LocalDate.of(2025, 2, 10));
+        request.setEndDate(LocalDate.of(2025, 2, 14));
+        request.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.SICK);
+        createTimeOff.execute(testUser.getId(), request);
+
+        // Assert - Vacation balance should remain unchanged
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balance.getUsedDays()).isEqualTo(0.0);
+        assertThat(balance.getRemainingDays()).isEqualTo(30.0);
+    }
+
+    @Test
+    @DisplayName("Should create vacation balance automatically if not exists when creating vacation")
+    void shouldCreateVacationBalanceIfNotExistsWhenCreatingVacation() {
+        // Arrange - No vacation balance exists yet for 2025
+        // Create a vacation
+        CreateTimeOffRequest request = new CreateTimeOffRequest();
+        request.setStartDate(LocalDate.of(2025, 6, 1));
+        request.setEndDate(LocalDate.of(2025, 6, 7));
+        request.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+
+        // Act
+        createTimeOff.execute(testUser.getId(), request);
+
+        // Assert - Vacation balance should be created with default 30 days and 7 days used
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balance).isNotNull();
+        assertThat(balance.getAnnualAllowanceDays()).isEqualTo(30.0);
+        assertThat(balance.getUsedDays()).isEqualTo(7.0);
+        assertThat(balance.getRemainingDays()).isEqualTo(23.0); // 30 - 7 = 23
     }
 
 }
