@@ -75,7 +75,59 @@
     "close": "Schließen"
   },
   "dashboard": {
-    "welcome": "Willkommen, {name}!"
+    "welcome": "Willkommen, {name}!",
+    "loadError": "Fehler beim Laden der Dashboard-Daten",
+    "calendar": {
+      "title": "Zeiterfassungs-Übersicht",
+      "previousMonth": "Vorheriger Monat",
+      "nextMonth": "Nächster Monat",
+      "today": "Heute",
+      "noEntries": "Keine Einträge für diesen Tag",
+      "timeEntries": "Zeiteinträge",
+      "timeOff": "Abwesenheit",
+      "recurringOffDays": "Wiederkehrende freie Tage",
+      "recurringOffDay": "Freier Tag",
+      "active": "Aktiv",
+      "weekdays": {
+        "0": "Mo",
+        "1": "Di",
+        "2": "Mi",
+        "3": "Do",
+        "4": "Fr",
+        "5": "Sa",
+        "6": "So"
+      },
+      "monthNames": {
+        "0": "Januar",
+        "1": "Februar",
+        "2": "März",
+        "3": "April",
+        "4": "Mai",
+        "5": "Juni",
+        "6": "Juli",
+        "7": "August",
+        "8": "September",
+        "9": "Oktober",
+        "10": "November",
+        "11": "Dezember"
+      }
+    },
+    "statistics": {
+      "title": "Statistiken",
+      "comingSoon": "Statistiken und Berichte folgen in Kürze..."
+    },
+    "entryTypes": {
+      "WORK": "Arbeit",
+      "SICK": "Krank",
+      "PTO": "Urlaub",
+      "EVENT": "Ereignis"
+    },
+    "status": {
+      "MATCHED": "Ziel erreicht",
+      "ABOVE_EXPECTED": "Über Ziel",
+      "BELOW_EXPECTED": "Unter Ziel",
+      "NO_ENTRY": "Kein Eintrag"
+    }
   },
   "publicHolidays": {
     "title": "Gesetzliche Feiertage",
