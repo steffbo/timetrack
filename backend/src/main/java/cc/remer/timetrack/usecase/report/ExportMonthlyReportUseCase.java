@@ -195,6 +195,11 @@ public class ExportMonthlyReportUseCase {
                 .map(java.time.LocalDateTime::toLocalTime)
                 .orElse(null);
 
+        // Calculate total break minutes for the day
+        int totalBreakMinutes = entries.stream()
+                .mapToInt(entry -> entry.getBreakMinutes() != null ? entry.getBreakMinutes() : 0)
+                .sum();
+
         // Check if any entry is still active (not clocked out)
         boolean hasActiveEntry = entries.stream().anyMatch(TimeEntry::isActive);
 
@@ -211,7 +216,7 @@ public class ExportMonthlyReportUseCase {
                     .map(java.time.LocalDateTime::toLocalTime)
                     .orElse(null);
 
-            // Calculate total hours
+            // Calculate total hours (already excludes breaks due to getHoursWorked() implementation)
             totalHours = entries.stream()
                     .map(TimeEntry::getHoursWorked)
                     .filter(Objects::nonNull)
@@ -226,7 +231,7 @@ public class ExportMonthlyReportUseCase {
                 .date(date)
                 .startTime(startTime)
                 .endTime(endTime)
-                .breakMinutes(0) // Hardcoded to 0 for now
+                .breakMinutes(totalBreakMinutes)
                 .totalHours(totalHours)
                 .expectedHours(expectedHours)
                 .overtime(overtime)

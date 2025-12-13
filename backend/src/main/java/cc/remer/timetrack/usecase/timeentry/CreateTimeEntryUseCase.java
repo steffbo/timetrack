@@ -28,6 +28,7 @@ public class CreateTimeEntryUseCase {
      * @param user the authenticated user
      * @param clockIn the clock in time
      * @param clockOut the clock out time
+     * @param breakMinutes break duration in minutes
      * @param entryType the type of entry
      * @param notes optional notes for this entry
      * @return the created time entry
@@ -35,7 +36,7 @@ public class CreateTimeEntryUseCase {
      */
     @Transactional
     public TimeEntry execute(User user, LocalDateTime clockIn, LocalDateTime clockOut,
-                            EntryType entryType, String notes) {
+                            Integer breakMinutes, EntryType entryType, String notes) {
         log.debug("Creating manual time entry for user: {}", user.getId());
 
         // Validate times
@@ -62,6 +63,7 @@ public class CreateTimeEntryUseCase {
                 .entryDate(clockIn.toLocalDate())
                 .clockIn(clockIn)
                 .clockOut(clockOut)
+                .breakMinutes(breakMinutes != null ? breakMinutes : 0)
                 .entryType(entryType)
                 .notes(notes)
                 .build();

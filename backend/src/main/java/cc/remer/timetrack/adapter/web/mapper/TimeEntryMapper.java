@@ -55,6 +55,7 @@ public class TimeEntryMapper {
         response.setEntryDate(entry.getEntryDate());
         response.setClockIn(toOffsetDateTime(entry.getClockIn()));
         response.setClockOut(toOffsetDateTime(entry.getClockOut()));
+        response.setBreakMinutes(entry.getBreakMinutes());
         response.setEntryType(TimeEntryResponse.EntryTypeEnum.fromValue(entry.getEntryType().name()));
         response.setHoursWorked(entry.getHoursWorked());
         response.setIsActive(entry.isActive());

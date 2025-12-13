@@ -44,6 +44,10 @@ public class TimeEntry {
     @Column(name = "clock_out")
     private LocalDateTime clockOut;
 
+    @Column(name = "break_minutes", nullable = false)
+    @Builder.Default
+    private Integer breakMinutes = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "entry_type", nullable = false, length = 20)
     @Builder.Default
@@ -82,16 +86,18 @@ public class TimeEntry {
     }
 
     /**
-     * Get the duration in hours as a decimal value.
+     * Get the duration in hours as a decimal value (excluding breaks).
      *
-     * @return hours worked, or null if not clocked out yet
+     * @return hours worked minus break time, or null if not clocked out yet
      */
     public Double getHoursWorked() {
         Duration duration = getDuration();
         if (duration == null) {
             return null;
         }
-        return duration.toMinutes() / 60.0;
+        double totalMinutes = duration.toMinutes();
+        double workMinutes = totalMinutes - (breakMinutes != null ? breakMinutes : 0);
+        return workMinutes / 60.0;
     }
 
     /**

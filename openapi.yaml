@@ -1601,6 +1601,11 @@ components:
           format: date-time
           description: Clock out timestamp (null if still active)
           example: "2025-12-12T17:00:00"
+        breakMinutes:
+          type: integer
+          description: Break duration in minutes
+          default: 0
+          example: 30
         entryType:
           type: string
           enum: [WORK, SICK, PTO, EVENT]
@@ -1640,6 +1645,11 @@ components:
           type: string
           format: date-time
           description: Clock out timestamp
+        breakMinutes:
+          type: integer
+          description: Break duration in minutes
+          default: 0
+          example: 30
         entryType:
           type: string
           enum: [WORK, SICK, PTO, EVENT]
@@ -1661,6 +1671,11 @@ components:
           type: string
           format: date-time
           description: Clock out timestamp
+        breakMinutes:
+          type: integer
+          description: Break duration in minutes
+          default: 0
+          example: 30
         entryType:
           type: string
           enum: [WORK, SICK, PTO, EVENT]

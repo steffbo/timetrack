@@ -10,6 +10,7 @@ import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
+import InputNumber from 'primevue/inputnumber'
 import { TimeEntriesService, OpenAPI } from '@/api/generated'
 import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, DailySummaryResponse } from '@/api/generated'
 
@@ -29,7 +30,8 @@ const clockOutNotes = ref('')
 const activeEntry = ref<TimeEntryResponse | null>(null)
 const currentTimeEntry = ref<Partial<UpdateTimeEntryRequest>>({})
 const newManualEntry = ref<Partial<CreateTimeEntryRequest>>({
-  entryType: 'WORK' as any
+  entryType: 'WORK' as any,
+  breakMinutes: 0
 })
 const timeEntryToDelete = ref<TimeEntryResponse | null>(null)
 
@@ -156,6 +158,7 @@ const openManualEntryDialog = () => {
     clockIn: new Date() as any,
     clockOut: new Date() as any,
     entryType: 'WORK' as any,
+    breakMinutes: 0,
     notes: ''
   }
   manualEntryDialogVisible.value = true
@@ -170,6 +173,7 @@ const createManualEntry = async () => {
       clockOut: newManualEntry.value.clockOut instanceof Date
         ? newManualEntry.value.clockOut.toISOString()
         : newManualEntry.value.clockOut as string,
+      breakMinutes: newManualEntry.value.breakMinutes || 0,
       entryType: newManualEntry.value.entryType!,
       notes: newManualEntry.value.notes
     }
@@ -202,6 +206,7 @@ const openEditDialog = (entry: TimeEntryResponse) => {
   currentTimeEntry.value = {
     clockIn: new Date(entry.clockIn) as any,
     clockOut: entry.clockOut ? new Date(entry.clockOut) as any : undefined,
+    breakMinutes: entry.breakMinutes || 0,
     entryType: entry.entryType,
     notes: entry.notes
   }
@@ -220,6 +225,7 @@ const saveTimeEntry = async () => {
         clockOut: currentTimeEntry.value.clockOut instanceof Date
           ? currentTimeEntry.value.clockOut.toISOString()
           : currentTimeEntry.value.clockOut as string | undefined,
+        breakMinutes: currentTimeEntry.value.breakMinutes || 0,
         entryType: currentTimeEntry.value.entryType!,
         notes: currentTimeEntry.value.notes
       }
@@ -534,6 +540,11 @@ onMounted(() => {
             {{ formatDateTime(data.clockOut) }}
           </template>
         </Column>
+        <Column field="breakMinutes" :header="t('timeEntries.breakMinutes')">
+          <template #body="{ data }">
+            {{ data.breakMinutes || 0 }} min
+          </template>
+        </Column>
         <Column field="hoursWorked" :header="t('timeEntries.hoursWorked')">
           <template #body="{ data }">
             {{ formatHours(data.hoursWorked) }}
@@ -698,6 +709,17 @@ onMounted(() => {
         />
       </div>
       <div class="field">
+        <label for="manualBreakMinutes">{{ t('timeEntries.breakMinutes') }}</label>
+        <InputNumber
+          id="manualBreakMinutes"
+          v-model="newManualEntry.breakMinutes"
+          :min="0"
+          :max="480"
+          suffix=" min"
+          class="w-full"
+        />
+      </div>
+      <div class="field">
         <label for="manualEntryType">{{ t('timeEntries.type.label') }}</label>
         <Dropdown
           id="manualEntryType"
@@ -749,6 +771,17 @@ onMounted(() => {
           show-time
           hour-format="24"
           date-format="yy-mm-dd"
+          class="w-full"
+        />
+      </div>
+      <div class="field">
+        <label for="editBreakMinutes">{{ t('timeEntries.breakMinutes') }}</label>
+        <InputNumber
+          id="editBreakMinutes"
+          v-model="currentTimeEntry.breakMinutes"
+          :min="0"
+          :max="480"
+          suffix=" min"
           class="w-full"
         />
       </div>

@@ -224,18 +224,18 @@ class TimeEntryIntegrationTest extends RepositoryTestBase {
     @Test
     @DisplayName("Should calculate daily summary with matched hours")
     void shouldCalculateDailySummaryWithMatchedHours() {
-        // Arrange
-        LocalDate today = LocalDate.now();
-        createCompletedEntry(testUser, today, 8.0); // Expected is 8h for weekdays
+        // Arrange - use a specific Monday to ensure working hours exist
+        LocalDate testDate = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
+        createCompletedEntry(testUser, testDate, 8.0); // Expected is 8h for weekdays
 
         // Act
         List<DailySummary> summaries = getDailySummaryUseCase.execute(
-                testUser, today, today);
+                testUser, testDate, testDate);
 
         // Assert
         assertThat(summaries).hasSize(1);
         DailySummary summary = summaries.get(0);
-        assertThat(summary.getDate()).isEqualTo(today);
+        assertThat(summary.getDate()).isEqualTo(testDate);
         assertThat(summary.getActualHours()).isEqualTo(8.0);
         assertThat(summary.getExpectedHours()).isGreaterThan(0.0); // Should have working hours config
         assertThat(summary.getStatus()).isEqualTo(DailySummaryStatus.MATCHED);
@@ -245,13 +245,13 @@ class TimeEntryIntegrationTest extends RepositoryTestBase {
     @Test
     @DisplayName("Should calculate daily summary with below expected hours")
     void shouldCalculateDailySummaryWithBelowExpectedHours() {
-        // Arrange
-        LocalDate today = LocalDate.now();
-        createCompletedEntry(testUser, today, 6.0); // Less than expected 8h
+        // Arrange - use a specific Monday to ensure working hours exist
+        LocalDate testDate = LocalDate.now().with(java.time.DayOfWeek.MONDAY);
+        createCompletedEntry(testUser, testDate, 6.0); // Less than expected 8h
 
         // Act
         List<DailySummary> summaries = getDailySummaryUseCase.execute(
-                testUser, today, today);
+                testUser, testDate, testDate);
 
         // Assert
         DailySummary summary = summaries.get(0);
@@ -340,7 +340,7 @@ class TimeEntryIntegrationTest extends RepositoryTestBase {
 
         // Act
         TimeEntry updated = updateTimeEntryUseCase.execute(
-                testUser, entry.getId(), newClockIn, newClockOut,
+                testUser, entry.getId(), newClockIn, newClockOut, 0,
                 EntryType.WORK, "Updated notes");
 
         // Assert
@@ -351,11 +351,30 @@ class TimeEntryIntegrationTest extends RepositoryTestBase {
     }
 
     @Test
+    @DisplayName("Should update break minutes successfully")
+    void shouldUpdateBreakMinutesSuccessfully() {
+        // Arrange
+        TimeEntry entry = createCompletedEntry(testUser, LocalDate.now(), 8.0);
+        LocalDateTime clockIn = entry.getClockIn();
+        LocalDateTime clockOut = entry.getClockOut();
+
+        // Act - Update with 30 minutes break
+        TimeEntry updated = updateTimeEntryUseCase.execute(
+                testUser, entry.getId(), clockIn, clockOut, 30,
+                EntryType.WORK, "With break");
+
+        // Assert
+        assertThat(updated.getBreakMinutes()).isEqualTo(30);
+        assertThat(updated.getHoursWorked()).isLessThan(8.0); // Should be reduced by break time
+        assertThat(updated.getHoursWorked()).isEqualTo(7.5); // 8h - 0.5h break = 7.5h
+    }
+
+    @Test
     @DisplayName("Should fail to update non-existent entry")
     void shouldFailToUpdateNonExistentEntry() {
         // Act & Assert
         assertThatThrownBy(() -> updateTimeEntryUseCase.execute(
-                testUser, 99999L, LocalDateTime.now(), LocalDateTime.now(),
+                testUser, 99999L, LocalDateTime.now(), LocalDateTime.now(), 0,
                 EntryType.WORK, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("nicht gefunden");
@@ -369,7 +388,7 @@ class TimeEntryIntegrationTest extends RepositoryTestBase {
 
         // Act & Assert
         assertThatThrownBy(() -> updateTimeEntryUseCase.execute(
-                testUser, entry.getId(), LocalDateTime.now(), LocalDateTime.now(),
+                testUser, entry.getId(), LocalDateTime.now(), LocalDateTime.now(), 0,
                 EntryType.WORK, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("keine Berechtigung");
@@ -385,7 +404,7 @@ class TimeEntryIntegrationTest extends RepositoryTestBase {
 
         // Act & Assert
         assertThatThrownBy(() -> updateTimeEntryUseCase.execute(
-                testUser, entry.getId(), clockIn, clockOut, EntryType.WORK, null))
+                testUser, entry.getId(), clockIn, clockOut, 0, EntryType.WORK, null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Checkout-Zeit muss nach der Checkin-Zeit liegen");
     }

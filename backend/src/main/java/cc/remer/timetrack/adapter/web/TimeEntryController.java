@@ -87,6 +87,7 @@ public class TimeEntryController implements TimeEntriesApi {
                     user,
                     mapper.toLocalDateTime(request.getClockIn()),
                     mapper.toLocalDateTime(request.getClockOut()),
+                    request.getBreakMinutes(),
                     entryType,
                     request.getNotes()
             );
@@ -139,6 +140,7 @@ public class TimeEntryController implements TimeEntriesApi {
                     user, id,
                     mapper.toLocalDateTime(request.getClockIn()),
                     request.getClockOut() != null ? mapper.toLocalDateTime(request.getClockOut()) : null,
+                    request.getBreakMinutes(),
                     entryType,
                     request.getNotes()
             );

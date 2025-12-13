@@ -28,6 +28,7 @@ public class UpdateTimeEntryUseCase {
      * @param entryId the ID of the entry to update
      * @param clockIn new clock in time
      * @param clockOut new clock out time (can be null)
+     * @param breakMinutes break duration in minutes
      * @param entryType new entry type
      * @param notes new notes
      * @return the updated time entry
@@ -36,7 +37,7 @@ public class UpdateTimeEntryUseCase {
      */
     @Transactional
     public TimeEntry execute(User user, Long entryId, LocalDateTime clockIn,
-                           LocalDateTime clockOut, EntryType entryType, String notes) {
+                           LocalDateTime clockOut, Integer breakMinutes, EntryType entryType, String notes) {
         log.debug("Updating time entry {} for user {}", entryId, user.getId());
 
         TimeEntry entry = timeEntryRepository.findById(entryId)
@@ -58,6 +59,7 @@ public class UpdateTimeEntryUseCase {
         // Update fields
         entry.setClockIn(clockIn);
         entry.setClockOut(clockOut);
+        entry.setBreakMinutes(breakMinutes != null ? breakMinutes : 0);
         entry.setEntryDate(clockIn.toLocalDate());
         entry.setEntryType(entryType);
         entry.setNotes(notes);

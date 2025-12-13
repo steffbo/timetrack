@@ -240,6 +240,7 @@
     "title": "Zeiteinträge",
     "clockIn": "Einstempeln",
     "clockOut": "Ausstempeln",
+    "breakMinutes": "Pause (min)",
     "activeSession": "Aktive Arbeitssitzung",
     "clockedInAt": "Eingestempelt um",
     "viewEntries": "Einträge",

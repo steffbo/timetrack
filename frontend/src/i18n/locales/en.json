@@ -240,6 +240,7 @@
     "title": "Time Entries",
     "clockIn": "Clock In",
     "clockOut": "Clock Out",
+    "breakMinutes": "Break (min)",
     "activeSession": "Active Work Session",
     "clockedInAt": "Clocked in at",
     "viewEntries": "Entries",
