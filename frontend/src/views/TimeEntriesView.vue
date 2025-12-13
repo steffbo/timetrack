@@ -597,7 +597,7 @@ onMounted(() => {
 
 <style scoped>
 .time-entries-view {
-  padding: 1rem;
+  padding: 0;
 }
 
 h2 {

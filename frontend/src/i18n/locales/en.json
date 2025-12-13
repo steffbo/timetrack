@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "profile": "Profile",
+    "settings": "Settings",
     "timeTracking": "Time Tracking",
     "timeEntries": "Time Entries",
     "timeOff": "Time Off",

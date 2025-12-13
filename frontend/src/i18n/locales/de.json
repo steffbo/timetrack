@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "profile": "Profil",
+    "settings": "Einstellungen",
     "timeTracking": "Zeiterfassung",
     "timeEntries": "Zeiteinträge",
     "timeOff": "Abwesenheiten",

@@ -171,8 +171,7 @@ async function handleSave() {
 
 <style scoped>
 .working-hours {
-  max-width: 800px;
-  margin: 0 auto;
+  padding: 0;
 }
 
 .button-group {

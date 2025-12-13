@@ -115,9 +115,7 @@ onMounted(() => {
 
 <style scoped>
 .dashboard {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 1rem;
+  padding: 0;
 }
 
 .welcome-section {

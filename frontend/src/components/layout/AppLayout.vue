@@ -25,7 +25,19 @@ import AppNavbar from './AppNavbar.vue'
 
 .app-content {
   flex: 1;
+  width: calc(100vw - 4rem); /* Full viewport width minus padding */
+  max-width: 1400px;
+  margin: 0 auto;
   padding: 2rem;
   background: var(--p-surface-50);
+  box-sizing: border-box;
+}
+
+/* Tablet and smaller - reduce padding */
+@media (max-width: 768px) {
+  .app-content {
+    width: calc(100vw - 2rem);
+    padding: 1rem;
+  }
 }
 </style>

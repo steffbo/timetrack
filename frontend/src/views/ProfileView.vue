@@ -170,8 +170,7 @@ async function handleSave() {
 
 <style scoped>
 .profile {
-  max-width: 600px;
-  margin: 0 auto;
+  padding: 0;
 }
 
 .field {
