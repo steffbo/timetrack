@@ -31,6 +31,7 @@ public class TimeEntryController implements TimeEntriesApi {
 
     private final ClockInUseCase clockInUseCase;
     private final ClockOutUseCase clockOutUseCase;
+    private final CreateTimeEntryUseCase createTimeEntryUseCase;
     private final GetTimeEntriesUseCase getTimeEntriesUseCase;
     private final GetDailySummaryUseCase getDailySummaryUseCase;
     private final UpdateTimeEntryUseCase updateTimeEntryUseCase;
@@ -65,6 +66,28 @@ public class TimeEntryController implements TimeEntriesApi {
             return ResponseEntity.ok(mapper.toResponse(entry));
         } catch (IllegalStateException e) {
             log.warn("Clock out failed: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    public ResponseEntity<TimeEntryResponse> createTimeEntry(CreateTimeEntryRequest request) {
+        log.info("POST /api/time-entries - Create manual time entry");
+        try {
+            User user = getCurrentUser();
+            EntryType entryType = EntryType.valueOf(request.getEntryType().name());
+
+            TimeEntry entry = createTimeEntryUseCase.execute(
+                    user,
+                    mapper.toLocalDateTime(request.getClockIn()),
+                    mapper.toLocalDateTime(request.getClockOut()),
+                    entryType,
+                    request.getNotes()
+            );
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(entry));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("Create entry failed: {}", e.getMessage());
             throw e;
         }
     }

@@ -734,6 +734,33 @@ paths:
                   $ref: '#/components/schemas/TimeEntryResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+    post:
+      tags:
+        - Time Entries
+      summary: Create time entry
+      description: Create a new time entry with both start and end times
+      operationId: createTimeEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTimeEntryRequest'
+      responses:
+        '201':
+          description: Time entry created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeEntryResponse'
+        '400':
+          description: Bad request (e.g., invalid times, overlapping entries)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
   /api/time-entries/daily-summary:
     get:
@@ -1555,6 +1582,28 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    CreateTimeEntryRequest:
+      type: object
+      required:
+        - clockIn
+        - clockOut
+        - entryType
+      properties:
+        clockIn:
+          type: string
+          format: date-time
+          description: Clock in timestamp
+        clockOut:
+          type: string
+          format: date-time
+          description: Clock out timestamp
+        entryType:
+          type: string
+          enum: [WORK, SICK, PTO, EVENT]
+          default: WORK
+        notes:
+          type: string
 
     UpdateTimeEntryRequest:
       type: object

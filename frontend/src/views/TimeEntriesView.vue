@@ -11,7 +11,7 @@ import Dropdown from 'primevue/dropdown'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import { TimeEntriesService } from '@/api/generated'
-import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, DailySummaryResponse } from '@/api/generated'
+import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, DailySummaryResponse } from '@/api/generated'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -21,12 +21,16 @@ const dailySummaries = ref<DailySummaryResponse[]>([])
 const loading = ref(false)
 const clockInDialogVisible = ref(false)
 const clockOutDialogVisible = ref(false)
+const manualEntryDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const deleteDialogVisible = ref(false)
 const clockInNotes = ref('')
 const clockOutNotes = ref('')
 const activeEntry = ref<TimeEntryResponse | null>(null)
 const currentTimeEntry = ref<Partial<UpdateTimeEntryRequest>>({})
+const newManualEntry = ref<Partial<CreateTimeEntryRequest>>({
+  entryType: 'WORK' as any
+})
 const timeEntryToDelete = ref<TimeEntryResponse | null>(null)
 
 // Date range filter - default to current month
@@ -147,10 +151,57 @@ const clockOut = async () => {
   }
 }
 
+const openManualEntryDialog = () => {
+  newManualEntry.value = {
+    clockIn: new Date() as any,
+    clockOut: new Date() as any,
+    entryType: 'WORK' as any,
+    notes: ''
+  }
+  manualEntryDialogVisible.value = true
+}
+
+const createManualEntry = async () => {
+  try {
+    const request: CreateTimeEntryRequest = {
+      clockIn: newManualEntry.value.clockIn instanceof Date
+        ? newManualEntry.value.clockIn.toISOString()
+        : newManualEntry.value.clockIn as string,
+      clockOut: newManualEntry.value.clockOut instanceof Date
+        ? newManualEntry.value.clockOut.toISOString()
+        : newManualEntry.value.clockOut as string,
+      entryType: newManualEntry.value.entryType!,
+      notes: newManualEntry.value.notes
+    }
+
+    await TimeEntriesService.createTimeEntry(request)
+
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('timeEntries.createSuccess'),
+      life: 3000
+    })
+
+    manualEntryDialogVisible.value = false
+    await loadTimeEntries()
+    if (viewMode.value === 'summary') {
+      await loadDailySummary()
+    }
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: error.body?.message || t('timeEntries.createError'),
+      life: 3000
+    })
+  }
+}
+
 const openEditDialog = (entry: TimeEntryResponse) => {
   currentTimeEntry.value = {
-    clockIn: entry.clockIn,
-    clockOut: entry.clockOut || undefined,
+    clockIn: new Date(entry.clockIn) as any,
+    clockOut: entry.clockOut ? new Date(entry.clockOut) as any : undefined,
     entryType: entry.entryType,
     notes: entry.notes
   }
@@ -161,9 +212,21 @@ const openEditDialog = (entry: TimeEntryResponse) => {
 const saveTimeEntry = async () => {
   try {
     if (timeEntryToDelete.value?.id) {
+      // Convert Date objects back to ISO strings
+      const request: UpdateTimeEntryRequest = {
+        clockIn: currentTimeEntry.value.clockIn instanceof Date
+          ? currentTimeEntry.value.clockIn.toISOString()
+          : currentTimeEntry.value.clockIn as string,
+        clockOut: currentTimeEntry.value.clockOut instanceof Date
+          ? currentTimeEntry.value.clockOut.toISOString()
+          : currentTimeEntry.value.clockOut as string | undefined,
+        entryType: currentTimeEntry.value.entryType!,
+        notes: currentTimeEntry.value.notes
+      }
+
       await TimeEntriesService.updateTimeEntry(
         timeEntryToDelete.value.id,
-        currentTimeEntry.value as UpdateTimeEntryRequest
+        request
       )
 
       toast.add({
@@ -294,6 +357,13 @@ onMounted(() => {
             icon="pi pi-stop"
             severity="danger"
             @click="openClockOutDialog"
+          />
+          <Button
+            :label="t('timeEntries.addManualEntry')"
+            icon="pi pi-plus"
+            severity="secondary"
+            @click="openManualEntryDialog"
+            outlined
           />
         </div>
       </div>
@@ -521,6 +591,61 @@ onMounted(() => {
       <template #footer>
         <Button :label="t('cancel')" severity="secondary" @click="clockOutDialogVisible = false" />
         <Button :label="t('timeEntries.clockOut')" severity="danger" @click="clockOut" />
+      </template>
+    </Dialog>
+
+    <!-- Manual Entry Dialog -->
+    <Dialog
+      v-model:visible="manualEntryDialogVisible"
+      :header="t('timeEntries.manualEntry')"
+      :modal="true"
+      :style="{ width: '500px' }"
+    >
+      <div class="field">
+        <label for="manualStartTime">{{ t('timeEntries.startTime') }}</label>
+        <Calendar
+          id="manualStartTime"
+          v-model="newManualEntry.clockIn"
+          show-time
+          hour-format="24"
+          date-format="yy-mm-dd"
+          class="w-full"
+        />
+      </div>
+      <div class="field">
+        <label for="manualEndTime">{{ t('timeEntries.endTime') }}</label>
+        <Calendar
+          id="manualEndTime"
+          v-model="newManualEntry.clockOut"
+          show-time
+          hour-format="24"
+          date-format="yy-mm-dd"
+          class="w-full"
+        />
+      </div>
+      <div class="field">
+        <label for="manualEntryType">{{ t('timeEntries.type.label') }}</label>
+        <Dropdown
+          id="manualEntryType"
+          v-model="newManualEntry.entryType"
+          :options="entryTypeOptions"
+          option-label="label"
+          option-value="value"
+          class="w-full"
+        />
+      </div>
+      <div class="field">
+        <label for="manualNotes">{{ t('timeEntries.notes') }}</label>
+        <Textarea
+          id="manualNotes"
+          v-model="newManualEntry.notes"
+          rows="3"
+          class="w-full"
+        />
+      </div>
+      <template #footer>
+        <Button :label="t('cancel')" severity="secondary" @click="manualEntryDialogVisible = false" />
+        <Button :label="t('save')" severity="primary" @click="createManualEntry" />
       </template>
     </Dialog>
 
