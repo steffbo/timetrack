@@ -10,7 +10,7 @@ import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
-import { TimeEntriesService } from '@/api/generated'
+import { TimeEntriesService, OpenAPI } from '@/api/generated'
 import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, DailySummaryResponse } from '@/api/generated'
 
 const { t } = useI18n()
@@ -333,6 +333,73 @@ const isActiveEntry = (entry: TimeEntryResponse) => {
   return entry.isActive
 }
 
+const exportMonthlyReport = async () => {
+  try {
+    // Get year and month from the start date filter
+    const startDate = new Date(startDateFilter.value)
+    const year = startDate.getFullYear()
+    const month = startDate.getMonth() + 1
+
+    console.log('Exporting report for:', year, month)
+
+    loading.value = true
+
+    // Make direct API call with proper responseType
+    const axios = (await import('axios')).default
+    // OpenAPI.TOKEN is a function, need to call it
+    const token = typeof OpenAPI.TOKEN === 'function' ? OpenAPI.TOKEN() : (OpenAPI.TOKEN || localStorage.getItem('accessToken'))
+    const baseUrl = OpenAPI.BASE || 'http://localhost:8080'
+
+    console.log('Making request to:', `${baseUrl}/api/time-entries/monthly-report?year=${year}&month=${month}`)
+    console.log('Using token:', token ? 'Token present' : 'No token')
+
+    const response = await axios.get(
+      `${baseUrl}/api/time-entries/monthly-report?year=${year}&month=${month}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        responseType: 'blob'
+      }
+    )
+
+    console.log('Response received:', response.status, response.headers)
+
+    // Create blob and download
+    const blob = new Blob([response.data], { type: 'application/pdf' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `stundenzettel_${year}_${month.toString().padStart(2, '0')}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('timeEntries.exportSuccess'),
+      life: 3000
+    })
+  } catch (error: any) {
+    console.error('Export error:', error)
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response,
+      stack: error.stack
+    })
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: error.message || error.response?.data?.message || t('timeEntries.exportError'),
+      life: 3000
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
   loadTimeEntries()
 })
@@ -431,6 +498,13 @@ onMounted(() => {
               :label="t('filter')"
               icon="pi pi-filter"
               @click="viewMode === 'entries' ? loadTimeEntries() : loadDailySummary()"
+            />
+            <Button
+              :label="t('timeEntries.exportPdf')"
+              icon="pi pi-file-pdf"
+              severity="secondary"
+              @click="exportMonthlyReport"
+              outlined
             />
           </div>
         </div>

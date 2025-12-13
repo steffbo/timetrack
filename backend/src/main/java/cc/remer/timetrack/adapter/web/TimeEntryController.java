@@ -9,9 +9,14 @@ import cc.remer.timetrack.domain.timeentry.TimeEntry;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.usecase.timeentry.*;
 import cc.remer.timetrack.usecase.timeentry.model.DailySummary;
+import cc.remer.timetrack.usecase.report.ExportMonthlyReportUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,6 +41,7 @@ public class TimeEntryController implements TimeEntriesApi {
     private final GetDailySummaryUseCase getDailySummaryUseCase;
     private final UpdateTimeEntryUseCase updateTimeEntryUseCase;
     private final DeleteTimeEntryUseCase deleteTimeEntryUseCase;
+    private final ExportMonthlyReportUseCase exportMonthlyReportUseCase;
     private final TimeEntryMapper mapper;
 
     private User getCurrentUser() {
@@ -153,6 +159,33 @@ public class TimeEntryController implements TimeEntriesApi {
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             log.warn("Delete entry failed: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    public ResponseEntity<Resource> exportMonthlyReport(Integer year, Integer month) {
+        log.info("GET /api/time-entries/monthly-report - Export PDF report for {}-{}", year, month);
+        try {
+            User user = getCurrentUser();
+
+            byte[] pdfBytes = exportMonthlyReportUseCase.execute(
+                    user.getId(),
+                    year,
+                    month,
+                    user
+            );
+
+            String filename = String.format("stundenzettel_%d_%02d.pdf", year, month);
+            ByteArrayResource resource = new ByteArrayResource(pdfBytes);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(resource);
+        } catch (IllegalArgumentException e) {
+            log.warn("Export monthly report failed: {}", e.getMessage());
             throw e;
         }
     }
