@@ -95,7 +95,7 @@ import { useI18n } from 'vue-i18n'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import OverlayPanel from 'primevue/overlaypanel'
-import type { DailySummaryResponse } from '@/api/generated'
+import type { DailySummaryResponse, WorkingHoursResponse } from '@/api/generated'
 
 const { t } = useI18n()
 
@@ -110,6 +110,7 @@ let hoverTimeout: ReturnType<typeof setTimeout> | null = null
 interface Props {
   currentMonth: Date
   dailySummaries: DailySummaryResponse[]
+  workingHours: WorkingHoursResponse | null
 }
 
 const props = defineProps<Props>()
@@ -341,6 +342,47 @@ const handleOverlayHide = () => {
   stickyDay.value = null
 }
 
+// Helper to get working day config for a specific weekday (1=Monday, 7=Sunday)
+const getWorkingDayConfig = (weekday: number) => {
+  if (!props.workingHours?.workingDays) return null
+  return props.workingHours.workingDays.find(wd => wd.weekday === weekday)
+}
+
+// Helper to get weekday number (1-7, where 1=Monday, 7=Sunday) from date
+const getWeekdayNumber = (day: number): number => {
+  const date = new Date(currentYear.value, currentMonthIndex.value, day)
+  const dayOfWeek = date.getDay() // 0=Sunday, 1=Monday, ..., 6=Saturday
+  return dayOfWeek === 0 ? 7 : dayOfWeek // Convert to 1=Monday, 7=Sunday
+}
+
+// Helper to calculate time difference in minutes
+const calculateTimeDiffMinutes = (time1: string, time2: string): number => {
+  const [h1, m1] = time1.split(':').map(Number)
+  const [h2, m2] = time2.split(':').map(Number)
+  const minutes1 = h1 * 60 + m1
+  const minutes2 = h2 * 60 + m2
+  return Math.abs(minutes1 - minutes2)
+}
+
+// Helper to format duration in hours and minutes
+const formatDuration = (hours: number): string => {
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
+}
+
+// Helper to get book emoji based on time discrepancy
+const getBookEmoji = (actualStart: string, actualEnd: string, plannedStart: string, plannedEnd: string): string => {
+  const startDiff = calculateTimeDiffMinutes(actualStart, plannedStart)
+  const endDiff = calculateTimeDiffMinutes(actualEnd, plannedEnd)
+  const maxDiff = Math.max(startDiff, endDiff)
+
+  if (maxDiff <= 10) return '📗' // Green: within 10 minutes
+  if (maxDiff <= 30) return '📒' // Yellow: 10-30 minutes
+  return '📕' // Red: more than 30 minutes
+}
+
 // Format day details as HTML for the overlay
 const formatDayDetailsHtml = (day: number): string => {
   const summary = getSummaryForDay(day)
@@ -390,25 +432,38 @@ const formatDayDetailsHtml = (day: number): string => {
   // Hours info - only show if it's NOT an absence day (no PTO and no recurring off-days)
   const isAbsenceDay = hasPTOEntries || (summary.recurringOffDays && summary.recurringOffDays.length > 0)
   if (!isAbsenceDay) {
-    parts.push(`<div class="detail-row">⏱️ ${summary.actualHours.toFixed(1)}h / ${summary.expectedHours.toFixed(1)}h</div>`)
-  }
+    // Get working day config for this day
+    const weekday = getWeekdayNumber(day)
+    const workingDayConfig = getWorkingDayConfig(weekday)
 
-  // Time entries
-  if (summary.entries && summary.entries.length > 0) {
-    parts.push(`<div class="detail-section"><strong>⏰ ${t('dashboard.calendar.timeEntries')}:</strong></div>`)
-    summary.entries.forEach(entry => {
-      const typeLabel = t(`timeEntries.type.${entry.entryType}`)
-      const startTime = entry.clockIn ? new Date(entry.clockIn).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : ''
-      const endTime = entry.clockOut ? new Date(entry.clockOut).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : t('dashboard.calendar.active')
+    // Show planned times if available
+    if (workingDayConfig?.isWorkingDay && workingDayConfig.startTime && workingDayConfig.endTime) {
+      const plannedHours = workingDayConfig.hours || 0
+      parts.push(`<div class="detail-row">⏲️ ${workingDayConfig.startTime} - ${workingDayConfig.endTime} (${formatDuration(plannedHours)})</div>`)
+    }
 
-      // Get entry type emoji
-      const entryEmoji = entry.entryType === 'WORK' ? '💼' :
-                        entry.entryType === 'SICK' ? '🤒' :
-                        entry.entryType === 'PTO' ? '🏖️' :
-                        entry.entryType === 'EVENT' ? '📅' : '•'
+    // Show actual times if there are entries
+    if (summary.entries && summary.entries.length > 0) {
+      // Calculate actual start and end times from all entries
+      const clockIns = summary.entries.filter(e => e.clockIn).map(e => e.clockIn!)
+      const clockOuts = summary.entries.filter(e => e.clockOut).map(e => e.clockOut!)
 
-      parts.push(`<div class="detail-item">${entryEmoji} ${typeLabel}: ${startTime} - ${endTime}</div>`)
-    })
+      if (clockIns.length > 0 && clockOuts.length > 0) {
+        const earliestClockIn = new Date(Math.min(...clockIns.map(d => new Date(d).getTime())))
+        const latestClockOut = new Date(Math.max(...clockOuts.map(d => new Date(d).getTime())))
+
+        const actualStart = earliestClockIn.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+        const actualEnd = latestClockOut.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+
+        // Determine book emoji based on discrepancy with planned times
+        let bookEmoji = '📘' // Default blue book
+        if (workingDayConfig?.startTime && workingDayConfig?.endTime) {
+          bookEmoji = getBookEmoji(actualStart, actualEnd, workingDayConfig.startTime, workingDayConfig.endTime)
+        }
+
+        parts.push(`<div class="detail-row">${bookEmoji} ${actualStart} - ${actualEnd} (${formatDuration(summary.actualHours)})</div>`)
+      }
+    }
   }
 
   return parts.join('')

@@ -55,6 +55,7 @@
     "startTime": "Start Time",
     "endTime": "End Time",
     "isWorkingDay": "Working Day",
+    "weeklySum": "Weekly Total",
     "save": "Save",
     "saveSuccess": "Working hours saved successfully",
     "saveError": "Error saving working hours"
@@ -95,6 +96,8 @@
       "recurringOffDays": "Recurring Off-Days",
       "recurringOffDay": "Recurring off-day",
       "active": "Active",
+      "actualHours": "Actual Hours",
+      "plannedHours": "Planned Hours",
       "weekdays": {
         "0": "Mon",
         "1": "Tue",

@@ -9,6 +9,7 @@
         <MonthlyCalendar
           :current-month="currentMonth"
           :daily-summaries="dailySummaries"
+          :working-hours="workingHours"
           @month-change="handleMonthChange"
         />
       </div>
@@ -34,8 +35,8 @@ import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
 import { useAuth } from '@/composables/useAuth'
 import MonthlyCalendar from '@/components/dashboard/MonthlyCalendar.vue'
-import { TimeEntriesService, PublicHolidaysService } from '@/api/generated'
-import type { DailySummaryResponse, PublicHolidayResponse, TimeOffResponse } from '@/api/generated'
+import { TimeEntriesService, PublicHolidaysService, WorkingHoursService } from '@/api/generated'
+import type { DailySummaryResponse, PublicHolidayResponse, TimeOffResponse, WorkingHoursResponse } from '@/api/generated'
 
 const { t } = useI18n()
 const { currentUser } = useAuth()
@@ -43,6 +44,7 @@ const toast = useToast()
 
 const currentMonth = ref<Date>(new Date())
 const dailySummaries = ref<DailySummaryResponse[]>([])
+const workingHours = ref<WorkingHoursResponse | null>(null)
 const loading = ref(false)
 
 const loadDailySummaries = async () => {
@@ -58,11 +60,14 @@ const loadDailySummaries = async () => {
     const startDateStr = startDate.toISOString().split('T')[0]
     const endDateStr = endDate.toISOString().split('T')[0]
 
-    // Fetch daily summaries and public holidays in parallel
-    const [summaries, publicHolidays] = await Promise.all([
+    // Fetch daily summaries, public holidays, and working hours in parallel
+    const [summaries, publicHolidays, workingHoursData] = await Promise.all([
       TimeEntriesService.getDailySummary(startDateStr, endDateStr),
-      PublicHolidaysService.getPublicHolidays(year)
+      PublicHolidaysService.getPublicHolidays(year),
+      WorkingHoursService.getWorkingHours(currentUser.value?.id || 0)
     ])
+
+    workingHours.value = workingHoursData
 
     // Merge public holidays into daily summaries
     const summariesWithHolidays = summaries.map(summary => {

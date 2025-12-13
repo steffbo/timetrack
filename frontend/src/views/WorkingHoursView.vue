@@ -56,6 +56,11 @@
           </Column>
         </DataTable>
 
+        <div class="weekly-sum">
+          <strong>{{ t('workingHours.weeklySum') }}:</strong>
+          <span>{{ weeklySum.toFixed(2) }} {{ t('workingHours.hours') }}</span>
+        </div>
+
         <div class="button-group">
           <Button
             :label="t('workingHours.save')"
@@ -69,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
@@ -93,6 +98,13 @@ const workingDays = ref<WorkingDayConfig[]>([])
 
 // Map weekday number (1-7) to day name
 const weekdayMap = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
+
+// Calculate weekly sum of working hours
+const weeklySum = computed(() => {
+  return workingDays.value
+    .filter(day => day.isWorkingDay)
+    .reduce((sum, day) => sum + (day.hours || 0), 0)
+})
 
 function getWeekdayName(weekday: number): string {
   return t(`workingHours.weekdays.${weekdayMap[weekday - 1]}`)
@@ -172,6 +184,18 @@ async function handleSave() {
 <style scoped>
 .working-hours {
   padding: 0;
+}
+
+.weekly-sum {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--surface-ground);
+  border-radius: 6px;
+  font-size: 1.1rem;
 }
 
 .button-group {

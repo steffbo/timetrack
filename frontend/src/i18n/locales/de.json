@@ -55,6 +55,7 @@
     "startTime": "Startzeit",
     "endTime": "Endzeit",
     "isWorkingDay": "Arbeitstag",
+    "weeklySum": "Wöchentliche Summe",
     "save": "Speichern",
     "saveSuccess": "Arbeitszeiten erfolgreich gespeichert",
     "saveError": "Fehler beim Speichern der Arbeitszeiten"
@@ -95,6 +96,8 @@
       "recurringOffDays": "Wiederkehrende freie Tage",
       "recurringOffDay": "Freier Tag",
       "active": "Aktiv",
+      "actualHours": "Tatsächliche Stunden",
+      "plannedHours": "Geplante Stunden",
       "weekdays": {
         "0": "Mo",
         "1": "Di",
