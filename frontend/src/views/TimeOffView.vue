@@ -232,6 +232,7 @@ onMounted(() => {
               id="startDateFilter"
               v-model="startDateFilter"
               date-format="yy-mm-dd"
+              :first-day-of-week="1"
               show-icon
             />
           </div>
@@ -241,6 +242,7 @@ onMounted(() => {
               id="endDateFilter"
               v-model="endDateFilter"
               date-format="yy-mm-dd"
+              :first-day-of-week="1"
               show-icon
             />
           </div>
@@ -346,6 +348,7 @@ onMounted(() => {
             id="startDate"
             v-model="currentTimeOff.startDate"
             date-format="yy-mm-dd"
+            :first-day-of-week="1"
           />
         </div>
 
@@ -355,6 +358,7 @@ onMounted(() => {
             id="endDate"
             v-model="currentTimeOff.endDate"
             date-format="yy-mm-dd"
+            :first-day-of-week="1"
           />
         </div>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
@@ -11,7 +11,8 @@ import Dropdown from 'primevue/dropdown'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import InputNumber from 'primevue/inputnumber'
-import { TimeEntriesService, OpenAPI } from '@/api/generated'
+import Checkbox from 'primevue/checkbox'
+import { TimeEntriesService, WorkingHoursService, OpenAPI } from '@/api/generated'
 import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, DailySummaryResponse } from '@/api/generated'
 
 const { t } = useI18n()
@@ -34,6 +35,7 @@ const newManualEntry = ref<Partial<CreateTimeEntryRequest>>({
   breakMinutes: 0
 })
 const timeEntryToDelete = ref<TimeEntryResponse | null>(null)
+const useDefaultHours = ref(false)  // Toggle for using default working hours
 
 // Date range filter - default to current month
 const now = new Date()
@@ -42,11 +44,9 @@ const endDateFilter = ref<string>(new Date(now.getFullYear(), now.getMonth() + 1
 
 const viewMode = ref<'entries' | 'summary'>('entries')
 
+// Only WORK type supported - absences are tracked via TimeOff entity
 const entryTypeOptions = [
-  { label: t('timeEntries.type.WORK'), value: 'WORK' },
-  { label: t('timeEntries.type.SICK'), value: 'SICK' },
-  { label: t('timeEntries.type.PTO'), value: 'PTO' },
-  { label: t('timeEntries.type.EVENT'), value: 'EVENT' }
+  { label: t('timeEntries.type.WORK'), value: 'WORK' }
 ]
 
 const loadTimeEntries = async () => {
@@ -154,27 +154,159 @@ const clockOut = async () => {
 }
 
 const openManualEntryDialog = () => {
+  const now = new Date()
   newManualEntry.value = {
-    clockIn: new Date() as any,
-    clockOut: new Date() as any,
-    entryType: 'WORK' as any,
+    entryType: 'WORK' as any,  // Only WORK supported
+    clockIn: now as any,
+    clockOut: now as any,
     breakMinutes: 0,
     notes: ''
   }
+  useDefaultHours.value = false
   manualEntryDialogVisible.value = true
+}
+
+const applyDefaultWorkingHours = async (selectedDate: Date) => {
+  try {
+    // Get working hours configuration
+    const workingHoursResponse = await WorkingHoursService.getWorkingHours()
+
+    // Get day of week (1=Monday, 7=Sunday)
+    const dayOfWeek = selectedDate.getDay() === 0 ? 7 : selectedDate.getDay()
+
+    // Find working hours for selected day
+    const dayWorkingHours = workingHoursResponse.workingDays.find(
+      wd => wd.weekday === dayOfWeek
+    )
+
+    if (!dayWorkingHours || !dayWorkingHours.isWorkingDay) {
+      toast.add({
+        severity: 'warn',
+        summary: t('warning'),
+        detail: t('timeEntries.noWorkingHoursForDay'),
+        life: 3000
+      })
+      return
+    }
+
+    // Parse start and end times
+    const [startHour, startMin] = dayWorkingHours.startTime.split(':').map(Number)
+    const [endHour, endMin] = dayWorkingHours.endTime.split(':').map(Number)
+
+    const clockIn = new Date(selectedDate)
+    clockIn.setHours(startHour, startMin, 0, 0)
+
+    const clockOut = new Date(selectedDate)
+    clockOut.setHours(endHour, endMin, 0, 0)
+
+    newManualEntry.value.clockIn = clockIn as any
+    newManualEntry.value.clockOut = clockOut as any
+
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('timeEntries.defaultHoursApplied'),
+      life: 2000
+    })
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: error.body?.message || t('timeEntries.defaultHoursError'),
+      life: 3000
+    })
+  }
+}
+
+const onDateChange = (date: Date) => {
+  if (useDefaultHours.value && date) {
+    applyDefaultWorkingHours(date)
+  }
+}
+
+const createQuickWorkEntry = async () => {
+  try {
+    loading.value = true
+    // Get working hours configuration
+    const workingHoursResponse = await WorkingHoursService.getWorkingHours()
+
+    // Get current day of week (1=Monday, 7=Sunday)
+    const today = new Date()
+    const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay()
+
+    // Find working hours for today
+    const todayWorkingHours = workingHoursResponse.workingDays.find(
+      wd => wd.weekday === dayOfWeek
+    )
+
+    if (!todayWorkingHours || !todayWorkingHours.isWorkingDay) {
+      toast.add({
+        severity: 'warn',
+        summary: t('warning'),
+        detail: t('timeEntries.noWorkingHoursForToday'),
+        life: 3000
+      })
+      return
+    }
+
+    // Parse start and end times
+    const [startHour, startMin] = todayWorkingHours.startTime.split(':').map(Number)
+    const [endHour, endMin] = todayWorkingHours.endTime.split(':').map(Number)
+
+    const clockIn = new Date(today)
+    clockIn.setHours(startHour, startMin, 0, 0)
+
+    const clockOut = new Date(today)
+    clockOut.setHours(endHour, endMin, 0, 0)
+
+    const request: CreateTimeEntryRequest = {
+      clockIn: clockIn.toISOString(),
+      clockOut: clockOut.toISOString(),
+      breakMinutes: 0,
+      entryType: 'WORK',
+      notes: ''
+    }
+
+    await TimeEntriesService.createTimeEntry(request)
+
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('timeEntries.quickEntryCreated'),
+      life: 3000
+    })
+
+    await loadTimeEntries()
+    if (viewMode.value === 'summary') {
+      await loadDailySummary()
+    }
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: error.body?.message || t('timeEntries.quickEntryError'),
+      life: 3000
+    })
+  } finally {
+    loading.value = false
+  }
 }
 
 const createManualEntry = async () => {
   try {
+    // Only WORK entries supported - no conditional logic needed
+    const clockIn = newManualEntry.value.clockIn instanceof Date
+      ? newManualEntry.value.clockIn.toISOString()
+      : newManualEntry.value.clockIn as string
+    const clockOut = newManualEntry.value.clockOut instanceof Date
+      ? newManualEntry.value.clockOut.toISOString()
+      : newManualEntry.value.clockOut as string
+
     const request: CreateTimeEntryRequest = {
-      clockIn: newManualEntry.value.clockIn instanceof Date
-        ? newManualEntry.value.clockIn.toISOString()
-        : newManualEntry.value.clockIn as string,
-      clockOut: newManualEntry.value.clockOut instanceof Date
-        ? newManualEntry.value.clockOut.toISOString()
-        : newManualEntry.value.clockOut as string,
+      clockIn,
+      clockOut,
       breakMinutes: newManualEntry.value.breakMinutes || 0,
-      entryType: newManualEntry.value.entryType!,
+      entryType: 'WORK',  // Always WORK
       notes: newManualEntry.value.notes
     }
 
@@ -432,6 +564,13 @@ onMounted(() => {
             @click="openClockOutDialog"
           />
           <Button
+            :label="t('timeEntries.quickWorkEntry')"
+            icon="pi pi-bolt"
+            severity="success"
+            @click="createQuickWorkEntry"
+            outlined
+          />
+          <Button
             :label="t('timeEntries.addManualEntry')"
             icon="pi pi-plus"
             severity="secondary"
@@ -486,6 +625,7 @@ onMounted(() => {
                 id="startDate"
                 v-model="startDateFilter"
                 date-format="yy-mm-dd"
+                :first-day-of-week="1"
                 show-icon
               />
             </div>
@@ -495,6 +635,7 @@ onMounted(() => {
                 id="endDate"
                 v-model="endDateFilter"
                 date-format="yy-mm-dd"
+                :first-day-of-week="1"
                 show-icon
               />
             </div>
@@ -686,58 +827,69 @@ onMounted(() => {
       :modal="true"
       :style="{ width: '500px' }"
     >
-      <div class="field">
-        <label for="manualStartTime">{{ t('timeEntries.startTime') }}</label>
-        <Calendar
-          id="manualStartTime"
-          v-model="newManualEntry.clockIn"
-          show-time
-          hour-format="24"
-          date-format="yy-mm-dd"
-          class="w-full"
-        />
-      </div>
-      <div class="field">
-        <label for="manualEndTime">{{ t('timeEntries.endTime') }}</label>
-        <Calendar
-          id="manualEndTime"
-          v-model="newManualEntry.clockOut"
-          show-time
-          hour-format="24"
-          date-format="yy-mm-dd"
-          class="w-full"
-        />
-      </div>
-      <div class="field">
-        <label for="manualBreakMinutes">{{ t('timeEntries.breakMinutes') }}</label>
-        <InputNumber
-          id="manualBreakMinutes"
-          v-model="newManualEntry.breakMinutes"
-          :min="0"
-          :max="480"
-          suffix=" min"
-          class="w-full"
-        />
-      </div>
-      <div class="field">
-        <label for="manualEntryType">{{ t('timeEntries.type.label') }}</label>
-        <Dropdown
-          id="manualEntryType"
-          v-model="newManualEntry.entryType"
-          :options="entryTypeOptions"
-          option-label="label"
-          option-value="value"
-          class="w-full"
-        />
-      </div>
-      <div class="field">
-        <label for="manualNotes">{{ t('timeEntries.notes') }}</label>
-        <Textarea
-          id="manualNotes"
-          v-model="newManualEntry.notes"
-          rows="3"
-          class="w-full"
-        />
+      <div class="manual-entry-form">
+        <!-- Type field removed - only WORK supported. For absences, use TimeOff view. -->
+        <div class="field">
+          <div class="flex align-items-center">
+            <Checkbox
+              v-model="useDefaultHours"
+              input-id="useDefaultHours"
+              :binary="true"
+            />
+            <label for="useDefaultHours" class="ml-2 mb-0" style="cursor: pointer">
+              {{ t('timeEntries.useDefaultHours') }}
+            </label>
+          </div>
+          <small class="text-muted">{{ t('timeEntries.useDefaultHoursHint') }}</small>
+        </div>
+
+        <div class="field">
+          <label for="manualStartTime">{{ t('timeEntries.startTime') }}</label>
+          <Calendar
+            id="manualStartTime"
+            v-model="newManualEntry.clockIn"
+            :show-time="!useDefaultHours"
+            hour-format="24"
+            date-format="yy-mm-dd"
+            :first-day-of-week="1"
+            :manual-input="true"
+            @date-select="onDateChange"
+            class="w-full"
+          />
+        </div>
+        <div v-if="!useDefaultHours" class="field">
+          <label for="manualEndTime">{{ t('timeEntries.endTime') }}</label>
+          <Calendar
+            id="manualEndTime"
+            v-model="newManualEntry.clockOut"
+            show-time
+            hour-format="24"
+            date-format="yy-mm-dd"
+            :first-day-of-week="1"
+            :manual-input="true"
+            class="w-full"
+          />
+        </div>
+        <div class="field">
+          <label for="manualBreakMinutes">{{ t('timeEntries.breakMinutes') }}</label>
+          <InputNumber
+            id="manualBreakMinutes"
+            v-model="newManualEntry.breakMinutes"
+            :min="0"
+            :max="480"
+            suffix=" min"
+            class="w-full"
+          />
+        </div>
+        <div class="field">
+          <label for="manualNotes">{{ t('timeEntries.notes') }}</label>
+          <Textarea
+            id="manualNotes"
+            v-model="newManualEntry.notes"
+            rows="3"
+            class="w-full"
+          />
+        </div>
       </div>
       <template #footer>
         <Button :label="t('cancel')" severity="secondary" @click="manualEntryDialogVisible = false" />
@@ -752,58 +904,54 @@ onMounted(() => {
       :modal="true"
       :style="{ width: '500px' }"
     >
-      <div class="field">
-        <label for="editClockIn">{{ t('timeEntries.clockIn') }}</label>
-        <Calendar
-          id="editClockIn"
-          v-model="currentTimeEntry.clockIn"
-          show-time
-          hour-format="24"
-          date-format="yy-mm-dd"
-          class="w-full"
-        />
-      </div>
-      <div class="field">
-        <label for="editClockOut">{{ t('timeEntries.clockOut') }}</label>
-        <Calendar
-          id="editClockOut"
-          v-model="currentTimeEntry.clockOut"
-          show-time
-          hour-format="24"
-          date-format="yy-mm-dd"
-          class="w-full"
-        />
-      </div>
-      <div class="field">
-        <label for="editBreakMinutes">{{ t('timeEntries.breakMinutes') }}</label>
-        <InputNumber
-          id="editBreakMinutes"
-          v-model="currentTimeEntry.breakMinutes"
-          :min="0"
-          :max="480"
-          suffix=" min"
-          class="w-full"
-        />
-      </div>
-      <div class="field">
-        <label for="editEntryType">{{ t('timeEntries.type.label') }}</label>
-        <Dropdown
-          id="editEntryType"
-          v-model="currentTimeEntry.entryType"
-          :options="entryTypeOptions"
-          option-label="label"
-          option-value="value"
-          class="w-full"
-        />
-      </div>
-      <div class="field">
-        <label for="editNotes">{{ t('timeEntries.notes') }}</label>
-        <Textarea
-          id="editNotes"
-          v-model="currentTimeEntry.notes"
-          rows="3"
-          class="w-full"
-        />
+      <div class="manual-entry-form">
+        <!-- Type field removed - only WORK supported. -->
+        <div class="field">
+          <label for="editClockIn">{{ t('timeEntries.clockIn') }}</label>
+          <Calendar
+            id="editClockIn"
+            v-model="currentTimeEntry.clockIn"
+            show-time
+            hour-format="24"
+            date-format="yy-mm-dd"
+            :first-day-of-week="1"
+            :manual-input="true"
+            class="w-full"
+          />
+        </div>
+        <div class="field">
+          <label for="editClockOut">{{ t('timeEntries.clockOut') }}</label>
+          <Calendar
+            id="editClockOut"
+            v-model="currentTimeEntry.clockOut"
+            show-time
+            hour-format="24"
+            date-format="yy-mm-dd"
+            :first-day-of-week="1"
+            :manual-input="true"
+            class="w-full"
+          />
+        </div>
+        <div class="field">
+          <label for="editBreakMinutes">{{ t('timeEntries.breakMinutes') }}</label>
+          <InputNumber
+            id="editBreakMinutes"
+            v-model="currentTimeEntry.breakMinutes"
+            :min="0"
+            :max="480"
+            suffix=" min"
+            class="w-full"
+          />
+        </div>
+        <div class="field">
+          <label for="editNotes">{{ t('timeEntries.notes') }}</label>
+          <Textarea
+            id="editNotes"
+            v-model="currentTimeEntry.notes"
+            rows="3"
+            class="w-full"
+          />
+        </div>
       </div>
       <template #footer>
         <Button :label="t('cancel')" severity="secondary" @click="editDialogVisible = false" />
@@ -890,5 +1038,26 @@ h2 {
   display: flex;
   gap: 0.5rem;
   align-items: flex-end;
+}
+
+.manual-entry-form .field {
+  margin-bottom: 1.5rem;
+}
+
+.manual-entry-form .field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-color);
+  min-width: 150px;
+}
+
+.manual-entry-form .field :deep(.p-inputtext),
+.manual-entry-form .field :deep(.p-dropdown),
+.manual-entry-form .field :deep(.p-inputnumber),
+.manual-entry-form .field :deep(.p-calendar),
+.manual-entry-form .field :deep(.p-inputtextarea) {
+  width: 100%;
 }
 </style>

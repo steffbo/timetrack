@@ -143,25 +143,23 @@ class TimeEntryRepositoryTest extends RepositoryTestBase {
     @Test
     @DisplayName("Should find entries by entry type")
     void shouldFindEntriesByEntryType() {
-        // Given
+        // Given - only WORK type supported now
         timeEntryRepository.save(testEntry);
 
-        TimeEntry sickEntry = TimeEntry.builder()
+        TimeEntry anotherWorkEntry = TimeEntry.builder()
                 .user(testUser)
                 .entryDate(LocalDate.now().minusDays(1))
                 .clockIn(LocalDateTime.now().minusDays(1).withHour(9).withMinute(0))
                 .clockOut(LocalDateTime.now().minusDays(1).withHour(17).withMinute(0))
-                .entryType(EntryType.SICK)
+                .entryType(EntryType.WORK)
                 .build();
-        timeEntryRepository.save(sickEntry);
+        timeEntryRepository.save(anotherWorkEntry);
 
         // When
         List<TimeEntry> workEntries = timeEntryRepository.findByUserIdAndEntryType(testUser.getId(), EntryType.WORK);
-        List<TimeEntry> sickEntries = timeEntryRepository.findByUserIdAndEntryType(testUser.getId(), EntryType.SICK);
 
         // Then
-        assertThat(workEntries).hasSize(1);
-        assertThat(sickEntries).hasSize(1);
+        assertThat(workEntries).hasSize(2);
     }
 
     @Test
@@ -286,22 +284,8 @@ class TimeEntryRepositoryTest extends RepositoryTestBase {
         // Given
         TimeEntry workEntry = timeEntryRepository.save(testEntry);
 
-        TimeEntry sickEntry = TimeEntry.builder()
-                .user(testUser)
-                .entryDate(LocalDate.now())
-                .clockIn(LocalDateTime.now().withHour(9).withMinute(0))
-                .clockOut(LocalDateTime.now().withHour(17).withMinute(0))
-                .entryType(EntryType.SICK)
-                .build();
-        sickEntry = timeEntryRepository.save(sickEntry);
-
-        // Then
+        // Then - only WORK type supported now
         assertThat(workEntry.isWorkEntry()).isTrue();
-        assertThat(workEntry.isSickEntry()).isFalse();
-        assertThat(workEntry.isPtoEntry()).isFalse();
-        assertThat(workEntry.isEventEntry()).isFalse();
-
-        assertThat(sickEntry.isSickEntry()).isTrue();
-        assertThat(sickEntry.isWorkEntry()).isFalse();
+        assertThat(workEntry.getEntryType()).isEqualTo(EntryType.WORK);
     }
 }

@@ -253,10 +253,7 @@
     "expectedHours": "Soll-Stunden",
     "type": {
       "label": "Typ",
-      "WORK": "Arbeit",
-      "SICK": "Krank",
-      "PTO": "Urlaub",
-      "EVENT": "Ereignis"
+      "WORK": "Arbeit"
     },
     "status": {
       "NO_ENTRY": "Kein Eintrag",
@@ -289,7 +286,16 @@
     "updateSuccess": "Zeiteintrag erfolgreich aktualisiert",
     "updateError": "Fehler beim Aktualisieren des Zeiteintrags",
     "deleteSuccess": "Zeiteintrag erfolgreich gelöscht",
-    "deleteError": "Fehler beim Löschen des Zeiteintrags"
+    "deleteError": "Fehler beim Löschen des Zeiteintrags",
+    "quickWorkEntry": "Schnelleintrag",
+    "quickEntryCreated": "Arbeitseintrag mit Standardzeiten erstellt",
+    "quickEntryError": "Fehler beim Erstellen des Schnelleintrags",
+    "noWorkingHoursForToday": "Für heute sind keine Arbeitszeiten konfiguriert",
+    "useDefaultHours": "Standardarbeitszeiten verwenden",
+    "useDefaultHoursHint": "Wähle nur ein Datum - Start- und Endzeit werden automatisch ausgefüllt",
+    "noWorkingHoursForDay": "Für den gewählten Tag sind keine Arbeitszeiten konfiguriert",
+    "defaultHoursApplied": "Standardarbeitszeiten angewendet",
+    "defaultHoursError": "Fehler beim Laden der Standardarbeitszeiten"
   },
   "weekday": {
     "monday": "Montag",
@@ -314,6 +320,7 @@
   "no": "Nein",
   "error": "Fehler",
   "success": "Erfolg",
+  "warning": "Warnung",
   "info": "Information",
   "filter": "Filtern",
   "locale": "de-DE"

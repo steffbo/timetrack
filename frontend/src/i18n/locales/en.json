@@ -253,10 +253,7 @@
     "expectedHours": "Expected Hours",
     "type": {
       "label": "Type",
-      "WORK": "Work",
-      "SICK": "Sick",
-      "PTO": "PTO",
-      "EVENT": "Event"
+      "WORK": "Work"
     },
     "status": {
       "NO_ENTRY": "No Entry",
@@ -289,7 +286,16 @@
     "updateSuccess": "Time entry updated successfully",
     "updateError": "Error updating time entry",
     "deleteSuccess": "Time entry deleted successfully",
-    "deleteError": "Error deleting time entry"
+    "deleteError": "Error deleting time entry",
+    "quickWorkEntry": "Quick Entry",
+    "quickEntryCreated": "Work entry created with default hours",
+    "quickEntryError": "Error creating quick entry",
+    "noWorkingHoursForToday": "No working hours configured for today",
+    "useDefaultHours": "Use default working hours",
+    "useDefaultHoursHint": "Select only a date - start and end times will be auto-filled",
+    "noWorkingHoursForDay": "No working hours configured for selected day",
+    "defaultHoursApplied": "Default working hours applied",
+    "defaultHoursError": "Error loading default working hours"
   },
   "weekday": {
     "monday": "Monday",
@@ -314,6 +320,7 @@
   "no": "No",
   "error": "Error",
   "success": "Success",
+  "warning": "Warning",
   "info": "Information",
   "filter": "Filter",
   "locale": "en-US"

@@ -102,38 +102,12 @@ public class TimeEntry {
 
     /**
      * Check if this is a regular work entry.
+     * Always returns true since only WORK entries are supported.
      *
-     * @return true if entry type is WORK
+     * @return true (always, since only WORK type exists)
      */
     public boolean isWorkEntry() {
         return entryType == EntryType.WORK;
-    }
-
-    /**
-     * Check if this is a sick leave entry.
-     *
-     * @return true if entry type is SICK
-     */
-    public boolean isSickEntry() {
-        return entryType == EntryType.SICK;
-    }
-
-    /**
-     * Check if this is a PTO entry.
-     *
-     * @return true if entry type is PTO
-     */
-    public boolean isPtoEntry() {
-        return entryType == EntryType.PTO;
-    }
-
-    /**
-     * Check if this is an event entry.
-     *
-     * @return true if entry type is EVENT
-     */
-    public boolean isEventEntry() {
-        return entryType == EntryType.EVENT;
     }
 
     @Override

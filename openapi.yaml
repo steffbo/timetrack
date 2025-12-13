@@ -1608,8 +1608,8 @@ components:
           example: 30
         entryType:
           type: string
-          enum: [WORK, SICK, PTO, EVENT]
-          description: Type of time entry
+          enum: [WORK]
+          description: Type of time entry (only WORK supported; absences use TimeOff entity)
           example: "WORK"
         hoursWorked:
           type: number
@@ -1652,8 +1652,9 @@ components:
           example: 30
         entryType:
           type: string
-          enum: [WORK, SICK, PTO, EVENT]
+          enum: [WORK]
           default: WORK
+          description: Type of time entry (only WORK supported; absences use TimeOff entity)
         notes:
           type: string
 
@@ -1678,7 +1679,8 @@ components:
           example: 30
         entryType:
           type: string
-          enum: [WORK, SICK, PTO, EVENT]
+          enum: [WORK]
+          description: Type of time entry (only WORK supported; absences use TimeOff entity)
         notes:
           type: string
 
