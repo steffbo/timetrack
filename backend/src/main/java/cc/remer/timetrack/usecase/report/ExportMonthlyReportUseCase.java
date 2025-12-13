@@ -1,11 +1,15 @@
 package cc.remer.timetrack.usecase.report;
 
 import cc.remer.timetrack.adapter.persistence.TimeEntryRepository;
+import cc.remer.timetrack.adapter.persistence.TimeOffRepository;
 import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.adapter.persistence.WorkingHoursRepository;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
+import cc.remer.timetrack.domain.timeoff.TimeOff;
+import cc.remer.timetrack.domain.timeoff.TimeOffType;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.workinghours.WorkingHours;
+import cc.remer.timetrack.usecase.report.DailyReportEntry.DayType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +32,7 @@ import java.util.stream.Collectors;
 public class ExportMonthlyReportUseCase {
 
     private final TimeEntryRepository timeEntryRepository;
+    private final TimeOffRepository timeOffRepository;
     private final WorkingHoursRepository workingHoursRepository;
     private final UserRepository userRepository;
     private final MonthlyReportPdfGenerator pdfGenerator;
@@ -67,6 +72,15 @@ public class ExportMonthlyReportUseCase {
 
         log.debug("Found {} time entries for the period", timeEntries.size());
 
+        // Fetch time-off entries for the month
+        List<TimeOff> timeOffEntries = timeOffRepository.findByUserIdAndDateRange(
+                userId,
+                startDate,
+                endDate
+        );
+
+        log.debug("Found {} time-off entries for the period", timeOffEntries.size());
+
         // Fetch working hours configuration
         List<WorkingHours> workingHoursConfig = workingHoursRepository.findByUserId(userId);
         Map<Short, WorkingHours> workingHoursMap = workingHoursConfig.stream()
@@ -78,6 +92,9 @@ public class ExportMonthlyReportUseCase {
         Map<LocalDate, List<TimeEntry>> entriesByDate = timeEntries.stream()
                 .collect(Collectors.groupingBy(TimeEntry::getEntryDate));
 
+        // Build map of time-off by date
+        Map<LocalDate, TimeOffType> timeOffByDate = buildTimeOffMap(timeOffEntries, startDate, endDate);
+
         // Generate daily report entries for each day in the month
         List<DailyReportEntry> dailyEntries = new ArrayList<>();
         LocalDate currentDate = startDate;
@@ -86,7 +103,8 @@ public class ExportMonthlyReportUseCase {
             DailyReportEntry dailyEntry = createDailyEntry(
                     currentDate,
                     entriesByDate.getOrDefault(currentDate, Collections.emptyList()),
-                    workingHoursMap
+                    workingHoursMap,
+                    timeOffByDate
             );
             dailyEntries.add(dailyEntry);
             currentDate = currentDate.plusDays(1);
@@ -119,6 +137,13 @@ public class ExportMonthlyReportUseCase {
                 endDate
         );
 
+        // Fetch time-off entries for the month
+        List<TimeOff> timeOffEntries = timeOffRepository.findByUserIdAndDateRange(
+                userId,
+                startDate,
+                endDate
+        );
+
         // Fetch working hours configuration
         List<WorkingHours> workingHoursConfig = workingHoursRepository.findByUserId(userId);
         Map<Short, WorkingHours> workingHoursMap = workingHoursConfig.stream()
@@ -128,6 +153,9 @@ public class ExportMonthlyReportUseCase {
         Map<LocalDate, List<TimeEntry>> entriesByDate = timeEntries.stream()
                 .collect(Collectors.groupingBy(TimeEntry::getEntryDate));
 
+        // Build map of time-off by date
+        Map<LocalDate, TimeOffType> timeOffByDate = buildTimeOffMap(timeOffEntries, startDate, endDate);
+
         // Generate daily report entries for each day in the month
         List<DailyReportEntry> dailyEntries = new ArrayList<>();
         LocalDate currentDate = startDate;
@@ -136,7 +164,8 @@ public class ExportMonthlyReportUseCase {
             DailyReportEntry dailyEntry = createDailyEntry(
                     currentDate,
                     entriesByDate.getOrDefault(currentDate, Collections.emptyList()),
-                    workingHoursMap
+                    workingHoursMap,
+                    timeOffByDate
             );
             dailyEntries.add(dailyEntry);
             currentDate = currentDate.plusDays(1);
@@ -159,12 +188,38 @@ public class ExportMonthlyReportUseCase {
     }
 
     /**
+     * Build a map of time-off entries by date.
+     * If multiple time-off entries exist for the same date, prioritize sick days, then vacation.
+     */
+    private Map<LocalDate, TimeOffType> buildTimeOffMap(List<TimeOff> timeOffEntries, LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, TimeOffType> timeOffByDate = new HashMap<>();
+
+        for (TimeOff timeOff : timeOffEntries) {
+            LocalDate currentDate = timeOff.getStartDate().isBefore(startDate) ? startDate : timeOff.getStartDate();
+            LocalDate lastDate = timeOff.getEndDate().isAfter(endDate) ? endDate : timeOff.getEndDate();
+
+            while (!currentDate.isAfter(lastDate)) {
+                // Prioritize sick days over other types
+                TimeOffType existingType = timeOffByDate.get(currentDate);
+                if (existingType == null ||
+                    (timeOff.getTimeOffType() == TimeOffType.SICK && existingType != TimeOffType.SICK)) {
+                    timeOffByDate.put(currentDate, timeOff.getTimeOffType());
+                }
+                currentDate = currentDate.plusDays(1);
+            }
+        }
+
+        return timeOffByDate;
+    }
+
+    /**
      * Create a daily report entry for a specific date.
      */
     private DailyReportEntry createDailyEntry(
             LocalDate date,
             List<TimeEntry> entries,
-            Map<Short, WorkingHours> workingHoursMap
+            Map<Short, WorkingHours> workingHoursMap,
+            Map<LocalDate, TimeOffType> timeOffByDate
     ) {
         // Get expected hours for this day of week
         DayOfWeek dayOfWeek = date.getDayOfWeek();
@@ -174,6 +229,9 @@ public class ExportMonthlyReportUseCase {
         Double expectedHours = (workingHours != null && workingHours.getIsWorkingDay())
                 ? workingHours.getHours().doubleValue()
                 : 0.0;
+
+        // Determine day type
+        DayType dayType = determineDayType(date, timeOffByDate);
 
         if (entries.isEmpty()) {
             // No entries for this day
@@ -185,6 +243,7 @@ public class ExportMonthlyReportUseCase {
                     .totalHours(null)
                     .expectedHours(expectedHours)
                     .overtime(null)
+                    .dayType(dayType)
                     .build();
         }
 
@@ -235,6 +294,31 @@ public class ExportMonthlyReportUseCase {
                 .totalHours(totalHours)
                 .expectedHours(expectedHours)
                 .overtime(overtime)
+                .dayType(dayType)
                 .build();
+    }
+
+    /**
+     * Determine the day type based on time-off and weekend status.
+     */
+    private DayType determineDayType(LocalDate date, Map<LocalDate, TimeOffType> timeOffByDate) {
+        TimeOffType timeOffType = timeOffByDate.get(date);
+
+        if (timeOffType != null) {
+            return switch (timeOffType) {
+                case SICK -> DayType.SICK;
+                case VACATION -> DayType.VACATION;
+                case PUBLIC_HOLIDAY -> DayType.PUBLIC_HOLIDAY;
+                default -> DayType.REGULAR;
+            };
+        }
+
+        // Check if weekend
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+            return DayType.WEEKEND;
+        }
+
+        return DayType.REGULAR;
     }
 }

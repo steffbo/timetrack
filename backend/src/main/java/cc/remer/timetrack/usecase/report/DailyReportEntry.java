@@ -32,7 +32,7 @@ public record DailyReportEntry(
         int breakMinutes,
 
         /**
-         * Total hours worked on this day (null if any active entries)
+         * Total hours worked on this day (null if no entries)
          */
         Double totalHours,
 
@@ -44,6 +44,21 @@ public record DailyReportEntry(
         /**
          * Overtime: totalHours - expectedHours (null if active entries)
          */
-        Double overtime
+        Double overtime,
+
+        /**
+         * Type of day (weekend, sick, vacation, public holiday, or regular work day)
+         */
+        DayType dayType
 ) {
+    /**
+     * Types of days for color coding in reports.
+     */
+    public enum DayType {
+        REGULAR,       // Regular work day
+        WEEKEND,       // Weekend day
+        SICK,          // Sick day
+        VACATION,      // Vacation day
+        PUBLIC_HOLIDAY // Public holiday
+    }
 }

@@ -1,6 +1,7 @@
 package cc.remer.timetrack.usecase.report;
 
 import cc.remer.timetrack.domain.user.User;
+import cc.remer.timetrack.usecase.report.DailyReportEntry.DayType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -177,12 +178,21 @@ public class MonthlyReportPdfGenerator {
                 entry.overtime() != null ? formatHours(entry.overtime()) : "-"
         };
 
+        // Draw background color based on day type
+        float[] bgColor = getBackgroundColor(entry.dayType());
+        if (bgColor != null) {
+            contentStream.setNonStrokingColor(bgColor[0], bgColor[1], bgColor[2]);
+            contentStream.addRect(xStart, yPosition - rowHeight, tableWidth, rowHeight);
+            contentStream.fill();
+        }
+
         // Draw border
         contentStream.setStrokingColor(200/255f, 200/255f, 200/255f);
         contentStream.addRect(xStart, yPosition - rowHeight, tableWidth, rowHeight);
         contentStream.stroke();
 
-        // Draw text - each cell independently
+        // Reset to black for text
+        contentStream.setNonStrokingColor(0, 0, 0);
         contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), NORMAL_FONT_SIZE);
 
         float xPosition = xStart + 5;
@@ -197,6 +207,25 @@ public class MonthlyReportPdfGenerator {
         }
 
         return yPosition - rowHeight;
+    }
+
+    /**
+     * Get background color for a day type.
+     * Returns RGB values as float array [r, g, b] in range 0.0-1.0.
+     * Returns null for regular days (no background color).
+     */
+    private float[] getBackgroundColor(DayType dayType) {
+        if (dayType == null) {
+            return null;
+        }
+
+        return switch (dayType) {
+            case WEEKEND -> new float[]{0.92f, 0.92f, 0.92f};        // Soft grey
+            case SICK -> new float[]{1.0f, 0.9f, 0.9f};              // Soft red
+            case VACATION -> new float[]{0.9f, 1.0f, 0.9f};          // Soft green
+            case PUBLIC_HOLIDAY -> new float[]{0.95f, 0.95f, 1.0f};  // Soft blue
+            case REGULAR -> null;                                     // No background
+        };
     }
 
     /**
