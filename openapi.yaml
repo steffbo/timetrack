@@ -1361,6 +1361,7 @@ components:
         - startDate
         - endDate
         - timeOffType
+        - days
       properties:
         id:
           type: integer
@@ -1382,6 +1383,10 @@ components:
           type: string
           enum: [VACATION, SICK, PERSONAL, PUBLIC_HOLIDAY]
           description: Type of time-off
+        days:
+          type: integer
+          description: Number of working days (excludes weekends, holidays, and recurring off-days)
+          example: 10
         hoursPerDay:
           type: number
           format: double

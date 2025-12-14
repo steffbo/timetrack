@@ -5,6 +5,7 @@ import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.adapter.persistence.VacationBalanceRepository;
 import cc.remer.timetrack.domain.timeoff.TimeOff;
 import cc.remer.timetrack.domain.timeoff.TimeOffType;
+import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.vacationbalance.VacationBalance;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -28,6 +28,7 @@ public class VacationBalanceService {
     private final VacationBalanceRepository vacationBalanceRepository;
     private final TimeOffRepository timeOffRepository;
     private final UserRepository userRepository;
+    private final WorkingDaysCalculator workingDaysCalculator;
 
     private static final BigDecimal DEFAULT_ANNUAL_ALLOWANCE_DAYS = new BigDecimal("30.0");
 
@@ -90,16 +91,27 @@ public class VacationBalanceService {
     }
 
     /**
-     * Calculate the number of days for a time-off entry.
-     * Counts inclusive days from start to end date.
+     * Calculate the number of vacation days for a time-off entry.
+     * Only counts working days, excluding:
+     * - Weekends (non-working days according to user's working hours)
+     * - Public holidays
+     * - Recurring off-days
      *
      * @param timeOff the time-off entry
-     * @return the number of days
+     * @return the number of working vacation days
      */
     private BigDecimal calculateDaysForTimeOff(TimeOff timeOff) {
-        // Calculate number of days (inclusive)
-        long daysBetween = ChronoUnit.DAYS.between(timeOff.getStartDate(), timeOff.getEndDate()) + 1;
-        return BigDecimal.valueOf(daysBetween);
+        User user = timeOff.getUser();
+        GermanState userState = user.getState();
+
+        int workingDays = workingDaysCalculator.calculateWorkingDays(
+                user.getId(),
+                userState,
+                timeOff.getStartDate(),
+                timeOff.getEndDate()
+        );
+
+        return BigDecimal.valueOf(workingDays);
     }
 
     /**

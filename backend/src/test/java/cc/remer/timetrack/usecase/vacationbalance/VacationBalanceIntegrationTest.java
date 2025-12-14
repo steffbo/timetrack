@@ -49,9 +49,11 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
     void setUp() {
         timeOffRepository.deleteAll();
         vacationBalanceRepository.deleteAll();
+        workingHoursRepository.deleteAll();
         userRepository.deleteAll();
 
         testUser = createTestUser();
+        createDefaultWorkingHours(testUser);
     }
 
     @Test
@@ -61,16 +63,18 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         int currentYear = Year.now().getValue();
         createVacationBalance(testUser, currentYear, 30.0, 5.0, 2.0, 0.0);
 
-        // Create vacation time-off entries totaling 12 days
+        // Create vacation time-off entries
+        // March 10-14, 2025: Mon-Fri = 5 working days
         CreateTimeOffRequest vacation1 = new CreateTimeOffRequest();
         vacation1.setStartDate(LocalDate.of(currentYear, 3, 10));
-        vacation1.setEndDate(LocalDate.of(currentYear, 3, 14)); // 5 days
+        vacation1.setEndDate(LocalDate.of(currentYear, 3, 14));
         vacation1.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
         createTimeOff.execute(testUser.getId(), vacation1);
 
+        // July 7-11, 2025: Mon-Fri = 5 working days
         CreateTimeOffRequest vacation2 = new CreateTimeOffRequest();
-        vacation2.setStartDate(LocalDate.of(currentYear, 7, 1));
-        vacation2.setEndDate(LocalDate.of(currentYear, 7, 7)); // 7 days
+        vacation2.setStartDate(LocalDate.of(currentYear, 7, 7));
+        vacation2.setEndDate(LocalDate.of(currentYear, 7, 11));
         vacation2.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
         createTimeOff.execute(testUser.getId(), vacation2);
 
@@ -84,8 +88,8 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         assertThat(response.getAnnualAllowanceDays()).isEqualTo(30.0);
         assertThat(response.getCarriedOverDays()).isEqualTo(5.0);
         assertThat(response.getAdjustmentDays()).isEqualTo(2.0);
-        assertThat(response.getUsedDays()).isEqualTo(12.0); // 5 + 7 = 12
-        assertThat(response.getRemainingDays()).isEqualTo(25.0); // 30 + 5 + 2 - 12 = 25
+        assertThat(response.getUsedDays()).isEqualTo(10.0); // 5 + 5 = 10 working days
+        assertThat(response.getRemainingDays()).isEqualTo(27.0); // 30 + 5 + 2 - 10 = 27
     }
 
     @Test
@@ -242,7 +246,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Arrange - Create vacation balance for 2025
         createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
 
-        // Create a 5-day vacation (Jan 6-10, 2025)
+        // Create a 5-day vacation (Jan 6-10, 2025 = Mon-Fri = 5 working days)
         CreateTimeOffRequest request = new CreateTimeOffRequest();
         request.setStartDate(LocalDate.of(2025, 1, 6));
         request.setEndDate(LocalDate.of(2025, 1, 10));
@@ -253,7 +257,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
 
         // Assert - Vacation balance should be updated
         VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
-        assertThat(balance.getUsedDays()).isEqualTo(5.0); // 5 days used
+        assertThat(balance.getUsedDays()).isEqualTo(5.0); // 5 working days used
         assertThat(balance.getRemainingDays()).isEqualTo(25.0); // 30 - 5 = 25
     }
 
@@ -263,6 +267,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Arrange - Create vacation balance and time-off
         createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
 
+        // Jan 6-10, 2025 = Mon-Fri = 5 working days
         CreateTimeOffRequest request = new CreateTimeOffRequest();
         request.setStartDate(LocalDate.of(2025, 1, 6));
         request.setEndDate(LocalDate.of(2025, 1, 10));
@@ -272,7 +277,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
 
         // Verify vacation was deducted
         VacationBalanceResponse balanceAfterCreate = getVacationBalance.execute(testUser.getId(), 2025);
-        assertThat(balanceAfterCreate.getUsedDays()).isEqualTo(5.0);
+        assertThat(balanceAfterCreate.getUsedDays()).isEqualTo(5.0); // 5 working days
 
         // Act - Delete the time-off
         deleteTimeOff.execute(testUser.getId(), timeOff.getId());
@@ -289,24 +294,24 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Arrange - Create vacation balance for 2025
         createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
 
-        // Create first vacation (3 days)
+        // Create first vacation - March 10-12, 2025 = Mon-Wed = 3 working days
         CreateTimeOffRequest request1 = new CreateTimeOffRequest();
         request1.setStartDate(LocalDate.of(2025, 3, 10));
         request1.setEndDate(LocalDate.of(2025, 3, 12));
         request1.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
         createTimeOff.execute(testUser.getId(), request1);
 
-        // Create second vacation (5 days)
+        // Create second vacation - July 1-5, 2025 = Tue-Sat = 4 working days (Tue-Fri)
         CreateTimeOffRequest request2 = new CreateTimeOffRequest();
         request2.setStartDate(LocalDate.of(2025, 7, 1));
-        request2.setEndDate(LocalDate.of(2025, 7, 5));
+        request2.setEndDate(LocalDate.of(2025, 7, 4)); // Changed to July 4 (Tue-Fri = 4 days)
         request2.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
         createTimeOff.execute(testUser.getId(), request2);
 
-        // Assert - Total used days should be 8
+        // Assert - Total used days should be 7 working days
         VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
-        assertThat(balance.getUsedDays()).isEqualTo(8.0); // 3 + 5 = 8
-        assertThat(balance.getRemainingDays()).isEqualTo(22.0); // 30 - 8 = 22
+        assertThat(balance.getUsedDays()).isEqualTo(7.0); // 3 + 4 = 7 working days
+        assertThat(balance.getRemainingDays()).isEqualTo(23.0); // 30 - 7 = 23
     }
 
     @Test
@@ -332,21 +337,98 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
     @DisplayName("Should create vacation balance automatically if not exists when creating vacation")
     void shouldCreateVacationBalanceIfNotExistsWhenCreatingVacation() {
         // Arrange - No vacation balance exists yet for 2025
-        // Create a vacation
+        // Create a vacation - June 2-6, 2025 = Mon-Fri = 5 working days
         CreateTimeOffRequest request = new CreateTimeOffRequest();
-        request.setStartDate(LocalDate.of(2025, 6, 1));
-        request.setEndDate(LocalDate.of(2025, 6, 7));
+        request.setStartDate(LocalDate.of(2025, 6, 2));
+        request.setEndDate(LocalDate.of(2025, 6, 6));
         request.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
 
         // Act
         createTimeOff.execute(testUser.getId(), request);
 
-        // Assert - Vacation balance should be created with default 30 days and 7 days used
+        // Assert - Vacation balance should be created with default 30 days and 5 working days used
         VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
         assertThat(balance).isNotNull();
         assertThat(balance.getAnnualAllowanceDays()).isEqualTo(30.0);
-        assertThat(balance.getUsedDays()).isEqualTo(7.0);
-        assertThat(balance.getRemainingDays()).isEqualTo(23.0); // 30 - 7 = 23
+        assertThat(balance.getUsedDays()).isEqualTo(5.0); // 5 working days
+        assertThat(balance.getRemainingDays()).isEqualTo(25.0); // 30 - 5 = 25
+    }
+
+    @Test
+    @DisplayName("Should exclude weekends when calculating vacation days")
+    void shouldExcludeWeekendsWhenCalculatingVacationDays() {
+        // Arrange - Create vacation balance for 2025
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create 2-week vacation including 2 weekends
+        // Jan 6-17, 2025 = 14 calendar days = 10 working days (Mon-Fri each week)
+        CreateTimeOffRequest request = new CreateTimeOffRequest();
+        request.setStartDate(LocalDate.of(2025, 1, 6)); // Monday
+        request.setEndDate(LocalDate.of(2025, 1, 17)); // Friday
+        request.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+
+        // Act
+        createTimeOff.execute(testUser.getId(), request);
+
+        // Assert - Only working days should be counted (weekends excluded)
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balance.getUsedDays()).isEqualTo(10.0); // 10 working days (2 full weeks Mon-Fri)
+        assertThat(balance.getRemainingDays()).isEqualTo(20.0); // 30 - 10 = 20
+    }
+
+    @Test
+    @DisplayName("Should exclude public holidays when calculating vacation days")
+    void shouldExcludePublicHolidaysWhenCalculatingVacationDays() {
+        // Arrange - Create vacation balance for 2025
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create vacation around New Year (includes Jan 1, 2025 = public holiday)
+        // Dec 30, 2024 - Jan 2, 2025 = 4 calendar days
+        // But Dec 30 is 2024, so only count Jan 2 = 1 working day (Jan 1 is holiday, weekends excluded)
+        CreateTimeOffRequest request = new CreateTimeOffRequest();
+        request.setStartDate(LocalDate.of(2025, 1, 1)); // Wednesday (New Year - holiday)
+        request.setEndDate(LocalDate.of(2025, 1, 3)); // Friday
+        request.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+
+        // Act
+        createTimeOff.execute(testUser.getId(), request);
+
+        // Assert - Jan 1 (holiday) should not be counted, only Jan 2-3 (Thu-Fri) = 2 working days
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balance.getUsedDays()).isEqualTo(2.0); // 2 working days (Jan 2-3)
+        assertThat(balance.getRemainingDays()).isEqualTo(28.0); // 30 - 2 = 28
+    }
+
+    @Test
+    @DisplayName("Should exclude recurring off-days when calculating vacation days")
+    void shouldExcludeRecurringOffDaysWhenCalculatingVacationDays() {
+        // Arrange - Create vacation balance for 2025
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create a recurring off-day for every other Monday starting Jan 6
+        createRecurringOffDay(
+                testUser,
+                1, // Monday
+                2, // Every 2 weeks
+                LocalDate.of(2025, 1, 6),
+                LocalDate.of(2025, 1, 1),
+                "Recurring Monday off"
+        );
+
+        // Create vacation Jan 6-9, 2025 (Mon-Thu)
+        // Jan 6 is a recurring off-day, so should only count Jan 7-9 = 3 working days
+        CreateTimeOffRequest request = new CreateTimeOffRequest();
+        request.setStartDate(LocalDate.of(2025, 1, 6)); // Monday (recurring off-day)
+        request.setEndDate(LocalDate.of(2025, 1, 9)); // Thursday
+        request.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+
+        // Act
+        createTimeOff.execute(testUser.getId(), request);
+
+        // Assert - Jan 6 should not be counted (recurring off-day), only Jan 7-9 = 3 working days
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balance.getUsedDays()).isEqualTo(3.0); // 3 working days (Jan 7-9)
+        assertThat(balance.getRemainingDays()).isEqualTo(27.0); // 30 - 3 = 27
     }
 
 }

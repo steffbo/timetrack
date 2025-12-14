@@ -5,6 +5,9 @@ import cc.remer.timetrack.api.model.TimeOffResponse;
 import cc.remer.timetrack.api.model.UpdateTimeOffRequest;
 import cc.remer.timetrack.domain.timeoff.TimeOff;
 import cc.remer.timetrack.domain.timeoff.TimeOffType;
+import cc.remer.timetrack.domain.user.GermanState;
+import cc.remer.timetrack.usecase.vacationbalance.WorkingDaysCalculator;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -13,7 +16,10 @@ import java.math.BigDecimal;
  * Mapper for TimeOff entity and DTOs.
  */
 @Component
+@RequiredArgsConstructor
 public class TimeOffMapper {
+
+    private final WorkingDaysCalculator workingDaysCalculator;
 
     /**
      * Map entity to response DTO.
@@ -25,6 +31,17 @@ public class TimeOffMapper {
         response.setStartDate(entity.getStartDate());
         response.setEndDate(entity.getEndDate());
         response.setTimeOffType(TimeOffResponse.TimeOffTypeEnum.fromValue(entity.getTimeOffType().name()));
+
+        // Calculate working days (excludes weekends, holidays, recurring off-days)
+        GermanState userState = entity.getUser().getState();
+        int workingDays = workingDaysCalculator.calculateWorkingDays(
+                entity.getUser().getId(),
+                userState,
+                entity.getStartDate(),
+                entity.getEndDate()
+        );
+        response.setDays(workingDays);
+
         response.setHoursPerDay(entity.getHoursPerDay() != null ? entity.getHoursPerDay().doubleValue() : null);
         response.setNotes(entity.getNotes());
         response.setCreatedAt(entity.getCreatedAt() != null ? entity.getCreatedAt().atOffset(java.time.ZoneOffset.UTC) : null);

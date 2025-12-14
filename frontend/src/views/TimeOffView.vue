@@ -196,14 +196,6 @@ const getTypeSeverity = (type: string) => {
   }
 }
 
-const calculateDays = (startDate: string, endDate: string) => {
-  const start = new Date(startDate)
-  const end = new Date(endDate)
-  const diffTime = Math.abs(end.getTime() - start.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
-  return diffDays
-}
-
 onMounted(() => {
   // Default filter: previous month + current month
   const now = new Date()
@@ -270,7 +262,7 @@ onMounted(() => {
         </Column>
         <Column field="days" :header="t('timeOff.days')">
           <template #body="{ data }">
-            {{ calculateDays(data.startDate, data.endDate) }}
+            {{ data.days }}
           </template>
         </Column>
         <Column field="hoursPerDay" :header="t('timeOff.hoursPerDay')">
