@@ -279,6 +279,7 @@
     "date": "Datum",
     "day": "Tag",
     "hoursWorked": "Gearbeitete Stunden",
+    "difference": "+/- Soll",
     "actualHours": "Ist-Stunden",
     "expectedHours": "Soll-Stunden",
     "type": {

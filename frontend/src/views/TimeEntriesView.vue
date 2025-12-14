@@ -179,6 +179,11 @@ const loadTimeEntries = async () => {
     // Check if there's an active entry
     activeEntry.value = response.find(entry => entry.isActive) || null
 
+    // Load working hours if not already loaded (needed for difference calculation)
+    if (!workingHours.value) {
+      await loadWorkingHours()
+    }
+
     // Load time-off entries if toggle is enabled
     if (showTimeOff.value) {
       await loadTimeOff()
@@ -649,7 +654,10 @@ const undoDelete = async () => {
 
 const formatDateTime = (dateTime: string | undefined) => {
   if (!dateTime) return '-'
-  return new Date(dateTime).toLocaleString(t('locale'))
+  return new Date(dateTime).toLocaleTimeString(t('locale'), {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 const formatDate = (date: string | undefined) => {
@@ -660,6 +668,57 @@ const formatDate = (date: string | undefined) => {
 const formatHours = (hours: number | undefined) => {
   if (hours === undefined || hours === null) return '-'
   return hours.toFixed(2) + 'h'
+}
+
+const getExpectedHoursForEntry = (entry: TimeEntryResponse): number | null => {
+  if (!workingHours.value || !entry.entryDate) return null
+
+  // Get day of week from entry date (1=Monday, 7=Sunday)
+  const entryDate = new Date(entry.entryDate)
+  const dayOfWeek = entryDate.getDay() === 0 ? 7 : entryDate.getDay()
+
+  // Find working hours for this day
+  const dayWorkingHours = workingHours.value.workingDays.find(
+    wd => wd.weekday === dayOfWeek
+  )
+
+  if (!dayWorkingHours || !dayWorkingHours.isWorkingDay) {
+    return 0 // Non-working day
+  }
+
+  return dayWorkingHours.hours
+}
+
+const getHoursDifference = (entry: TimeEntryResponse): string => {
+  const expectedHours = getExpectedHoursForEntry(entry)
+  if (expectedHours === null) return '-'
+
+  const actualHours = entry.hoursWorked || 0
+  const diffHours = actualHours - expectedHours
+  const diffMinutes = Math.round(diffHours * 60)
+
+  if (diffMinutes === 0) return '±0 min'
+
+  const sign = diffMinutes > 0 ? '+' : ''
+  return `${sign}${diffMinutes} min`
+}
+
+const getDifferenceSeverity = (entry: TimeEntryResponse): 'success' | 'warn' | 'danger' | 'secondary' | null => {
+  const expectedHours = getExpectedHoursForEntry(entry)
+  if (expectedHours === null) return null
+
+  const actualHours = entry.hoursWorked || 0
+  const diffHours = actualHours - expectedHours
+  const diffMinutes = Math.abs(Math.round(diffHours * 60))
+
+  // Within 15 minutes: green (success)
+  if (diffMinutes <= 15) return 'success'
+
+  // Between 15-45 minutes: yellow (warn)
+  if (diffMinutes <= 45) return 'warn'
+
+  // Over 45 minutes: red (danger)
+  return 'danger'
 }
 
 const isActiveEntry = (entry: TimeEntryResponse) => {
@@ -809,6 +868,16 @@ onMounted(() => {
             <span v-if="entry.type === 'work'">
               {{ formatHours((entry.data as TimeEntryResponse).hoursWorked) }}
             </span>
+            <span v-else>-</span>
+          </template>
+        </Column>
+        <Column field="difference" :header="t('timeEntries.difference')">
+          <template #body="{ data: entry }">
+            <Tag
+              v-if="entry.type === 'work' && getDifferenceSeverity(entry.data as TimeEntryResponse)"
+              :value="getHoursDifference(entry.data as TimeEntryResponse)"
+              :severity="getDifferenceSeverity(entry.data as TimeEntryResponse)"
+            />
             <span v-else>-</span>
           </template>
         </Column>

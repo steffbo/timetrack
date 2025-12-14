@@ -279,6 +279,7 @@
     "date": "Date",
     "day": "Day",
     "hoursWorked": "Hours Worked",
+    "difference": "+/- Expected",
     "actualHours": "Actual Hours",
     "expectedHours": "Expected Hours",
     "type": {
