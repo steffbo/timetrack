@@ -14,13 +14,23 @@
           <h3 class="calendar-title">
             {{ monthName }} {{ currentYear }}
           </h3>
-          <Button
-            :label="t('dashboard.calendar.today')"
-            @click="goToToday"
-            size="small"
-            outlined
-            :class="{ 'invisible-button': isCurrentMonth }"
-          />
+          <div class="calendar-actions">
+            <Button
+              :label="t('dashboard.calendar.today')"
+              @click="goToToday"
+              size="small"
+              outlined
+              :class="{ 'invisible-button': isCurrentMonth }"
+            />
+            <Button
+              :label="t('dashboard.calendar.exportPdf')"
+              @click="exportMonthlyPdf"
+              size="small"
+              icon="pi pi-file-pdf"
+              outlined
+              :loading="exportLoading"
+            />
+          </div>
         </div>
         <div class="nav-buttons-right">
           <Button
@@ -92,12 +102,16 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import OverlayPanel from 'primevue/overlaypanel'
 import type { DailySummaryResponse, WorkingHoursResponse } from '@/api/generated'
+import { OpenAPI } from '@/api/generated'
+import axios from 'axios'
 
 const { t } = useI18n()
+const toast = useToast()
 
 // State for hover and sticky overlays
 const hoveredDay = ref<number | null>(null) // Currently hovered day
@@ -106,6 +120,9 @@ const hoverPanel = ref<InstanceType<typeof OverlayPanel> | null>(null)
 const stickyPanel = ref<InstanceType<typeof OverlayPanel> | null>(null)
 const dayRefs = ref<Map<number, HTMLElement>>(new Map())
 let hoverTimeout: ReturnType<typeof setTimeout> | null = null
+
+// State for PDF export
+const exportLoading = ref(false)
 
 interface Props {
   currentMonth: Date
@@ -383,6 +400,60 @@ const getBookEmoji = (actualStart: string, actualEnd: string, plannedStart: stri
   return '📕' // Red: more than 30 minutes
 }
 
+// Export monthly PDF
+const exportMonthlyPdf = async () => {
+  exportLoading.value = true
+  try {
+    const year = currentYear.value
+    const month = currentMonthIndex.value + 1 // API expects 1-12
+
+    // Get the token - OpenAPI.TOKEN can be a string or a function
+    const token = typeof OpenAPI.TOKEN === 'function' ? OpenAPI.TOKEN({} as any) : OpenAPI.TOKEN
+
+    // Use axios directly with responseType: 'blob' to properly handle PDF response
+    const response = await axios.get(
+      `${OpenAPI.BASE}/api/time-entries/monthly-report`,
+      {
+        params: { year, month },
+        responseType: 'blob',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    )
+
+    // Create a download link for the PDF
+    const blob = new Blob([response.data], { type: 'application/pdf' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `timetrack-${year}-${String(month).padStart(2, '0')}.pdf`
+    document.body.appendChild(link)
+    link.click()
+
+    // Clean up
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('dashboard.calendar.exportSuccess'),
+      life: 3000
+    })
+  } catch (error) {
+    console.error('PDF export error:', error)
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: t('dashboard.calendar.exportError'),
+      life: 3000
+    })
+  } finally {
+    exportLoading.value = false
+  }
+}
+
 // Format day details as HTML for the overlay
 const formatDayDetailsHtml = (day: number): string => {
   const summary = getSummaryForDay(day)
@@ -503,6 +574,12 @@ const formatDayDetailsHtml = (day: number): string => {
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--p-text-color);
+}
+
+.calendar-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .invisible-button {

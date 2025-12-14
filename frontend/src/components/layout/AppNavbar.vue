@@ -2,6 +2,7 @@
   <Menubar :model="menuItems">
     <template #end>
       <div class="navbar-end">
+        <span class="user-name">{{ displayName }}</span>
         <Button
           class="user-avatar-button"
           :label="userInitials"
@@ -34,11 +35,22 @@ const { t } = useI18n()
 const { currentUser, isAdmin, logout } = useAuth()
 const userMenu = ref()
 
+const displayName = computed(() => {
+  if (!currentUser.value) return ''
+
+  const firstName = currentUser.value.firstName
+  if (firstName && firstName.trim()) {
+    return firstName.trim()
+  }
+
+  return currentUser.value.email || ''
+})
+
 const userInitials = computed(() => {
   if (!currentUser.value) return '?'
 
-  const firstName = currentUser.value.firstName || ''
-  const lastName = currentUser.value.lastName || ''
+  const firstName = currentUser.value.firstName?.trim() || ''
+  const lastName = currentUser.value.lastName?.trim() || ''
 
   if (firstName && lastName) {
     return (firstName[0] + lastName[0]).toUpperCase()
@@ -143,7 +155,13 @@ async function handleLogout() {
 .navbar-end {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
+}
+
+.user-name {
+  color: var(--p-text-color);
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .user-avatar-button {

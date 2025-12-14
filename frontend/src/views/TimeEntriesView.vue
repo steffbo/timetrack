@@ -13,15 +13,126 @@ import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
-import { TimeEntriesService, WorkingHoursService, OpenAPI } from '@/api/generated'
-import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, DailySummaryResponse } from '@/api/generated'
+import { TimeEntriesService, WorkingHoursService, TimeOffService, RecurringOffDaysService } from '@/api/generated'
+import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, TimeOffResponse, RecurringOffDayResponse, WorkingHoursResponse } from '@/api/generated'
 
 const { t } = useI18n()
 const toast = useToast()
 
 const timeEntries = ref<TimeEntryResponse[]>([])
-const dailySummaries = ref<DailySummaryResponse[]>([])
+const timeOffEntries = ref<TimeOffResponse[]>([])
+const recurringOffDays = ref<RecurringOffDayResponse[]>([])
+const workingHours = ref<WorkingHoursResponse | null>(null)
+const showTimeOff = ref(false)
 const loading = ref(false)
+
+// Combined entries for display
+type DisplayEntry = {
+  type: 'work' | 'timeoff' | 'recurring-off' | 'weekend'
+  date: string
+  data: TimeEntryResponse | TimeOffResponse | RecurringOffDayResponse | { description: string }
+}
+
+const displayEntries = computed<DisplayEntry[]>(() => {
+  const entries: DisplayEntry[] = []
+  const dateMap = new Map<string, boolean>() // Track dates with work entries
+
+  // Add work entries
+  timeEntries.value.forEach(entry => {
+    const date = entry.entryDate || ''
+    dateMap.set(date, true)
+    entries.push({
+      type: 'work',
+      date,
+      data: entry
+    })
+  })
+
+  // Add time-off entries if toggle is enabled
+  if (showTimeOff.value) {
+    timeOffEntries.value.forEach(timeOff => {
+      // Create entries for each day in the time-off range
+      const start = new Date(timeOff.startDate)
+      const end = new Date(timeOff.endDate)
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0]
+        // Only add if no work entry exists for this date
+        if (!dateMap.has(dateStr)) {
+          entries.push({
+            type: 'timeoff',
+            date: dateStr,
+            data: timeOff
+          })
+        }
+      }
+    })
+
+    // Add recurring off-days for the date range
+    if (recurringOffDays.value.length > 0 && startDateFilter.value && endDateFilter.value) {
+      const start = new Date(startDateFilter.value)
+      const end = new Date(endDateFilter.value)
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0]
+        const dayOfWeek = d.getDay() === 0 ? 7 : d.getDay() // Convert to 1=Mon, 7=Sun
+
+        // Check if this date matches any recurring off-day
+        recurringOffDays.value.forEach(rod => {
+          if (rod.weekday === dayOfWeek && !dateMap.has(dateStr)) {
+            // Check if it matches the recurrence pattern
+            if (rod.recurrencePattern === 'EVERY_NTH_WEEK') {
+              // For now, we'll show all matching weekdays if it's an EVERY_NTH_WEEK pattern
+              // A more sophisticated implementation would check the week intervals
+              entries.push({
+                type: 'recurring-off',
+                date: dateStr,
+                data: rod
+              })
+              dateMap.set(dateStr, true)
+            } else if (rod.recurrencePattern === 'NTH_WEEKDAY_OF_MONTH') {
+              // Check if it's the Nth occurrence of this weekday in the month
+              const nthOccurrence = Math.ceil(d.getDate() / 7)
+              if (rod.intervalValue === nthOccurrence) {
+                entries.push({
+                  type: 'recurring-off',
+                  date: dateStr,
+                  data: rod
+                })
+                dateMap.set(dateStr, true)
+              }
+            }
+          }
+        })
+      }
+    }
+
+    // Add weekend days
+    if (workingHours.value && startDateFilter.value && endDateFilter.value) {
+      const start = new Date(startDateFilter.value)
+      const end = new Date(endDateFilter.value)
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0]
+        const dayOfWeek = d.getDay() === 0 ? 7 : d.getDay()
+
+        // Check if this day is not a working day
+        const workingDay = workingHours.value.workingDays?.find(wd => wd.weekday === dayOfWeek)
+        if (!workingDay?.isWorkingDay && !dateMap.has(dateStr)) {
+          entries.push({
+            type: 'weekend',
+            date: dateStr,
+            data: { description: t('timeEntries.weekend') }
+          })
+          dateMap.set(dateStr, true)
+        }
+      }
+    }
+  }
+
+  // Sort by date descending
+  return entries.sort((a, b) => b.date.localeCompare(a.date))
+})
 const clockInDialogVisible = ref(false)
 const clockOutDialogVisible = ref(false)
 const manualEntryDialogVisible = ref(false)
@@ -35,15 +146,18 @@ const newManualEntry = ref<Partial<CreateTimeEntryRequest>>({
   entryType: 'WORK' as any,
   breakMinutes: 0
 })
+const manualEntryDate = ref<Date>(new Date())  // Separate date field
+const manualEntryStartTime = ref<Date>(new Date())  // Start time
+const manualEntryEndTime = ref<Date>(new Date())    // End time
 const timeEntryToDelete = ref<TimeEntryResponse | null>(null)
 const useDefaultHours = ref(false)  // Toggle for using default working hours
+const hasWorkingHoursForSelectedDay = ref(true)  // Track if selected day has working hours
+const cachedWorkingHours = ref<WorkingHoursResponse | null>(null)  // Cache working hours
 
-// Date range filter - default to current month
+// Date range filter - default to previous month start and current month end
 const now = new Date()
-const startDateFilter = ref<string>(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0])
+const startDateFilter = ref<string>(new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0])
 const endDateFilter = ref<string>(new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0])
-
-const viewMode = ref<'entries' | 'summary'>('entries')
 
 // Only WORK type supported - absences are tracked via TimeOff entity
 const entryTypeOptions = [
@@ -58,6 +172,11 @@ const loadTimeEntries = async () => {
 
     // Check if there's an active entry
     activeEntry.value = response.find(entry => entry.isActive) || null
+
+    // Load time-off entries if toggle is enabled
+    if (showTimeOff.value) {
+      await loadTimeOff()
+    }
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -70,20 +189,52 @@ const loadTimeEntries = async () => {
   }
 }
 
-const loadDailySummary = async () => {
-  loading.value = true
+const loadTimeOff = async () => {
   try {
-    const response = await TimeEntriesService.getDailySummary(startDateFilter.value, endDateFilter.value)
-    dailySummaries.value = response
+    const response = await TimeOffService.getTimeOffEntries(startDateFilter.value, endDateFilter.value)
+    timeOffEntries.value = response
   } catch (error) {
+    console.error('Error loading time-off entries:', error)
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: t('timeEntries.summaryLoadError'),
+      detail: t('timeEntries.timeOffLoadError'),
       life: 3000
     })
-  } finally {
-    loading.value = false
+  }
+}
+
+const loadRecurringOffDays = async () => {
+  try {
+    const response = await RecurringOffDaysService.getRecurringOffDays()
+    recurringOffDays.value = response
+  } catch (error) {
+    console.error('Error loading recurring off-days:', error)
+  }
+}
+
+const loadWorkingHours = async () => {
+  try {
+    const response = await WorkingHoursService.getWorkingHours()
+    workingHours.value = response
+  } catch (error) {
+    console.error('Error loading working hours:', error)
+  }
+}
+
+const toggleTimeOff = async () => {
+  showTimeOff.value = !showTimeOff.value
+  if (showTimeOff.value && timeOffEntries.value.length === 0) {
+    loading.value = true
+    try {
+      await Promise.all([
+        loadTimeOff(),
+        loadRecurringOffDays(),
+        loadWorkingHours()
+      ])
+    } finally {
+      loading.value = false
+    }
   }
 }
 
@@ -141,9 +292,6 @@ const clockOut = async () => {
 
     clockOutDialogVisible.value = false
     await loadTimeEntries()
-    if (viewMode.value === 'summary') {
-      await loadDailySummary()
-    }
   } catch (error: any) {
     toast.add({
       severity: 'error',
@@ -156,21 +304,36 @@ const clockOut = async () => {
 
 const openManualEntryDialog = () => {
   const now = new Date()
+
+  // Initialize date field
+  manualEntryDate.value = new Date(now)
+
+  // Initialize time fields (default to current time and 1 hour later)
+  manualEntryStartTime.value = new Date(now)
+
+  const oneHourLater = new Date(now)
+  oneHourLater.setHours(now.getHours() + 1)
+  manualEntryEndTime.value = oneHourLater
+
   newManualEntry.value = {
     entryType: 'WORK' as any,  // Only WORK supported
-    clockIn: now as any,
-    clockOut: now as any,
     breakMinutes: 0,
     notes: ''
   }
+
   useDefaultHours.value = false
+  hasWorkingHoursForSelectedDay.value = true  // Reset the flag
   manualEntryDialogVisible.value = true
 }
 
 const applyDefaultWorkingHours = async (selectedDate: Date) => {
   try {
-    // Get working hours configuration
-    const workingHoursResponse = await WorkingHoursService.getWorkingHours()
+    // Use cached working hours if available, otherwise fetch
+    let workingHoursResponse = cachedWorkingHours.value
+    if (!workingHoursResponse) {
+      workingHoursResponse = await WorkingHoursService.getWorkingHours()
+      cachedWorkingHours.value = workingHoursResponse
+    }
 
     // Get day of week (1=Monday, 7=Sunday)
     const dayOfWeek = selectedDate.getDay() === 0 ? 7 : selectedDate.getDay()
@@ -181,6 +344,7 @@ const applyDefaultWorkingHours = async (selectedDate: Date) => {
     )
 
     if (!dayWorkingHours || !dayWorkingHours.isWorkingDay) {
+      hasWorkingHoursForSelectedDay.value = false
       toast.add({
         severity: 'warn',
         summary: t('warning'),
@@ -190,26 +354,23 @@ const applyDefaultWorkingHours = async (selectedDate: Date) => {
       return
     }
 
-    // Parse start and end times
+    hasWorkingHoursForSelectedDay.value = true
+
+    // Set time fields from working hours configuration
     const [startHour, startMin] = dayWorkingHours.startTime.split(':').map(Number)
     const [endHour, endMin] = dayWorkingHours.endTime.split(':').map(Number)
 
-    const clockIn = new Date(selectedDate)
-    clockIn.setHours(startHour, startMin, 0, 0)
+    const startTime = new Date()
+    startTime.setHours(startHour, startMin, 0, 0)
+    manualEntryStartTime.value = startTime
 
-    const clockOut = new Date(selectedDate)
-    clockOut.setHours(endHour, endMin, 0, 0)
+    const endTime = new Date()
+    endTime.setHours(endHour, endMin, 0, 0)
+    manualEntryEndTime.value = endTime
 
-    newManualEntry.value.clockIn = clockIn as any
-    newManualEntry.value.clockOut = clockOut as any
-
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('timeEntries.defaultHoursApplied'),
-      life: 2000
-    })
+    // Remove success toast - user will get it after clicking save
   } catch (error: any) {
+    hasWorkingHoursForSelectedDay.value = false
     toast.add({
       severity: 'error',
       summary: t('error'),
@@ -222,6 +383,13 @@ const applyDefaultWorkingHours = async (selectedDate: Date) => {
 const onDateChange = (date: Date) => {
   if (useDefaultHours.value && date) {
     applyDefaultWorkingHours(date)
+  }
+}
+
+const onUseDefaultHoursChange = async () => {
+  if (useDefaultHours.value && manualEntryDate.value) {
+    // Apply default hours immediately when checkbox is checked
+    await applyDefaultWorkingHours(manualEntryDate.value)
   }
 }
 
@@ -278,9 +446,6 @@ const createQuickWorkEntry = async () => {
     })
 
     await loadTimeEntries()
-    if (viewMode.value === 'summary') {
-      await loadDailySummary()
-    }
   } catch (error: any) {
     toast.add({
       severity: 'error',
@@ -295,17 +460,18 @@ const createQuickWorkEntry = async () => {
 
 const createManualEntry = async () => {
   try {
-    // Only WORK entries supported - no conditional logic needed
-    const clockIn = newManualEntry.value.clockIn instanceof Date
-      ? newManualEntry.value.clockIn.toISOString()
-      : newManualEntry.value.clockIn as string
-    const clockOut = newManualEntry.value.clockOut instanceof Date
-      ? newManualEntry.value.clockOut.toISOString()
-      : newManualEntry.value.clockOut as string
+    // Combine date and time fields into ISO datetime strings
+    const date = manualEntryDate.value
+
+    const clockIn = new Date(date)
+    clockIn.setHours(manualEntryStartTime.value.getHours(), manualEntryStartTime.value.getMinutes(), 0, 0)
+
+    const clockOut = new Date(date)
+    clockOut.setHours(manualEntryEndTime.value.getHours(), manualEntryEndTime.value.getMinutes(), 0, 0)
 
     const request: CreateTimeEntryRequest = {
-      clockIn,
-      clockOut,
+      clockIn: clockIn.toISOString(),
+      clockOut: clockOut.toISOString(),
       breakMinutes: newManualEntry.value.breakMinutes || 0,
       entryType: 'WORK',  // Always WORK
       notes: newManualEntry.value.notes
@@ -322,9 +488,6 @@ const createManualEntry = async () => {
 
     manualEntryDialogVisible.value = false
     await loadTimeEntries()
-    if (viewMode.value === 'summary') {
-      await loadDailySummary()
-    }
   } catch (error: any) {
     toast.add({
       severity: 'error',
@@ -377,9 +540,6 @@ const saveTimeEntry = async () => {
 
       editDialogVisible.value = false
       await loadTimeEntries()
-      if (viewMode.value === 'summary') {
-        await loadDailySummary()
-      }
     }
   } catch (error: any) {
     toast.add({
@@ -410,9 +570,6 @@ const deleteTimeEntry = async () => {
 
       deleteDialogVisible.value = false
       await loadTimeEntries()
-      if (viewMode.value === 'summary') {
-        await loadDailySummary()
-      }
     }
   } catch (error) {
     toast.add({
@@ -421,15 +578,6 @@ const deleteTimeEntry = async () => {
       detail: t('timeEntries.deleteError'),
       life: 3000
     })
-  }
-}
-
-const switchViewMode = (mode: 'entries' | 'summary') => {
-  viewMode.value = mode
-  if (mode === 'summary') {
-    loadDailySummary()
-  } else {
-    loadTimeEntries()
   }
 }
 
@@ -448,95 +596,8 @@ const formatHours = (hours: number | undefined) => {
   return hours.toFixed(2) + 'h'
 }
 
-const getEntryTypeSeverity = (type: string) => {
-  switch (type) {
-    case 'WORK': return 'info'
-    case 'SICK': return 'warn'
-    case 'PTO': return 'success'
-    case 'EVENT': return 'secondary'
-    default: return 'info'
-  }
-}
-
-const getSummaryStatusSeverity = (status: string) => {
-  switch (status) {
-    case 'NO_ENTRY': return 'warn'
-    case 'BELOW_EXPECTED': return 'warn'
-    case 'MATCHED': return 'success'
-    case 'ABOVE_EXPECTED': return 'info'
-    default: return 'secondary'
-  }
-}
-
 const isActiveEntry = (entry: TimeEntryResponse) => {
   return entry.isActive
-}
-
-const exportMonthlyReport = async () => {
-  try {
-    // Get year and month from the start date filter
-    const startDate = new Date(startDateFilter.value)
-    const year = startDate.getFullYear()
-    const month = startDate.getMonth() + 1
-
-    console.log('Exporting report for:', year, month)
-
-    loading.value = true
-
-    // Make direct API call with proper responseType
-    const axios = (await import('axios')).default
-    // OpenAPI.TOKEN is a function, need to call it
-    const token = typeof OpenAPI.TOKEN === 'function' ? OpenAPI.TOKEN() : (OpenAPI.TOKEN || localStorage.getItem('accessToken'))
-    const baseUrl = OpenAPI.BASE || 'http://localhost:8080'
-
-    console.log('Making request to:', `${baseUrl}/api/time-entries/monthly-report?year=${year}&month=${month}`)
-    console.log('Using token:', token ? 'Token present' : 'No token')
-
-    const response = await axios.get(
-      `${baseUrl}/api/time-entries/monthly-report?year=${year}&month=${month}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        responseType: 'blob'
-      }
-    )
-
-    console.log('Response received:', response.status, response.headers)
-
-    // Create blob and download
-    const blob = new Blob([response.data], { type: 'application/pdf' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `stundenzettel_${year}_${month.toString().padStart(2, '0')}.pdf`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('timeEntries.exportSuccess'),
-      life: 3000
-    })
-  } catch (error: any) {
-    console.error('Export error:', error)
-    console.error('Error details:', {
-      message: error.message,
-      response: error.response,
-      stack: error.stack
-    })
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: error.message || error.response?.data?.message || t('timeEntries.exportError'),
-      life: 3000
-    })
-  } finally {
-    loading.value = false
-  }
 }
 
 onMounted(() => {
@@ -599,176 +660,145 @@ onMounted(() => {
 
       <!-- Filters Section -->
       <div class="filters-section mb-4">
-        <!-- View Mode Toggle -->
-        <div class="flex justify-content-between align-items-center mb-3">
-          <div class="flex gap-2">
-            <Button
-              :label="t('timeEntries.viewEntries')"
-              :severity="viewMode === 'entries' ? 'primary' : 'secondary'"
-              size="small"
-              @click="switchViewMode('entries')"
-            />
-            <Button
-              :label="t('timeEntries.viewSummary')"
-              :severity="viewMode === 'summary' ? 'primary' : 'secondary'"
-              size="small"
-              @click="switchViewMode('summary')"
+        <div class="filter-row">
+          <div class="filter-field">
+            <DatePicker
+              id="startDate"
+              v-model="startDateFilter"
+              show-icon
+              :placeholder="t('timeEntries.startDate')"
             />
           </div>
-        </div>
-
-        <!-- Date Filter -->
-        <div class="filter-bar">
-          <div class="filter-fields">
-            <div class="filter-field">
-              <label for="startDate">{{ t('timeEntries.startDate') }}</label>
-              <DatePicker
-                id="startDate"
-                v-model="startDateFilter"
-                show-icon
-              />
-            </div>
-            <div class="filter-field">
-              <label for="endDate">{{ t('timeEntries.endDate') }}</label>
-              <DatePicker
-                id="endDate"
-                v-model="endDateFilter"
-                show-icon
-              />
-            </div>
-          </div>
-          <div class="filter-actions">
-            <Button
-              :label="t('filter')"
-              icon="pi pi-filter"
-              @click="viewMode === 'entries' ? loadTimeEntries() : loadDailySummary()"
-            />
-            <Button
-              :label="t('timeEntries.exportPdf')"
-              icon="pi pi-file-pdf"
-              severity="secondary"
-              @click="exportMonthlyReport"
-              outlined
+          <div class="filter-field">
+            <DatePicker
+              id="endDate"
+              v-model="endDateFilter"
+              show-icon
+              :placeholder="t('timeEntries.endDate')"
             />
           </div>
+          <Button
+            :label="t('filter')"
+            icon="pi pi-filter"
+            @click="loadTimeEntries()"
+          />
+          <Button
+            :label="showTimeOff ? t('timeEntries.hideTimeOff') : t('timeEntries.showTimeOff')"
+            :icon="showTimeOff ? 'pi pi-eye-slash' : 'pi pi-eye'"
+            severity="secondary"
+            outlined
+            @click="toggleTimeOff()"
+          />
         </div>
       </div>
 
-      <!-- Time Entries Table -->
+      <!-- Combined Entries Table -->
       <DataTable
-        v-if="viewMode === 'entries'"
-        :value="timeEntries"
+        :value="displayEntries"
         :loading="loading"
         striped-rows
         responsive-layout="scroll"
         :empty-message="t('timeEntries.noEntries')"
       >
-        <Column field="entryDate" :header="t('timeEntries.date')">
-          <template #body="{ data }">
-            {{ formatDate(data.entryDate) }}
+        <Column field="date" :header="t('timeEntries.date')">
+          <template #body="{ data: entry }">
+            {{ formatDate(entry.date) }}
+          </template>
+        </Column>
+        <Column :header="t('timeEntries.type.label')">
+          <template #body="{ data: entry }">
+            <Tag
+              v-if="entry.type === 'work'"
+              :value="t('timeEntries.type.WORK')"
+              severity="info"
+            />
+            <Tag
+              v-else-if="entry.type === 'timeoff'"
+              :value="t(`timeOff.type.${(entry.data as TimeOffResponse).timeOffType}`)"
+              severity="success"
+            />
+            <Tag
+              v-else-if="entry.type === 'recurring-off'"
+              :value="t('timeEntries.recurringOffDay')"
+              severity="secondary"
+            />
+            <Tag
+              v-else-if="entry.type === 'weekend'"
+              :value="t('timeEntries.weekend')"
+              severity="secondary"
+            />
           </template>
         </Column>
         <Column field="clockIn" :header="t('timeEntries.clockIn')">
-          <template #body="{ data }">
-            {{ formatDateTime(data.clockIn) }}
+          <template #body="{ data: entry }">
+            <span v-if="entry.type === 'work'">
+              {{ formatDateTime((entry.data as TimeEntryResponse).clockIn) }}
+            </span>
+            <span v-else>-</span>
           </template>
         </Column>
         <Column field="clockOut" :header="t('timeEntries.clockOut')">
-          <template #body="{ data }">
-            {{ formatDateTime(data.clockOut) }}
+          <template #body="{ data: entry }">
+            <span v-if="entry.type === 'work'">
+              {{ formatDateTime((entry.data as TimeEntryResponse).clockOut) }}
+            </span>
+            <span v-else>-</span>
           </template>
         </Column>
         <Column field="breakMinutes" :header="t('timeEntries.breakMinutes')">
-          <template #body="{ data }">
-            {{ data.breakMinutes || 0 }} min
+          <template #body="{ data: entry }">
+            <span v-if="entry.type === 'work'">
+              {{ (entry.data as TimeEntryResponse).breakMinutes || 0 }} min
+            </span>
+            <span v-else>-</span>
           </template>
         </Column>
         <Column field="hoursWorked" :header="t('timeEntries.hoursWorked')">
-          <template #body="{ data }">
-            {{ formatHours(data.hoursWorked) }}
-          </template>
-        </Column>
-        <Column field="entryType" :header="t('timeEntries.type.label')">
-          <template #body="{ data }">
-            <Tag :value="t(`timeEntries.type.${data.entryType}`)" :severity="getEntryTypeSeverity(data.entryType)" />
+          <template #body="{ data: entry }">
+            <span v-if="entry.type === 'work'">
+              {{ formatHours((entry.data as TimeEntryResponse).hoursWorked) }}
+            </span>
+            <span v-else>-</span>
           </template>
         </Column>
         <Column field="notes" :header="t('timeEntries.notes')">
-          <template #body="{ data }">
-            {{ data.notes || '-' }}
+          <template #body="{ data: entry }">
+            <span v-if="entry.type === 'recurring-off'">
+              {{ (entry.data as RecurringOffDayResponse).description || '-' }}
+            </span>
+            <span v-else-if="entry.type === 'weekend'">
+              -
+            </span>
+            <span v-else>
+              {{ entry.data.notes || '-' }}
+            </span>
           </template>
         </Column>
         <Column :header="t('actions')">
-          <template #body="{ data }">
-            <div class="flex gap-2">
+          <template #body="{ data: entry }">
+            <div v-if="entry.type === 'work'" class="flex gap-2">
               <Button
                 icon="pi pi-pencil"
                 text
                 rounded
                 severity="info"
-                @click="openEditDialog(data)"
-                :disabled="isActiveEntry(data)"
+                @click="openEditDialog(entry.data as TimeEntryResponse)"
+                :disabled="isActiveEntry(entry.data as TimeEntryResponse)"
               />
               <Button
                 icon="pi pi-trash"
                 text
                 rounded
                 severity="danger"
-                @click="openDeleteDialog(data)"
-                :disabled="isActiveEntry(data)"
+                @click="openDeleteDialog(entry.data as TimeEntryResponse)"
+                :disabled="isActiveEntry(entry.data as TimeEntryResponse)"
               />
             </div>
+            <span v-else>-</span>
           </template>
         </Column>
       </DataTable>
 
-      <!-- Daily Summary Table -->
-      <DataTable
-        v-if="viewMode === 'summary'"
-        :value="dailySummaries"
-        :loading="loading"
-        striped-rows
-        responsive-layout="scroll"
-        :empty-message="t('timeEntries.noSummaries')"
-      >
-        <Column field="date" :header="t('timeEntries.date')">
-          <template #body="{ data }">
-            {{ formatDate(data.date) }}
-          </template>
-        </Column>
-        <Column field="actualHours" :header="t('timeEntries.actualHours')">
-          <template #body="{ data }">
-            {{ formatHours(data.actualHours) }}
-          </template>
-        </Column>
-        <Column field="expectedHours" :header="t('timeEntries.expectedHours')">
-          <template #body="{ data }">
-            {{ formatHours(data.expectedHours) }}
-          </template>
-        </Column>
-        <Column field="status" :header="t('timeEntries.status')">
-          <template #body="{ data }">
-            <Tag :value="t(`timeEntries.status.${data.status}`)" :severity="getSummaryStatusSeverity(data.status)" />
-          </template>
-        </Column>
-        <Column :header="t('timeEntries.notes')">
-          <template #body="{ data }">
-            <div v-if="data.timeOffEntries && data.timeOffEntries.length > 0" class="mb-2">
-              <div v-for="timeOff in data.timeOffEntries" :key="timeOff.id" class="mb-1">
-                <Tag :value="t(`timeOff.type.${timeOff.timeOffType}`)" severity="success" class="mr-2" />
-                <span v-if="timeOff.notes" class="text-sm">{{ timeOff.notes }}</span>
-              </div>
-            </div>
-            <div v-if="data.recurringOffDays && data.recurringOffDays.length > 0">
-              <div v-for="rod in data.recurringOffDays" :key="rod.id" class="mb-1">
-                <Tag value="Recurring Off-Day" severity="secondary" class="mr-2" />
-                <span v-if="rod.description" class="text-sm">{{ rod.description }}</span>
-              </div>
-            </div>
-            <span v-if="(!data.timeOffEntries || data.timeOffEntries.length === 0) && (!data.recurringOffDays || data.recurringOffDays.length === 0)">-</span>
-          </template>
-        </Column>
-      </DataTable>
     </div>
 
     <!-- Clock In Dialog -->
@@ -827,37 +857,52 @@ onMounted(() => {
       <div class="manual-entry-form">
         <!-- Type field removed - only WORK supported. For absences, use TimeOff view. -->
         <div class="field">
-          <div class="flex align-items-center">
-            <Checkbox
-              v-model="useDefaultHours"
-              input-id="useDefaultHours"
-              :binary="true"
-            />
-            <label for="useDefaultHours" class="ml-2 mb-0" style="cursor: pointer">
-              {{ t('timeEntries.useDefaultHours') }}
-            </label>
-          </div>
-          <small class="text-muted">{{ t('timeEntries.useDefaultHoursHint') }}</small>
-        </div>
-
-        <div class="field">
-          <label for="manualStartTime">{{ t('timeEntries.startTime') }}</label>
-          <DateTimePicker
-            id="manualStartTime"
-            v-model="newManualEntry.clockIn"
-            :show-time="!useDefaultHours"
+          <label for="manualEntryDate">{{ t('timeEntries.day') }}</label>
+          <DatePicker
+            id="manualEntryDate"
+            v-model="manualEntryDate"
+            show-icon
             @date-select="onDateChange"
             class="w-full"
           />
         </div>
-        <div v-if="!useDefaultHours" class="field">
-          <label for="manualEndTime">{{ t('timeEntries.endTime') }}</label>
-          <DateTimePicker
-            id="manualEndTime"
-            v-model="newManualEntry.clockOut"
-            class="w-full"
+
+        <div class="field checkbox-field">
+          <Checkbox
+            v-model="useDefaultHours"
+            input-id="useDefaultHours"
+            :binary="true"
+            @change="onUseDefaultHoursChange"
           />
+          <label for="useDefaultHours" class="checkbox-label">
+            {{ t('timeEntries.useDefaultHours') }}
+          </label>
         </div>
+
+        <div class="field-row">
+          <div class="field field-half">
+            <label for="manualStartTime">{{ t('timeEntries.startTime') }}</label>
+            <DatePicker
+              id="manualStartTime"
+              v-model="manualEntryStartTime"
+              time-only
+              :disabled="useDefaultHours"
+              class="w-full"
+            />
+          </div>
+
+          <div class="field field-half">
+            <label for="manualEndTime">{{ t('timeEntries.endTime') }}</label>
+            <DatePicker
+              id="manualEndTime"
+              v-model="manualEntryEndTime"
+              time-only
+              :disabled="useDefaultHours"
+              class="w-full"
+            />
+          </div>
+        </div>
+
         <div class="field">
           <label for="manualBreakMinutes">{{ t('timeEntries.breakMinutes') }}</label>
           <InputNumber
@@ -881,7 +926,12 @@ onMounted(() => {
       </div>
       <template #footer>
         <Button :label="t('cancel')" severity="secondary" @click="manualEntryDialogVisible = false" />
-        <Button :label="t('save')" severity="primary" @click="createManualEntry" />
+        <Button
+          :label="t('save')"
+          severity="primary"
+          @click="createManualEntry"
+          :disabled="useDefaultHours && !hasWorkingHoursForSelectedDay"
+        />
       </template>
     </Dialog>
 
@@ -980,46 +1030,49 @@ h2 {
 
 .filters-section {
   background: var(--surface-50);
-  padding: 1.25rem;
+  padding: 1rem;
   border-radius: var(--border-radius);
   border: 1px solid var(--surface-200);
 }
 
-.filter-bar {
+.filter-row {
   display: flex;
-  gap: 1rem;
-  align-items: flex-end;
+  gap: 0.75rem;
+  align-items: center;
   flex-wrap: wrap;
 }
 
-.filter-fields {
-  display: flex;
-  gap: 1rem;
-  flex: 1;
-  min-width: 300px;
-}
-
 .filter-field {
-  flex: 1;
   min-width: 200px;
-}
-
-.filter-field label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  font-size: 0.875rem;
-  color: var(--text-color);
-}
-
-.filter-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-end;
 }
 
 .manual-entry-form .field {
   margin-bottom: 1.5rem;
+}
+
+.manual-entry-form .checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.manual-entry-form .checkbox-label {
+  margin: 0;
+  cursor: pointer;
+  font-weight: 400;
+  font-size: 0.875rem;
+}
+
+.manual-entry-form .field-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.manual-entry-form .field-half {
+  flex: 1;
+  margin-bottom: 0;
 }
 
 .manual-entry-form .field label {

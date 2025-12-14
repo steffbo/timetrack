@@ -91,7 +91,7 @@ import type { UpdateUserRequest } from '@/api/generated'
 
 const { t } = useI18n()
 const toast = useToast()
-const { currentUser } = useAuth()
+const { currentUser, refreshCurrentUser } = useAuth()
 
 const isLoading = ref(false)
 const formData = ref<UpdateUserRequest & { password?: string }>({
@@ -147,6 +147,9 @@ async function handleSave() {
     // Refresh user data in localStorage
     const updatedUserResponse = await apiClient.get('/api/users/me')
     localStorage.setItem('timetrack_user', JSON.stringify(updatedUserResponse.data))
+
+    // Refresh the reactive currentUser ref
+    refreshCurrentUser()
 
     toast.add({
       severity: 'success',

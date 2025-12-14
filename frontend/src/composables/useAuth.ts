@@ -127,6 +127,13 @@ export function useAuth() {
     }
   }
 
+  function refreshCurrentUser() {
+    const storedUser = localStorage.getItem(USER_KEY)
+    if (storedUser) {
+      currentUser.value = JSON.parse(storedUser)
+    }
+  }
+
   return {
     currentUser: computed(() => currentUser.value),
     isAuthenticated,
@@ -136,6 +143,7 @@ export function useAuth() {
     login,
     logout,
     refreshAccessToken,
-    checkAuth
+    checkAuth,
+    refreshCurrentUser
   }
 }
