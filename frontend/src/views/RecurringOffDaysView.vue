@@ -5,13 +5,13 @@ import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import Calendar from 'primevue/calendar'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
+import DatePicker from '@/components/common/DatePicker.vue'
 import { RecurringOffDaysService } from '@/api/generated'
 import type { RecurringOffDayResponse, CreateRecurringOffDayRequest, UpdateRecurringOffDayRequest } from '@/api/generated'
 
@@ -331,10 +331,9 @@ onMounted(() => {
 
         <div v-if="currentOffDay.recurrencePattern === 'EVERY_NTH_WEEK'" class="field">
           <label for="referenceDate">{{ t('recurringOffDays.referenceDate') }}</label>
-          <Calendar
+          <DatePicker
             id="referenceDate"
             v-model="currentOffDay.referenceDate"
-            date-format="yy-mm-dd"
           />
         </div>
 
@@ -351,19 +350,17 @@ onMounted(() => {
 
         <div class="field">
           <label for="startDate">{{ t('recurringOffDays.startDate') }} *</label>
-          <Calendar
+          <DatePicker
             id="startDate"
             v-model="currentOffDay.startDate"
-            date-format="yy-mm-dd"
           />
         </div>
 
         <div class="field">
           <label for="endDate">{{ t('recurringOffDays.endDate') }}</label>
-          <Calendar
+          <DatePicker
             id="endDate"
             v-model="currentOffDay.endDate"
-            date-format="yy-mm-dd"
           />
         </div>
 

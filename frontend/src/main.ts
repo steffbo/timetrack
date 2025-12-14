@@ -25,13 +25,57 @@ OpenAPI.TOKEN = () => {
 
 const app = createApp(App)
 
+// German locale configuration with Monday as first day of week
+const deLocale = {
+  startsWith: 'Beginnt mit',
+  contains: 'Enthält',
+  notContains: 'Enthält nicht',
+  endsWith: 'Endet mit',
+  equals: 'Gleich',
+  notEquals: 'Nicht gleich',
+  noFilter: 'Kein Filter',
+  lt: 'Kleiner als',
+  lte: 'Kleiner oder gleich',
+  gt: 'Größer als',
+  gte: 'Größer oder gleich',
+  dateIs: 'Datum ist',
+  dateIsNot: 'Datum ist nicht',
+  dateBefore: 'Datum ist vor',
+  dateAfter: 'Datum ist nach',
+  clear: 'Löschen',
+  apply: 'Anwenden',
+  matchAll: 'Alles entsprechen',
+  matchAny: 'Beliebig entsprechen',
+  addRule: 'Regel hinzufügen',
+  removeRule: 'Regel entfernen',
+  accept: 'Ja',
+  reject: 'Nein',
+  choose: 'Wählen',
+  upload: 'Hochladen',
+  cancel: 'Abbrechen',
+  dayNames: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+  dayNamesShort: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+  dayNamesMin: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+  monthNames: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
+  monthNamesShort: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
+  today: 'Heute',
+  weekHeader: 'Woche',
+  firstDayOfWeek: 1,
+  dateFormat: 'dd.mm.yy',
+  weak: 'Schwach',
+  medium: 'Mittel',
+  strong: 'Stark',
+  passwordPrompt: 'Passwort eingeben'
+}
+
 app.use(PrimeVue, {
   theme: {
     preset: Aura,
     options: {
       darkModeSelector: false
     }
-  }
+  },
+  locale: deLocale
 })
 app.use(ToastService)
 app.use(ConfirmationService)

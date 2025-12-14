@@ -5,13 +5,14 @@ import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import Calendar from 'primevue/calendar'
 import Dialog from 'primevue/dialog'
 import Dropdown from 'primevue/dropdown'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
+import DatePicker from '@/components/common/DatePicker.vue'
+import DateTimePicker from '@/components/common/DateTimePicker.vue'
 import { TimeEntriesService, WorkingHoursService, OpenAPI } from '@/api/generated'
 import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, DailySummaryResponse } from '@/api/generated'
 
@@ -621,21 +622,17 @@ onMounted(() => {
           <div class="filter-fields">
             <div class="filter-field">
               <label for="startDate">{{ t('timeEntries.startDate') }}</label>
-              <Calendar
+              <DatePicker
                 id="startDate"
                 v-model="startDateFilter"
-                date-format="yy-mm-dd"
-                :first-day-of-week="1"
                 show-icon
               />
             </div>
             <div class="filter-field">
               <label for="endDate">{{ t('timeEntries.endDate') }}</label>
-              <Calendar
+              <DatePicker
                 id="endDate"
                 v-model="endDateFilter"
-                date-format="yy-mm-dd"
-                :first-day-of-week="1"
                 show-icon
               />
             </div>
@@ -845,28 +842,19 @@ onMounted(() => {
 
         <div class="field">
           <label for="manualStartTime">{{ t('timeEntries.startTime') }}</label>
-          <Calendar
+          <DateTimePicker
             id="manualStartTime"
             v-model="newManualEntry.clockIn"
             :show-time="!useDefaultHours"
-            hour-format="24"
-            date-format="yy-mm-dd"
-            :first-day-of-week="1"
-            :manual-input="true"
             @date-select="onDateChange"
             class="w-full"
           />
         </div>
         <div v-if="!useDefaultHours" class="field">
           <label for="manualEndTime">{{ t('timeEntries.endTime') }}</label>
-          <Calendar
+          <DateTimePicker
             id="manualEndTime"
             v-model="newManualEntry.clockOut"
-            show-time
-            hour-format="24"
-            date-format="yy-mm-dd"
-            :first-day-of-week="1"
-            :manual-input="true"
             class="w-full"
           />
         </div>
@@ -908,27 +896,17 @@ onMounted(() => {
         <!-- Type field removed - only WORK supported. -->
         <div class="field">
           <label for="editClockIn">{{ t('timeEntries.clockIn') }}</label>
-          <Calendar
+          <DateTimePicker
             id="editClockIn"
             v-model="currentTimeEntry.clockIn"
-            show-time
-            hour-format="24"
-            date-format="yy-mm-dd"
-            :first-day-of-week="1"
-            :manual-input="true"
             class="w-full"
           />
         </div>
         <div class="field">
           <label for="editClockOut">{{ t('timeEntries.clockOut') }}</label>
-          <Calendar
+          <DateTimePicker
             id="editClockOut"
             v-model="currentTimeEntry.clockOut"
-            show-time
-            hour-format="24"
-            date-format="yy-mm-dd"
-            :first-day-of-week="1"
-            :manual-input="true"
             class="w-full"
           />
         </div>

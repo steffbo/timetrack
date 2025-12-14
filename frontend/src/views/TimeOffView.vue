@@ -5,12 +5,12 @@ import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import Calendar from 'primevue/calendar'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import InputNumber from 'primevue/inputnumber'
+import DatePicker from '@/components/common/DatePicker.vue'
 import { TimeOffService } from '@/api/generated'
 import type { TimeOffResponse, CreateTimeOffRequest, UpdateTimeOffRequest } from '@/api/generated'
 
@@ -228,21 +228,17 @@ onMounted(() => {
         <div class="flex gap-3 align-items-end">
           <div class="flex-1">
             <label for="startDateFilter">{{ t('timeOff.startDate') }}</label>
-            <Calendar
+            <DatePicker
               id="startDateFilter"
               v-model="startDateFilter"
-              date-format="yy-mm-dd"
-              :first-day-of-week="1"
               show-icon
             />
           </div>
           <div class="flex-1">
             <label for="endDateFilter">{{ t('timeOff.endDate') }}</label>
-            <Calendar
+            <DatePicker
               id="endDateFilter"
               v-model="endDateFilter"
-              date-format="yy-mm-dd"
-              :first-day-of-week="1"
               show-icon
             />
           </div>
@@ -344,21 +340,17 @@ onMounted(() => {
 
         <div class="field">
           <label for="startDate">{{ t('timeOff.startDate') }} *</label>
-          <Calendar
+          <DatePicker
             id="startDate"
             v-model="currentTimeOff.startDate"
-            date-format="yy-mm-dd"
-            :first-day-of-week="1"
           />
         </div>
 
         <div class="field">
           <label for="endDate">{{ t('timeOff.endDate') }} *</label>
-          <Calendar
+          <DatePicker
             id="endDate"
             v-model="currentTimeOff.endDate"
-            date-format="yy-mm-dd"
-            :first-day-of-week="1"
           />
         </div>
 
