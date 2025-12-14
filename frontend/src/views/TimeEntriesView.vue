@@ -11,6 +11,7 @@ import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
+import Toast from 'primevue/toast'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
@@ -138,7 +139,6 @@ const clockInDialogVisible = ref(false)
 const clockOutDialogVisible = ref(false)
 const manualEntryDialogVisible = ref(false)
 const editDialogVisible = ref(false)
-const deleteDialogVisible = ref(false)
 const clockInNotes = ref('')
 const clockOutNotes = ref('')
 const activeEntry = ref<TimeEntryResponse | null>(null)
@@ -150,13 +150,14 @@ const newManualEntry = ref<Partial<CreateTimeEntryRequest>>({
 const manualEntryDate = ref<Date>(new Date())  // Separate date field
 const manualEntryStartTime = ref<Date>(new Date())  // Start time
 const manualEntryEndTime = ref<Date>(new Date())    // End time
-const timeEntryToDelete = ref<TimeEntryResponse | null>(null)
 const useDefaultHours = ref(false)  // Toggle for using default working hours
 const hasWorkingHoursForSelectedDay = ref(true)  // Track if selected day has working hours
 const cachedWorkingHours = ref<WorkingHoursResponse | null>(null)  // Cache working hours
 // Store the values when default hours are applied, so they persist when toggling
 const savedStartTime = ref<Date | null>(null)
 const savedEndTime = ref<Date | null>(null)
+// Last deleted entry for undo
+const lastDeletedEntry = ref<TimeEntryResponse | null>(null)
 
 // Date range filter - default to previous month start and current month end
 const now = new Date()
@@ -564,31 +565,82 @@ const saveTimeEntry = async () => {
   }
 }
 
-const openDeleteDialog = (entry: TimeEntryResponse) => {
-  timeEntryToDelete.value = entry
-  deleteDialogVisible.value = true
-}
-
-const deleteTimeEntry = async () => {
+const deleteTimeEntry = async (entry: TimeEntryResponse) => {
   try {
-    if (timeEntryToDelete.value?.id) {
-      await TimeEntriesService.deleteTimeEntry(timeEntryToDelete.value.id)
+    // Store the deleted entry for potential undo
+    lastDeletedEntry.value = { ...entry }
 
-      toast.add({
-        severity: 'success',
-        summary: t('success'),
-        detail: t('timeEntries.deleteSuccess'),
-        life: 3000
-      })
+    // Delete immediately via API
+    await TimeEntriesService.deleteTimeEntry(entry.id)
 
-      deleteDialogVisible.value = false
-      await loadTimeEntries()
-    }
+    // Reload entries
+    await loadTimeEntries()
+
+    // Format the day for the toast message (short format)
+    const entryDate = new Date(entry.clockIn)
+    const dayString = entryDate.toLocaleDateString(t('locale'), {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+
+    // Close any existing delete toast
+    toast.removeGroup('delete-undo')
+
+    // Show compact toast with undo option (stays until dismissed)
+    toast.add({
+      severity: 'info',
+      summary: t('timeEntries.deletedForDay', { day: dayString }),
+      life: 0, // Stays until manually dismissed
+      closable: true,
+      group: 'delete-undo'
+    })
   } catch (error) {
     toast.add({
       severity: 'error',
       summary: t('error'),
       detail: t('timeEntries.deleteError'),
+      life: 3000
+    })
+  }
+}
+
+const undoDelete = async () => {
+  if (!lastDeletedEntry.value) return
+
+  try {
+    // Close the delete toast
+    toast.removeGroup('delete-undo')
+
+    // Re-create the entry via API
+    const createRequest: CreateTimeEntryRequest = {
+      entryType: 'WORK' as any,
+      clockIn: lastDeletedEntry.value.clockIn,
+      clockOut: lastDeletedEntry.value.clockOut,
+      breakMinutes: lastDeletedEntry.value.breakMinutes,
+      notes: lastDeletedEntry.value.notes
+    }
+
+    await TimeEntriesService.createTimeEntry(createRequest)
+
+    // Clear last deleted
+    lastDeletedEntry.value = null
+
+    // Reload entries
+    await loadTimeEntries()
+
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('timeEntries.undoSuccess'),
+      life: 3000
+    })
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: t('timeEntries.undoError'),
       life: 3000
     })
   }
@@ -788,7 +840,7 @@ onMounted(() => {
                 text
                 rounded
                 severity="danger"
-                @click="openDeleteDialog(entry.data as TimeEntryResponse)"
+                @click="deleteTimeEntry(entry.data as TimeEntryResponse)"
                 :disabled="isActiveEntry(entry.data as TimeEntryResponse)"
               />
             </div>
@@ -987,19 +1039,21 @@ onMounted(() => {
       </template>
     </Dialog>
 
-    <!-- Delete Confirmation Dialog -->
-    <Dialog
-      v-model:visible="deleteDialogVisible"
-      :header="t('timeEntries.deleteConfirmTitle')"
-      :modal="true"
-      :style="{ width: '400px' }"
-    >
-      <p>{{ t('timeEntries.deleteConfirmMessage') }}</p>
-      <template #footer>
-        <Button :label="t('cancel')" severity="secondary" @click="deleteDialogVisible = false" />
-        <Button :label="t('delete')" severity="danger" @click="deleteTimeEntry" />
+    <!-- Toast for undo delete -->
+    <Toast position="bottom-center" group="delete-undo">
+      <template #message="slotProps">
+        <div class="flex align-items-center gap-3 flex-1">
+          <span class="flex-1 text-sm">{{ slotProps.message.summary }}</span>
+          <Button
+            :label="t('timeEntries.undo')"
+            severity="secondary"
+            size="small"
+            outlined
+            @click="undoDelete"
+          />
+        </div>
       </template>
-    </Dialog>
+    </Toast>
   </div>
 </template>
 
