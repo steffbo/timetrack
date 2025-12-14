@@ -143,6 +143,7 @@ const clockInNotes = ref('')
 const clockOutNotes = ref('')
 const activeEntry = ref<TimeEntryResponse | null>(null)
 const currentTimeEntry = ref<Partial<UpdateTimeEntryRequest>>({})
+const timeEntryToEdit = ref<TimeEntryResponse | null>(null)
 const newManualEntry = ref<Partial<CreateTimeEntryRequest>>({
   entryType: 'WORK' as any,
   breakMinutes: 0
@@ -520,13 +521,13 @@ const openEditDialog = (entry: TimeEntryResponse) => {
     entryType: entry.entryType,
     notes: entry.notes
   }
-  timeEntryToDelete.value = entry
+  timeEntryToEdit.value = entry
   editDialogVisible.value = true
 }
 
 const saveTimeEntry = async () => {
   try {
-    if (timeEntryToDelete.value?.id) {
+    if (timeEntryToEdit.value?.id) {
       // Convert Date objects back to ISO strings
       const request: UpdateTimeEntryRequest = {
         clockIn: currentTimeEntry.value.clockIn instanceof Date
@@ -541,7 +542,7 @@ const saveTimeEntry = async () => {
       }
 
       await TimeEntriesService.updateTimeEntry(
-        timeEntryToDelete.value.id,
+        timeEntryToEdit.value.id,
         request
       )
 
