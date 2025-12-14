@@ -110,7 +110,7 @@ const formatDate = (dateStr: string) => {
 
 <style scoped>
 .public-holidays-view {
-  padding: 2rem;
+  padding: 1rem 2rem 2rem 2rem;
 }
 
 h1 {

@@ -157,7 +157,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Assert
         assertThat(response.getCarriedOverDays()).isEqualTo(5.0);
         assertThat(response.getAdjustmentDays()).isEqualTo(2.0);
-        assertThat(response.getRemainingDays()).isEqualTo(32.0); // 30 + 5 + 2 - 5 = 32
+        assertThat(response.getRemainingDays()).isEqualTo(37.0); // 30 + 5 + 2 - 0 = 37 (no planned vacation)
     }
 
     @Test
@@ -198,7 +198,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         assertThat(response.getCarriedOverDays()).isEqualTo(5.0);
         assertThat(response.getAdjustmentDays()).isEqualTo(3.0);
         assertThat(response.getUsedDays()).isEqualTo(10.0);
-        assertThat(response.getRemainingDays()).isEqualTo(28.0); // 30 + 5 + 3 - 10 = 28
+        assertThat(response.getRemainingDays()).isEqualTo(38.0); // 30 + 5 + 3 - 0 = 38 (no planned vacation)
     }
 
     @Test

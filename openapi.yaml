@@ -1460,6 +1460,7 @@ components:
         - annualAllowanceDays
         - carriedOverDays
         - adjustmentDays
+        - plannedDays
         - usedDays
         - remainingDays
       properties:
@@ -1488,15 +1489,20 @@ components:
           format: double
           description: Manual adjustments (bonus days, etc.)
           example: 2.0
+        plannedDays:
+          type: number
+          format: double
+          description: Total vacation days planned for this year (all approved vacation entries)
+          example: 15.0
         usedDays:
           type: number
           format: double
-          description: Vacation days used this year
-          example: 12.5
+          description: Vacation days already taken (past approved vacation entries)
+          example: 5.0
         remainingDays:
           type: number
           format: double
-          description: Remaining vacation days
+          description: Remaining vacation days available for planning
           example: 24.5
         createdAt:
           type: string

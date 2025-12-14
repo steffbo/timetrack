@@ -33,6 +33,7 @@ public class VacationBalanceService {
 
     /**
      * Recalculate vacation balance for a user and year based on VACATION time-off entries.
+     * Only updates usedDays (past vacation). plannedDays is calculated on-demand.
      *
      * @param userId the user ID
      * @param year the year
@@ -45,24 +46,47 @@ public class VacationBalanceService {
         VacationBalance balance = vacationBalanceRepository.findByUserIdAndYear(userId, year)
                 .orElseGet(() -> createDefaultBalance(userId, year));
 
-        // Calculate used days from VACATION time-off entries
+        // Get all VACATION time-off entries for the year
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+        LocalDate today = LocalDate.now();
+
+        List<TimeOff> vacationEntries = timeOffRepository.findByUserIdAndTypeAndYear(
+                userId, TimeOffType.VACATION, yearStart, yearEnd);
+
+        // Calculate used days (only past vacation entries where end date <= today)
+        BigDecimal totalUsedDays = vacationEntries.stream()
+                .filter(timeOff -> !timeOff.getEndDate().isAfter(today))
+                .map(this::calculateDaysForTimeOff)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Update used days (this is what gets stored)
+        balance.setUsedDays(totalUsedDays);
+        balance.calculateRemainingDays();
+
+        vacationBalanceRepository.save(balance);
+        log.info("Updated vacation balance for user ID: {} and year: {}. Used: {}, Remaining: {}",
+                userId, year, totalUsedDays, balance.getRemainingDays());
+    }
+
+    /**
+     * Calculate total planned vacation days for a user and year.
+     * This includes all VACATION time-off entries regardless of dates.
+     *
+     * @param userId the user ID
+     * @param year the year
+     * @return total planned days
+     */
+    public BigDecimal calculatePlannedDays(Long userId, int year) {
         LocalDate yearStart = LocalDate.of(year, 1, 1);
         LocalDate yearEnd = LocalDate.of(year, 12, 31);
 
         List<TimeOff> vacationEntries = timeOffRepository.findByUserIdAndTypeAndYear(
                 userId, TimeOffType.VACATION, yearStart, yearEnd);
 
-        BigDecimal totalUsedDays = vacationEntries.stream()
+        return vacationEntries.stream()
                 .map(this::calculateDaysForTimeOff)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // Update used days
-        balance.setUsedDays(totalUsedDays);
-        balance.calculateRemainingDays();
-
-        vacationBalanceRepository.save(balance);
-        log.info("Updated vacation balance for user ID: {} and year: {}. Used days: {}, Remaining: {}",
-                userId, year, totalUsedDays, balance.getRemainingDays());
     }
 
     /**

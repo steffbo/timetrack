@@ -59,7 +59,7 @@ public class VacationBalance {
     private BigDecimal adjustmentDays = BigDecimal.ZERO;
 
     /**
-     * Days used (calculated from time_off entries).
+     * Days already used/taken (past approved vacation entries, calculated from time_off entries).
      */
     @Builder.Default
     @Column(name = "used_days", precision = 5, scale = 1)
@@ -82,6 +82,7 @@ public class VacationBalance {
 
     /**
      * Calculate remaining days.
+     * = annualAllowanceDays + carriedOverDays + adjustmentDays - usedDays
      */
     public void calculateRemainingDays() {
         this.remainingDays = annualAllowanceDays

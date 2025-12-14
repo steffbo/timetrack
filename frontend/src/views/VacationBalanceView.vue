@@ -3,11 +3,9 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
-import Card from 'primevue/card'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import InputNumber from 'primevue/inputnumber'
-import Knob from 'primevue/knob'
 import { useAuth } from '@/composables/useAuth'
 import { VacationBalanceService } from '@/api/generated'
 import type { VacationBalanceResponse, UpdateVacationBalanceRequest } from '@/api/generated'
@@ -38,11 +36,6 @@ const remainingDays = computed(() => {
 const totalAvailableDays = computed(() => {
   if (!balance.value) return 0
   return balance.value.annualAllowanceDays + balance.value.carriedOverDays + balance.value.adjustmentDays
-})
-
-const usedPercentage = computed(() => {
-  if (!balance.value || totalAvailableDays.value === 0) return 0
-  return Math.round((balance.value.usedDays / totalAvailableDays.value) * 100)
 })
 
 const loadBalance = async () => {
@@ -106,13 +99,6 @@ const saveBalance = async () => {
   }
 }
 
-const getSeverity = () => {
-  const percentage = usedPercentage.value
-  if (percentage < 50) return 'success'
-  if (percentage < 80) return 'warning'
-  return 'danger'
-}
-
 onMounted(() => {
   loadBalance()
 })
@@ -144,80 +130,44 @@ onMounted(() => {
       </div>
 
       <div v-else-if="balance" class="balance-content">
-        <div class="grid">
-          <!-- Summary Card -->
-          <div class="col-12 lg:col-6">
-            <Card>
-              <template #title>
-                <div class="flex justify-content-between align-items-center">
-                  <span>{{ t('vacationBalance.summary') }}</span>
-                </div>
-              </template>
-              <template #content>
-                <div class="balance-summary">
-                  <div class="summary-item">
-                    <span class="summary-label">{{ t('vacationBalance.annualAllowanceDays') }}</span>
-                    <span class="summary-value">{{ balance.annualAllowanceDays.toFixed(1) }} {{ t('vacationBalance.days') }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <span class="summary-label">{{ t('vacationBalance.carriedOverDays') }}</span>
-                    <span class="summary-value">{{ balance.carriedOverDays.toFixed(1) }} {{ t('vacationBalance.days') }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <span class="summary-label">{{ t('vacationBalance.adjustmentDays') }}</span>
-                    <span class="summary-value">{{ balance.adjustmentDays.toFixed(1) }} {{ t('vacationBalance.days') }}</span>
-                  </div>
-                  <Divider />
-                  <div class="summary-item total">
-                    <span class="summary-label font-bold">{{ t('vacationBalance.totalAvailable') }}</span>
-                    <span class="summary-value font-bold">{{ totalAvailableDays.toFixed(1) }} {{ t('vacationBalance.days') }}</span>
-                  </div>
-                  <div class="summary-item">
-                    <span class="summary-label">{{ t('vacationBalance.usedDays') }}</span>
-                    <span class="summary-value text-red-500">-{{ balance.usedDays.toFixed(1) }} {{ t('vacationBalance.days') }}</span>
-                  </div>
-                  <Divider />
-                  <div class="summary-item remaining">
-                    <span class="summary-label font-bold text-xl">{{ t('vacationBalance.remainingDays') }}</span>
-                    <span class="summary-value font-bold text-2xl text-primary">{{ remainingDays.toFixed(1) }} {{ t('vacationBalance.days') }}</span>
-                  </div>
-                </div>
-              </template>
-            </Card>
+        <!-- Stat Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">{{ t('vacationBalance.annualAllowanceDays') }}</div>
+            <div class="stat-value">{{ balance.annualAllowanceDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
           </div>
 
-          <!-- Progress Chart -->
-          <div class="col-12 lg:col-6">
-            <Card>
-              <template #title>{{ t('vacationBalance.usage') }}</template>
-              <template #content>
-                <div class="text-center">
-                  <div class="progress-circle mb-3">
-                    <Knob
-                      v-model="usedPercentage"
-                      :size="200"
-                      :readonly="true"
-                      :value-color="getSeverity() === 'success' ? '#22c55e' : getSeverity() === 'warning' ? '#f59e0b' : '#ef4444'"
-                    />
-                  </div>
-                  <div class="progress-stats">
-                    <p class="text-lg font-semibold">
-                      {{ balance.usedDays.toFixed(1) }} / {{ totalAvailableDays.toFixed(1) }} {{ t('vacationBalance.days') }}
-                    </p>
-                    <p class="text-gray-600">
-                      {{ usedPercentage }}% {{ t('vacationBalance.used') }}
-                    </p>
-                  </div>
-                </div>
-              </template>
-            </Card>
+          <div class="stat-card stat-planned">
+            <div class="stat-label">{{ t('vacationBalance.plannedDays') }}</div>
+            <div class="stat-value">{{ balance.plannedDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <div class="stat-card stat-used">
+            <div class="stat-label">{{ t('vacationBalance.usedDays') }}</div>
+            <div class="stat-value">{{ balance.usedDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <div class="stat-card stat-remaining">
+            <div class="stat-label">{{ t('vacationBalance.leftForPlanning') }}</div>
+            <div class="stat-value">{{ remainingDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">{{ t('vacationBalance.carriedOverDays') }}</div>
+            <div class="stat-value">{{ balance.carriedOverDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">{{ t('vacationBalance.adjustmentDays') }}</div>
+            <div class="stat-value">{{ balance.adjustmentDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
           </div>
         </div>
-
-        <!-- Info Message -->
-        <Message v-if="user?.role !== 'ADMIN'" severity="info" :closable="false" class="mt-3">
-          {{ t('vacationBalance.userInfo') }}
-        </Message>
       </div>
 
       <div v-else class="text-center py-4 text-gray-500">
@@ -296,7 +246,7 @@ onMounted(() => {
 
 <style scoped>
 .vacation-balance-view {
-  padding: 2rem;
+  padding: 1rem 2rem 2rem 2rem;
 }
 
 h1 {
@@ -306,36 +256,86 @@ h1 {
   margin: 0;
 }
 
-.balance-summary {
-  display: flex;
-  flex-direction: column;
+/* Stat Cards Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
 }
 
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  text-align: center;
 }
 
-.summary-label {
-  font-size: 0.95rem;
+.stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.stat-label {
+  font-size: 0.85rem;
   color: #6c757d;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
 }
 
-.summary-value {
-  font-size: 1.1rem;
-  font-weight: 600;
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+  line-height: 1;
 }
 
-.summary-item.total,
-.summary-item.remaining {
-  padding: 0.5rem 0;
+.stat-unit {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-weight: 500;
 }
 
-.progress-circle {
-  display: flex;
-  justify-content: center;
+.stat-card.stat-total {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-card.stat-total .stat-label,
+.stat-card.stat-total .stat-value,
+.stat-card.stat-total .stat-unit {
+  color: white;
+}
+
+.stat-card.stat-used {
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+}
+
+.stat-card.stat-used .stat-label,
+.stat-card.stat-used .stat-value,
+.stat-card.stat-used .stat-unit {
+  color: white;
+}
+
+.stat-card.stat-planned {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-card.stat-planned .stat-label,
+.stat-card.stat-planned .stat-value,
+.stat-card.stat-planned .stat-unit {
+  color: white;
+}
+
+.stat-card.stat-remaining {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.stat-card.stat-remaining .stat-label,
+.stat-card.stat-remaining .stat-value,
+.stat-card.stat-remaining .stat-unit {
+  color: white;
 }
 
 .field {
@@ -352,5 +352,22 @@ h1 {
   display: block;
   margin-top: 0.25rem;
   color: #6c757d;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

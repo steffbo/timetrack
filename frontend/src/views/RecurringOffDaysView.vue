@@ -429,7 +429,7 @@ onMounted(() => {
 
 <style scoped>
 .recurring-off-days-view {
-  padding: 2rem;
+  padding: 1rem 2rem 2rem 2rem;
 }
 
 h1 {
