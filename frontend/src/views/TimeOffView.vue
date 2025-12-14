@@ -11,6 +11,7 @@ import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import InputNumber from 'primevue/inputnumber'
 import DatePicker from '@/components/common/DatePicker.vue'
+import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import { TimeOffService } from '@/api/generated'
 import type { TimeOffResponse, CreateTimeOffRequest, UpdateTimeOffRequest } from '@/api/generated'
 
@@ -204,10 +205,20 @@ const calculateDays = (startDate: string, endDate: string) => {
 }
 
 onMounted(() => {
-  // Default filter: current year
+  // Default filter: previous month + current month
   const now = new Date()
-  startDateFilter.value = `${now.getFullYear()}-01-01`
-  endDateFilter.value = `${now.getFullYear()}-12-31`
+  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+
+  const formatDate = (date: Date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  startDateFilter.value = formatDate(previousMonth)
+  endDateFilter.value = formatDate(endOfCurrentMonth)
   loadTimeOffs()
 })
 </script>
@@ -225,31 +236,11 @@ onMounted(() => {
       </div>
 
       <div class="filters mb-4">
-        <div class="flex gap-3 align-items-end">
-          <div class="flex-1">
-            <label for="startDateFilter">{{ t('timeOff.startDate') }}</label>
-            <DatePicker
-              id="startDateFilter"
-              v-model="startDateFilter"
-              show-icon
-            />
-          </div>
-          <div class="flex-1">
-            <label for="endDateFilter">{{ t('timeOff.endDate') }}</label>
-            <DatePicker
-              id="endDateFilter"
-              v-model="endDateFilter"
-              show-icon
-            />
-          </div>
-          <div>
-            <Button
-              :label="t('filter')"
-              icon="pi pi-filter"
-              @click="loadTimeOffs"
-            />
-          </div>
-        </div>
+        <DateRangeFilter
+          v-model:start-date="startDateFilter"
+          v-model:end-date="endDateFilter"
+          @filter="loadTimeOffs"
+        />
       </div>
 
       <DataTable
@@ -433,11 +424,6 @@ h1 {
   margin: 0;
 }
 
-.filters label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
 
 .field {
   margin-bottom: 1.5rem;

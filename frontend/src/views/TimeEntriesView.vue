@@ -13,6 +13,7 @@ import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
+import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import { TimeEntriesService, WorkingHoursService, TimeOffService, RecurringOffDaysService } from '@/api/generated'
 import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, TimeOffResponse, RecurringOffDayResponse, WorkingHoursResponse } from '@/api/generated'
 
@@ -660,36 +661,21 @@ onMounted(() => {
 
       <!-- Filters Section -->
       <div class="filters-section mb-4">
-        <div class="filter-row">
-          <div class="filter-field">
-            <DatePicker
-              id="startDate"
-              v-model="startDateFilter"
-              show-icon
-              :placeholder="t('timeEntries.startDate')"
+        <DateRangeFilter
+          v-model:start-date="startDateFilter"
+          v-model:end-date="endDateFilter"
+          @filter="loadTimeEntries()"
+        >
+          <template #extra-actions>
+            <Button
+              :label="showTimeOff ? t('timeEntries.hideTimeOff') : t('timeEntries.showTimeOff')"
+              :icon="showTimeOff ? 'pi pi-eye-slash' : 'pi pi-eye'"
+              severity="secondary"
+              outlined
+              @click="toggleTimeOff()"
             />
-          </div>
-          <div class="filter-field">
-            <DatePicker
-              id="endDate"
-              v-model="endDateFilter"
-              show-icon
-              :placeholder="t('timeEntries.endDate')"
-            />
-          </div>
-          <Button
-            :label="t('filter')"
-            icon="pi pi-filter"
-            @click="loadTimeEntries()"
-          />
-          <Button
-            :label="showTimeOff ? t('timeEntries.hideTimeOff') : t('timeEntries.showTimeOff')"
-            :icon="showTimeOff ? 'pi pi-eye-slash' : 'pi pi-eye'"
-            severity="secondary"
-            outlined
-            @click="toggleTimeOff()"
-          />
-        </div>
+          </template>
+        </DateRangeFilter>
       </div>
 
       <!-- Combined Entries Table -->
@@ -1035,16 +1021,6 @@ h2 {
   border: 1px solid var(--surface-200);
 }
 
-.filter-row {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.filter-field {
-  min-width: 200px;
-}
 
 .manual-entry-form .field {
   margin-bottom: 1.5rem;

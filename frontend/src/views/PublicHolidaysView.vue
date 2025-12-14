@@ -56,31 +56,29 @@ const formatDate = (dateStr: string) => {
       <h1>{{ t('publicHolidays.title') }}</h1>
 
       <div class="filters">
-        <div class="p-fluid">
-          <div class="flex gap-3 mb-4">
-            <div class="flex-1">
-              <label for="year">{{ t('publicHolidays.year') }}</label>
-              <Select
-                id="year"
-                v-model="selectedYear"
-                :options="years"
-                @change="loadHolidays"
-              />
-            </div>
-            <div class="flex-1">
-              <label for="state">{{ t('publicHolidays.state') }}</label>
-              <Select
-                id="state"
-                v-model="selectedState"
-                :options="[
-                  { label: t('state.BERLIN'), value: 'BERLIN' },
-                  { label: t('state.BRANDENBURG'), value: 'BRANDENBURG' }
-                ]"
-                option-label="label"
-                option-value="value"
-                @change="loadHolidays"
-              />
-            </div>
+        <div class="filter-row">
+          <div class="filter-field">
+            <label for="year">{{ t('publicHolidays.year') }}</label>
+            <Select
+              id="year"
+              v-model="selectedYear"
+              :options="years"
+              @change="loadHolidays"
+            />
+          </div>
+          <div class="filter-field">
+            <label for="state">{{ t('publicHolidays.state') }}</label>
+            <Select
+              id="state"
+              v-model="selectedState"
+              :options="[
+                { label: t('state.BERLIN'), value: 'BERLIN' },
+                { label: t('state.BRANDENBURG'), value: 'BRANDENBURG' }
+              ]"
+              option-label="label"
+              option-value="value"
+              @change="loadHolidays"
+            />
           </div>
         </div>
       </div>
@@ -126,7 +124,18 @@ h1 {
   margin-bottom: 1.5rem;
 }
 
-label {
+.filter-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.filter-field {
+  flex: 0 0 auto;
+  min-width: 200px;
+}
+
+.filter-field label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
