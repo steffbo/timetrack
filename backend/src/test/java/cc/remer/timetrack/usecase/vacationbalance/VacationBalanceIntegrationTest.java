@@ -431,4 +431,148 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         assertThat(balance.getRemainingDays()).isEqualTo(27.0); // 30 - 3 = 27
     }
 
+    @Test
+    @DisplayName("Should exclude sick days when calculating vacation days")
+    void shouldExcludeSickDaysWhenCalculatingVacationDays() {
+        // Arrange - Create vacation balance for 2025
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create a 2-week vacation block: Jan 6-17, 2025 (Mon-Fri = 10 working days)
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 1, 6)); // Monday
+        vacationRequest.setEndDate(LocalDate.of(2025, 1, 17)); // Friday
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Create a sick day within the vacation period: Jan 9-10, 2025 (Thu-Fri = 2 working days)
+        CreateTimeOffRequest sickRequest = new CreateTimeOffRequest();
+        sickRequest.setStartDate(LocalDate.of(2025, 1, 9)); // Thursday
+        sickRequest.setEndDate(LocalDate.of(2025, 1, 10)); // Friday
+        sickRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.SICK);
+        createTimeOff.execute(testUser.getId(), sickRequest);
+
+        // Act - Recalculate to ensure sick days take precedence
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Only 8 working days should be counted as vacation (10 - 2 sick days)
+        assertThat(balance.getUsedDays()).isEqualTo(8.0); // 10 - 2 sick days = 8 vacation days
+        assertThat(balance.getRemainingDays()).isEqualTo(22.0); // 30 - 8 = 22
+    }
+
+    @Test
+    @DisplayName("Should exclude personal days when calculating vacation days")
+    void shouldExcludePersonalDaysWhenCalculatingVacationDays() {
+        // Arrange - Create vacation balance for 2025
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create a 3-week vacation block: Feb 3-21, 2025 (Mon-Fri = 15 working days)
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 2, 3)); // Monday
+        vacationRequest.setEndDate(LocalDate.of(2025, 2, 21)); // Friday
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Create personal days within the vacation period: Feb 10-12, 2025 (Mon-Wed = 3 working days)
+        CreateTimeOffRequest personalRequest = new CreateTimeOffRequest();
+        personalRequest.setStartDate(LocalDate.of(2025, 2, 10)); // Monday
+        personalRequest.setEndDate(LocalDate.of(2025, 2, 12)); // Wednesday
+        personalRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.PERSONAL);
+        createTimeOff.execute(testUser.getId(), personalRequest);
+
+        // Act
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Only 12 working days should be counted as vacation (15 - 3 personal days)
+        assertThat(balance.getUsedDays()).isEqualTo(12.0); // 15 - 3 personal days = 12 vacation days
+        assertThat(balance.getRemainingDays()).isEqualTo(18.0); // 30 - 12 = 18
+    }
+
+    @Test
+    @DisplayName("Should handle complex vacation with multiple exclusions")
+    void shouldHandleComplexVacationWithMultipleExclusions() {
+        // Arrange - Create vacation balance for 2025
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create a recurring off-day for Wednesdays starting Feb 5
+        createRecurringOffDay(
+                testUser,
+                3, // Wednesday
+                1, // Every week
+                LocalDate.of(2025, 2, 5),
+                LocalDate.of(2025, 2, 1),
+                "Wednesday off"
+        );
+
+        // Create a 3-week vacation: Feb 3-21, 2025
+        // Total calendar days: 19 days
+        // Working days without exclusions: 15 (3 weeks * 5 days)
+        // - 3 Wednesdays (recurring off-days): Feb 5, 12, 19
+        // - 2 sick days: Feb 10-11 (Mon-Tue)
+        // Expected vacation days: 15 - 3 - 2 = 10
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 2, 3)); // Monday
+        vacationRequest.setEndDate(LocalDate.of(2025, 2, 21)); // Friday
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Create sick days within the vacation period: Feb 10-11 (Mon-Tue)
+        CreateTimeOffRequest sickRequest = new CreateTimeOffRequest();
+        sickRequest.setStartDate(LocalDate.of(2025, 2, 10)); // Monday
+        sickRequest.setEndDate(LocalDate.of(2025, 2, 11)); // Tuesday
+        sickRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.SICK);
+        createTimeOff.execute(testUser.getId(), sickRequest);
+
+        // Act
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Should exclude weekends, recurring off-days, and sick days
+        assertThat(balance.getUsedDays()).isEqualTo(10.0); // 15 - 3 Wed - 2 sick = 10
+        assertThat(balance.getRemainingDays()).isEqualTo(20.0); // 30 - 10 = 20
+    }
+
+    @Test
+    @DisplayName("Should correctly calculate vacation days for Dec 21-31, 2025 with Christmas holidays")
+    void shouldCalculateVacationDaysForChristmasWeek2025() {
+        // Arrange - Create vacation balance for 2025
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create a recurring off-day for only Dec 22 (Monday) - use 5-week interval to avoid Dec 29
+        createRecurringOffDay(
+                testUser,
+                1, // Monday
+                5, // Every 5 weeks (so Dec 29 won't match)
+                LocalDate.of(2025, 12, 22),
+                LocalDate.of(2025, 12, 1),
+                "Recurring Monday off"
+        );
+
+        // Create vacation from Dec 21-31, 2025
+        // Dec 21 (Sun) - weekend
+        // Dec 22 (Mon) - recurring off-day
+        // Dec 23 (Tue) - working day = 1
+        // Dec 24 (Wed) - working day = 2
+        // Dec 25 (Thu) - Christmas Day (public holiday)
+        // Dec 26 (Fri) - Boxing Day (public holiday)
+        // Dec 27 (Sat) - weekend
+        // Dec 28 (Sun) - weekend
+        // Dec 29 (Mon) - working day = 3
+        // Dec 30 (Tue) - working day = 4
+        // Dec 31 (Wed) - working day = 5
+        // Expected: 5 working days
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 12, 21));
+        vacationRequest.setEndDate(LocalDate.of(2025, 12, 31));
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Act
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Should be 5 working days (excluding weekends, recurring off-day, and Christmas holidays)
+        // Since this vacation is in the future, it shows up in plannedDays, not usedDays
+        assertThat(balance.getPlannedDays()).isEqualTo(5.0);
+        assertThat(balance.getUsedDays()).isEqualTo(0.0); // Not yet taken (future vacation)
+        assertThat(balance.getRemainingDays()).isEqualTo(25.0); // 30 - 5 planned = 25
+    }
+
 }
