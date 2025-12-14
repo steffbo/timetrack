@@ -154,6 +154,9 @@ const timeEntryToDelete = ref<TimeEntryResponse | null>(null)
 const useDefaultHours = ref(false)  // Toggle for using default working hours
 const hasWorkingHoursForSelectedDay = ref(true)  // Track if selected day has working hours
 const cachedWorkingHours = ref<WorkingHoursResponse | null>(null)  // Cache working hours
+// Store the values when default hours are applied, so they persist when toggling
+const savedStartTime = ref<Date | null>(null)
+const savedEndTime = ref<Date | null>(null)
 
 // Date range filter - default to previous month start and current month end
 const now = new Date()
@@ -324,6 +327,8 @@ const openManualEntryDialog = () => {
 
   useDefaultHours.value = false
   hasWorkingHoursForSelectedDay.value = true  // Reset the flag
+  savedStartTime.value = null  // Clear saved times
+  savedEndTime.value = null
   manualEntryDialogVisible.value = true
 }
 
@@ -364,10 +369,12 @@ const applyDefaultWorkingHours = async (selectedDate: Date) => {
     const startTime = new Date()
     startTime.setHours(startHour, startMin, 0, 0)
     manualEntryStartTime.value = startTime
+    savedStartTime.value = new Date(startTime) // Save a copy
 
     const endTime = new Date()
     endTime.setHours(endHour, endMin, 0, 0)
     manualEntryEndTime.value = endTime
+    savedEndTime.value = new Date(endTime) // Save a copy
 
     // Remove success toast - user will get it after clicking save
   } catch (error: any) {
@@ -391,6 +398,11 @@ const onUseDefaultHoursChange = async () => {
   if (useDefaultHours.value && manualEntryDate.value) {
     // Apply default hours immediately when checkbox is checked
     await applyDefaultWorkingHours(manualEntryDate.value)
+  } else if (!useDefaultHours.value && savedStartTime.value && savedEndTime.value) {
+    // When unchecking, restore the saved values that were set by default hours
+    // This ensures the time pickers show the correct times instead of reverting to initial values
+    manualEntryStartTime.value = new Date(savedStartTime.value)
+    manualEntryEndTime.value = new Date(savedEndTime.value)
   }
 }
 
@@ -873,6 +885,7 @@ onMounted(() => {
               v-model="manualEntryStartTime"
               time-only
               :disabled="useDefaultHours"
+              :manual-input="true"
               class="w-full"
             />
           </div>
@@ -884,6 +897,7 @@ onMounted(() => {
               v-model="manualEntryEndTime"
               time-only
               :disabled="useDefaultHours"
+              :manual-input="true"
               class="w-full"
             />
           </div>
