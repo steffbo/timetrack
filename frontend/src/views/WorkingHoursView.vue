@@ -141,9 +141,7 @@ onMounted(async () => {
 async function loadWorkingHours() {
   isLoading.value = true
   try {
-    const response = await apiClient.get(
-      `/api/working-hours/${currentUser.value?.id}`
-    )
+    const response = await apiClient.get(`/api/working-hours`)
     workingDays.value = response.data.workingDays
   } catch (error) {
     toast.add({
