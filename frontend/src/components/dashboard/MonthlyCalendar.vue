@@ -67,10 +67,17 @@
         >
           <div class="day-content">
             <span class="day-number">{{ day.day }}</span>
-            <i
-              v-if="getAdjacentDayStatusIcon(day.day, 'prev')"
-              :class="['status-icon', getAdjacentDayStatusIcon(day.day, 'prev'), getAdjacentDayStatusIconColor(day.day, 'prev')]"
-            />
+            <div class="day-indicators">
+              <i
+                v-if="getAdjacentDayStatusIcon(day.day, 'prev')"
+                :class="['status-icon', getAdjacentDayStatusIcon(day.day, 'prev'), getAdjacentDayStatusIconColor(day.day, 'prev')]"
+              />
+              <span
+                v-for="emoji in getAdjacentDayEmojis(day.day, 'prev')"
+                :key="emoji"
+                class="day-emoji"
+              >{{ emoji }}</span>
+            </div>
           </div>
         </div>
 
@@ -88,10 +95,17 @@
         >
           <div class="day-content">
             <span class="day-number">{{ day }}</span>
-            <i
-              v-if="getDayStatusIcon(day)"
-              :class="['status-icon', getDayStatusIcon(day), getDayStatusIconColor(day)]"
-            />
+            <div class="day-indicators">
+              <i
+                v-if="getDayStatusIcon(day)"
+                :class="['status-icon', getDayStatusIcon(day), getDayStatusIconColor(day)]"
+              />
+              <span
+                v-for="emoji in getDayEmojis(day)"
+                :key="emoji"
+                class="day-emoji"
+              >{{ emoji }}</span>
+            </div>
           </div>
         </div>
 
@@ -109,10 +123,17 @@
         >
           <div class="day-content">
             <span class="day-number">{{ day.day }}</span>
-            <i
-              v-if="getAdjacentDayStatusIcon(day.day, 'next')"
-              :class="['status-icon', getAdjacentDayStatusIcon(day.day, 'next'), getAdjacentDayStatusIconColor(day.day, 'next')]"
-            />
+            <div class="day-indicators">
+              <i
+                v-if="getAdjacentDayStatusIcon(day.day, 'next')"
+                :class="['status-icon', getAdjacentDayStatusIcon(day.day, 'next'), getAdjacentDayStatusIconColor(day.day, 'next')]"
+              />
+              <span
+                v-for="emoji in getAdjacentDayEmojis(day.day, 'next')"
+                :key="emoji"
+                class="day-emoji"
+              >{{ emoji }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -144,6 +165,7 @@ import OverlayPanel from 'primevue/overlaypanel'
 import type { DailySummaryResponse, WorkingHoursResponse } from '@/api/generated'
 import { OpenAPI } from '@/api/generated'
 import axios from 'axios'
+import { resolvePrimaryDayType } from '@/utils/dayTypePrecedence'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -249,69 +271,12 @@ const isWorkingDay = (day: number): boolean => {
 }
 
 // Helper to determine primary entry type for a day
+// Uses centralized precedence rules from /precedence-rules.md
 const getPrimaryEntryType = (day: number): string => {
   const summary = getSummaryForDay(day)
-
-  // Check if it's a working day first
   const isDayWorking = isWorkingDay(day)
 
-  // If no summary exists, check if it's a weekend
-  if (!summary) {
-    return isDayWorking ? 'NO_ENTRY' : 'WEEKEND'
-  }
-
-  // Priority: PUBLIC_HOLIDAY > RECURRING_OFF > SICK > PERSONAL > VACATION > EVENT > WORK > WEEKEND
-
-  // Public holidays always take precedence
-  if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
-    const publicHoliday = summary.timeOffEntries.find(e => e.timeOffType === 'PUBLIC_HOLIDAY')
-    if (publicHoliday) return 'PUBLIC_HOLIDAY'
-  }
-
-  // Recurring off-days take precedence over vacation
-  if (summary.recurringOffDays && summary.recurringOffDays.length > 0) {
-    return 'RECURRING_OFF'
-  }
-
-  // Other time-off types (sick, personal) take precedence over vacation
-  if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
-    const sick = summary.timeOffEntries.find(e => e.timeOffType === 'SICK')
-    if (sick) return 'SICK_LEAVE'
-
-    const personal = summary.timeOffEntries.find(e => e.timeOffType === 'PERSONAL')
-    if (personal) return 'PERSONAL'
-  }
-
-  // Only show vacation color if it's actually a working day
-  if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
-    const vacation = summary.timeOffEntries.find(e => e.timeOffType === 'VACATION')
-    if (vacation) {
-      // If it's a weekend/non-working day, show as weekend instead of vacation
-      if (!isDayWorking) return 'WEEKEND'
-      return 'VACATION'
-    }
-
-    // Generic time off
-    return 'TIME_OFF'
-  }
-
-  // Work entries
-  if (summary.entries && summary.entries.length > 0) {
-    // Check if SICK, PTO, or EVENT entries exist
-    const hasSick = summary.entries.some(e => e.entryType === 'SICK')
-    const hasPTO = summary.entries.some(e => e.entryType === 'PTO')
-    const hasEvent = summary.entries.some(e => e.entryType === 'EVENT')
-
-    if (hasSick) return 'SICK'
-    if (hasPTO) return 'PTO'
-    if (hasEvent) return 'EVENT'
-    return 'WORK'
-  }
-
-  // No entries - check if it's a weekend
-  if (!isDayWorking) return 'WEEKEND'
-
-  return 'NO_ENTRY'
+  return resolvePrimaryDayType(summary, isDayWorking)
 }
 
 // Get CSS classes for a day cell
@@ -388,6 +353,36 @@ const getDayStatusIconColor = (day: number): string | null => {
   return 'status-icon-danger'
 }
 
+// Get emoji indicators for a day's time-off entries
+// Shows emojis in precedence order: sick > personal > recurring > vacation
+// Uses same emojis as the overlay panel for consistency
+const getDayEmojis = (day: number): string[] => {
+  const summary = getSummaryForDay(day)
+  if (!summary) return []
+
+  const emojis: string[] = []
+
+  // Check time-off entries in precedence order
+  if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
+    const hasSick = summary.timeOffEntries.some(e => e.timeOffType === 'SICK')
+    const hasPersonal = summary.timeOffEntries.some(e => e.timeOffType === 'PERSONAL')
+    const hasVacation = summary.timeOffEntries.some(e => e.timeOffType === 'VACATION')
+    const hasPublicHoliday = summary.timeOffEntries.some(e => e.timeOffType === 'PUBLIC_HOLIDAY')
+
+    if (hasPublicHoliday) emojis.push('🎊')
+    if (hasSick) emojis.push('😵‍💫')
+    if (hasPersonal) emojis.push('🏠')
+    if (hasVacation) emojis.push('🏝️')
+  }
+
+  // Check recurring off-days
+  if (summary.recurringOffDays && summary.recurringOffDays.length > 0) {
+    emojis.push('📴')
+  }
+
+  return emojis
+}
+
 // Helper to get summary for adjacent month day
 const getAdjacentSummaryForDay = (day: number, type: 'prev' | 'next'): DailySummaryResponse | undefined => {
   const monthData = type === 'prev' ? previousMonthDays.value.find(d => d.day === day) : nextMonthDays.value.find(d => d.day === day)
@@ -398,34 +393,15 @@ const getAdjacentSummaryForDay = (day: number, type: 'prev' | 'next'): DailySumm
 }
 
 // Helper to get primary entry type for adjacent month day
+// Uses centralized precedence rules from /precedence-rules.md
 const getAdjacentPrimaryEntryType = (day: number, type: 'prev' | 'next'): string => {
   const summary = getAdjacentSummaryForDay(day, type)
 
-  // For adjacent months, we use simplified logic
-  if (!summary) return 'NO_ENTRY'
+  // For adjacent months, we don't have working hours config easily accessible
+  // so we use a simplified approach - assume it's a working day if it has data
+  const isDayWorking = summary?.entries?.length > 0 || summary?.timeOffEntries?.length > 0
 
-  if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
-    const publicHoliday = summary.timeOffEntries.find(e => e.timeOffType === 'PUBLIC_HOLIDAY')
-    if (publicHoliday) return 'PUBLIC_HOLIDAY'
-
-    const vacation = summary.timeOffEntries.find(e => e.timeOffType === 'VACATION')
-    if (vacation) return 'VACATION'
-
-    const sick = summary.timeOffEntries.find(e => e.timeOffType === 'SICK')
-    if (sick) return 'SICK_LEAVE'
-
-    return 'TIME_OFF'
-  }
-
-  if (summary.recurringOffDays && summary.recurringOffDays.length > 0) {
-    return 'RECURRING_OFF'
-  }
-
-  if (summary.entries && summary.entries.length > 0) {
-    return 'WORK'
-  }
-
-  return 'NO_ENTRY'
+  return resolvePrimaryDayType(summary, isDayWorking)
 }
 
 // Get CSS classes for adjacent month day
@@ -494,6 +470,35 @@ const getAdjacentDayStatusIconColor = (day: number, type: 'prev' | 'next'): stri
 
   // Over 45 minutes: red
   return 'status-icon-danger'
+}
+
+// Get emoji indicators for adjacent month day's time-off entries
+// Uses same emojis as the overlay panel for consistency
+const getAdjacentDayEmojis = (day: number, type: 'prev' | 'next'): string[] => {
+  const summary = getAdjacentSummaryForDay(day, type)
+  if (!summary) return []
+
+  const emojis: string[] = []
+
+  // Check time-off entries in precedence order
+  if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
+    const hasSick = summary.timeOffEntries.some(e => e.timeOffType === 'SICK')
+    const hasPersonal = summary.timeOffEntries.some(e => e.timeOffType === 'PERSONAL')
+    const hasVacation = summary.timeOffEntries.some(e => e.timeOffType === 'VACATION')
+    const hasPublicHoliday = summary.timeOffEntries.some(e => e.timeOffType === 'PUBLIC_HOLIDAY')
+
+    if (hasPublicHoliday) emojis.push('🎊')
+    if (hasSick) emojis.push('😵‍💫')
+    if (hasPersonal) emojis.push('🏠')
+    if (hasVacation) emojis.push('🏝️')
+  }
+
+  // Check recurring off-days
+  if (summary.recurringOffDays && summary.recurringOffDays.length > 0) {
+    emojis.push('📴')
+  }
+
+  return emojis
 }
 
 // Handle adjacent day click
@@ -989,13 +994,24 @@ const formatDayDetailsHtml = (day: number | string): string => {
   color: var(--p-text-color);
 }
 
-.status-icon {
+.day-indicators {
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: 2px;
+  right: 2px;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.status-icon {
   font-size: 0.875rem;
   color: var(--p-text-color);
   opacity: 0.9;
+}
+
+.day-emoji {
+  font-size: 0.75rem;
+  line-height: 1;
 }
 
 /* Color classes for status icons based on time difference */
@@ -1054,6 +1070,10 @@ const formatDayDetailsHtml = (day: number | string): string => {
 
   .status-icon {
     font-size: 0.75rem;
+  }
+
+  .day-emoji {
+    font-size: 0.65rem;
   }
 }
 </style>

@@ -210,6 +210,9 @@
   },
   "timeOff": {
     "title": "Abwesenheiten",
+    "entries": "Abwesenheitseinträge",
+    "statistics": "Abwesenheitsstatistik",
+    "sickDaysThisYear": "Krankheitstage",
     "create": "Neue Abwesenheit",
     "edit": "Abwesenheit bearbeiten",
     "type": {

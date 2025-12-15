@@ -125,11 +125,6 @@ const menuItems = computed<MenuItem[]>(() => {
           command: () => router.push('/recurring-off-days')
         },
         {
-          label: t('nav.vacationBalance'),
-          icon: 'pi pi-chart-bar',
-          command: () => router.push('/vacation-balance')
-        },
-        {
           label: t('nav.publicHolidays'),
           icon: 'pi pi-sun',
           command: () => router.push('/public-holidays')

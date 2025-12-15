@@ -46,11 +46,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/RecurringOffDaysView.vue')
       },
       {
-        path: 'vacation-balance',
-        name: 'vacation-balance',
-        component: () => import('@/views/VacationBalanceView.vue')
-      },
-      {
         path: 'public-holidays',
         name: 'public-holidays',
         component: () => import('@/views/PublicHolidaysView.vue')

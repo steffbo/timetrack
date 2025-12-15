@@ -210,6 +210,9 @@
   },
   "timeOff": {
     "title": "Time Off",
+    "entries": "Time Off Entries",
+    "statistics": "Time Off Statistics",
+    "sickDaysThisYear": "Sick Days",
     "create": "New Time Off",
     "edit": "Edit Time Off",
     "type": {

@@ -38,7 +38,8 @@ public class TimeOffMapper {
                 entity.getUser().getId(),
                 userState,
                 entity.getStartDate(),
-                entity.getEndDate()
+                entity.getEndDate(),
+                entity.getId() // Exclude this entry from the calculation
         );
         response.setDays(workingDays);
 

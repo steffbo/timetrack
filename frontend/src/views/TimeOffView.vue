@@ -10,13 +10,16 @@ import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import InputNumber from 'primevue/inputnumber'
+import Message from 'primevue/message'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
-import { TimeOffService } from '@/api/generated'
-import type { TimeOffResponse, CreateTimeOffRequest, UpdateTimeOffRequest } from '@/api/generated'
+import { TimeOffService, VacationBalanceService } from '@/api/generated'
+import type { TimeOffResponse, CreateTimeOffRequest, UpdateTimeOffRequest, VacationBalanceResponse, UpdateVacationBalanceRequest } from '@/api/generated'
+import { useAuth } from '@/composables/useAuth'
 
 const { t } = useI18n()
 const toast = useToast()
+const { currentUser } = useAuth()
 
 const timeOffs = ref<TimeOffResponse[]>([])
 const loading = ref(false)
@@ -32,12 +35,112 @@ const timeOffToDelete = ref<TimeOffResponse | null>(null)
 const startDateFilter = ref<string>()
 const endDateFilter = ref<string>()
 
+// Vacation balance
+const balance = ref<VacationBalanceResponse | null>(null)
+const balanceLoading = ref(false)
+const editBalanceDialogVisible = ref(false)
+const selectedYear = ref(new Date().getFullYear())
+const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i - 2)
+
+const editBalanceForm = ref<UpdateVacationBalanceRequest>({
+  userId: currentUser.value?.id || 0,
+  year: new Date().getFullYear(),
+  annualAllowanceDays: 30.0,
+  carriedOverDays: 0.0,
+  adjustmentDays: 0.0
+})
+
+// Sick days statistics
+const sickDaysCount = ref(0)
+
 const timeOffTypeOptions = [
   { label: t('timeOff.type.VACATION'), value: 'VACATION' },
   { label: t('timeOff.type.SICK'), value: 'SICK' },
   { label: t('timeOff.type.PERSONAL'), value: 'PERSONAL' },
   { label: t('timeOff.type.PUBLIC_HOLIDAY'), value: 'PUBLIC_HOLIDAY' }
 ]
+
+const remainingDays = computed(() => {
+  if (!balance.value) return 0
+  return balance.value.remainingDays
+})
+
+const totalAvailableDays = computed(() => {
+  if (!balance.value) return 0
+  return balance.value.annualAllowanceDays + balance.value.carriedOverDays + balance.value.adjustmentDays
+})
+
+const loadBalance = async () => {
+  balanceLoading.value = true
+  try {
+    const response = await VacationBalanceService.getVacationBalance(selectedYear.value)
+    balance.value = response
+  } catch (error: any) {
+    if (error?.status === 404) {
+      balance.value = null
+    } else {
+      console.error('Failed to load vacation balance:', error)
+    }
+  } finally {
+    balanceLoading.value = false
+  }
+}
+
+const calculateSickDays = async () => {
+  try {
+    const startDate = `${selectedYear.value}-01-01`
+    const endDate = `${selectedYear.value}-12-31`
+
+    const response = await TimeOffService.getTimeOffEntries(startDate, endDate)
+    const sickEntries = response.filter(entry => entry.timeOffType === 'SICK')
+
+    // Use the 'days' field which counts working days
+    const total = sickEntries.reduce((sum, entry) => sum + entry.days, 0)
+    sickDaysCount.value = total
+  } catch (error) {
+    console.error('Failed to calculate sick days:', error)
+    sickDaysCount.value = 0
+  }
+}
+
+const openEditBalanceDialog = () => {
+  if (!balance.value || !currentUser.value) return
+
+  editBalanceForm.value = {
+    userId: currentUser.value.id,
+    year: selectedYear.value,
+    annualAllowanceDays: balance.value.annualAllowanceDays,
+    carriedOverDays: balance.value.carriedOverDays,
+    adjustmentDays: balance.value.adjustmentDays
+  }
+  editBalanceDialogVisible.value = true
+}
+
+const saveBalance = async () => {
+  try {
+    await VacationBalanceService.updateVacationBalance(editBalanceForm.value)
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('vacationBalance.updateSuccess'),
+      life: 3000
+    })
+    editBalanceDialogVisible.value = false
+    await loadBalance()
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: t('vacationBalance.updateError'),
+      life: 3000
+    })
+  }
+}
+
+const onYearChange = async () => {
+  await loadBalance()
+  await calculateSickDays()
+}
 
 const loadTimeOffs = async () => {
   loading.value = true
@@ -60,6 +163,7 @@ const loadTimeOffs = async () => {
 
     const response = await TimeOffService.getTimeOffEntries(startDate, endDate)
     timeOffs.value = response
+    await calculateSickDays()
   } catch (error: any) {
     console.error('Failed to load time offs:', error)
     toast.add({
@@ -211,15 +315,94 @@ onMounted(() => {
 
   startDateFilter.value = formatDate(previousMonth)
   endDateFilter.value = formatDate(endOfCurrentMonth)
+  loadBalance()
   loadTimeOffs()
 })
 </script>
 
 <template>
   <div class="time-off-view">
+    <!-- Statistics Cards -->
+    <div class="stats-section mb-4">
+      <div class="flex justify-content-between align-items-center mb-3">
+        <h2 class="section-title">{{ t('timeOff.statistics') }}</h2>
+        <div class="flex gap-2 align-items-center">
+          <Select
+            v-model="selectedYear"
+            :options="years"
+            @change="onYearChange"
+            class="w-auto year-select"
+          />
+          <Button
+            v-if="balance"
+            :label="t('edit')"
+            icon="pi pi-pencil"
+            size="small"
+            @click="openEditBalanceDialog"
+          />
+        </div>
+      </div>
+
+      <div v-if="balanceLoading" class="flex justify-content-center py-4">
+        <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+      </div>
+
+      <div v-else-if="balance" class="stats-grid">
+        <!-- Vacation Cards -->
+        <div class="stat-card">
+          <div class="stat-label">{{ t('vacationBalance.annualAllowanceDays') }}</div>
+          <div class="stat-value">{{ balance.annualAllowanceDays.toFixed(1) }}</div>
+          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+        </div>
+
+        <div class="stat-card stat-planned">
+          <div class="stat-label">{{ t('vacationBalance.plannedDays') }}</div>
+          <div class="stat-value">{{ balance.plannedDays.toFixed(1) }}</div>
+          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+        </div>
+
+        <div class="stat-card stat-used">
+          <div class="stat-label">{{ t('vacationBalance.usedDays') }}</div>
+          <div class="stat-value">{{ balance.usedDays.toFixed(1) }}</div>
+          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+        </div>
+
+        <div class="stat-card stat-remaining">
+          <div class="stat-label">{{ t('vacationBalance.leftForPlanning') }}</div>
+          <div class="stat-value">{{ remainingDays.toFixed(1) }}</div>
+          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">{{ t('vacationBalance.carriedOverDays') }}</div>
+          <div class="stat-value">{{ balance.carriedOverDays.toFixed(1) }}</div>
+          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">{{ t('vacationBalance.adjustmentDays') }}</div>
+          <div class="stat-value">{{ balance.adjustmentDays.toFixed(1) }}</div>
+          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+        </div>
+
+        <!-- Sick Days Card -->
+        <div class="stat-card stat-sick">
+          <div class="stat-label">{{ t('timeOff.sickDaysThisYear') }}</div>
+          <div class="stat-value">{{ sickDaysCount.toFixed(1) }}</div>
+          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+        </div>
+      </div>
+
+      <div v-else class="text-center py-3 text-gray-500">
+        <i class="pi pi-info-circle text-2xl mb-2" />
+        <p class="text-sm">{{ t('vacationBalance.noData') }}</p>
+      </div>
+    </div>
+
+    <!-- Time Off Entries -->
     <div class="card">
       <div class="flex justify-content-between align-items-center mb-4">
-        <h1>{{ t('timeOff.title') }}</h1>
+        <h1>{{ t('timeOff.entries') }}</h1>
         <Button
           :label="t('timeOff.create')"
           icon="pi pi-plus"
@@ -401,6 +584,72 @@ onMounted(() => {
         />
       </template>
     </Dialog>
+
+    <!-- Edit Vacation Balance Dialog -->
+    <Dialog
+      v-model:visible="editBalanceDialogVisible"
+      :header="t('vacationBalance.edit')"
+      :modal="true"
+      :style="{ width: '500px' }"
+    >
+      <div class="p-fluid">
+        <div class="field">
+          <label for="annualAllowanceDays">{{ t('vacationBalance.annualAllowanceDays') }} *</label>
+          <InputNumber
+            id="annualAllowanceDays"
+            v-model="editBalanceForm.annualAllowanceDays"
+            :min="0"
+            :max="365"
+            :max-fraction-digits="1"
+            suffix=" days"
+          />
+        </div>
+
+        <div class="field">
+          <label for="carriedOverDays">{{ t('vacationBalance.carriedOverDays') }}</label>
+          <InputNumber
+            id="carriedOverDays"
+            v-model="editBalanceForm.carriedOverDays"
+            :min="0"
+            :max="365"
+            :max-fraction-digits="1"
+            suffix=" days"
+          />
+          <small>{{ t('vacationBalance.carriedOverDaysHint') }}</small>
+        </div>
+
+        <div class="field">
+          <label for="adjustmentDays">{{ t('vacationBalance.adjustmentDays') }}</label>
+          <InputNumber
+            id="adjustmentDays"
+            v-model="editBalanceForm.adjustmentDays"
+            :min="-365"
+            :max="365"
+            :max-fraction-digits="1"
+            suffix=" days"
+          />
+          <small>{{ t('vacationBalance.adjustmentDaysHint') }}</small>
+        </div>
+
+        <Message severity="info" :closable="false">
+          {{ t('vacationBalance.usedDaysAutoCalculated') }}
+        </Message>
+      </div>
+
+      <template #footer>
+        <Button
+          :label="t('cancel')"
+          icon="pi pi-times"
+          class="p-button-text"
+          @click="editBalanceDialogVisible = false"
+        />
+        <Button
+          :label="t('save')"
+          icon="pi pi-check"
+          @click="saveBalance"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -416,6 +665,105 @@ h1 {
   margin: 0;
 }
 
+/* Statistics Section */
+.stats-section {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+/* Stat Cards Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+  line-height: 1;
+}
+
+.stat-unit {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.stat-card.stat-used {
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+}
+
+.stat-card.stat-used .stat-label,
+.stat-card.stat-used .stat-value,
+.stat-card.stat-used .stat-unit {
+  color: white;
+}
+
+.stat-card.stat-planned {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-card.stat-planned .stat-label,
+.stat-card.stat-planned .stat-value,
+.stat-card.stat-planned .stat-unit {
+  color: white;
+}
+
+.stat-card.stat-remaining {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.stat-card.stat-remaining .stat-label,
+.stat-card.stat-remaining .stat-value,
+.stat-card.stat-remaining .stat-unit {
+  color: white;
+}
+
+.stat-card.stat-sick {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+}
+
+.stat-card.stat-sick .stat-label,
+.stat-card.stat-sick .stat-value,
+.stat-card.stat-sick .stat-unit {
+  color: white;
+}
+
+.year-select {
+  min-width: 100px;
+}
 
 .field {
   margin-bottom: 1.5rem;
@@ -431,5 +779,22 @@ h1 {
   display: block;
   margin-top: 0.25rem;
   color: #6c757d;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
