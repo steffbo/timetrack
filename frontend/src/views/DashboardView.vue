@@ -166,12 +166,19 @@ const loadDailySummaries = async () => {
     const startDateStr = `${fetchStartDate.getFullYear()}-${String(fetchStartDate.getMonth() + 1).padStart(2, '0')}-${String(fetchStartDate.getDate()).padStart(2, '0')}`
     const endDateStr = `${fetchEndDate.getFullYear()}-${String(fetchEndDate.getMonth() + 1).padStart(2, '0')}-${String(fetchEndDate.getDate()).padStart(2, '0')}`
 
-    // Fetch daily summaries, public holidays, and working hours in parallel
-    const [summaries, publicHolidays, workingHoursData] = await Promise.all([
+    // Determine which years we need holidays for (adjacent months might cross year boundaries)
+    const yearsNeeded = new Set([fetchStartDate.getFullYear(), fetchEndDate.getFullYear()])
+
+    // Fetch daily summaries, public holidays for all needed years, and working hours in parallel
+    const [summaries, ...holidayResponses] = await Promise.all([
       TimeEntriesService.getDailySummary(startDateStr, endDateStr),
-      PublicHolidaysService.getPublicHolidays(year),
+      ...Array.from(yearsNeeded).map(y => PublicHolidaysService.getPublicHolidays(y)),
       WorkingHoursService.getWorkingHours(currentUser.value?.id || 0)
     ])
+
+    // Combine holidays from all years and get working hours (last item in Promise.all results)
+    const publicHolidays = holidayResponses.slice(0, -1).flat()
+    const workingHoursData = holidayResponses[holidayResponses.length - 1] as WorkingHoursResponse
 
     workingHours.value = workingHoursData
 
