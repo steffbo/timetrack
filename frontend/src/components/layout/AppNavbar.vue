@@ -105,9 +105,9 @@ const menuItems = computed<MenuItem[]>(() => {
       icon: 'pi pi-calendar',
       items: [
         {
-          label: t('nav.workingHours'),
+          label: t('nav.schedule'),
           icon: 'pi pi-clock',
-          command: () => router.push('/working-hours')
+          command: () => router.push('/schedule')
         },
         {
           label: t('nav.timeEntries'),
@@ -118,11 +118,6 @@ const menuItems = computed<MenuItem[]>(() => {
           label: t('nav.timeOff'),
           icon: 'pi pi-calendar-times',
           command: () => router.push('/time-off')
-        },
-        {
-          label: t('nav.recurringOffDays'),
-          icon: 'pi pi-refresh',
-          command: () => router.push('/recurring-off-days')
         },
         {
           label: t('nav.publicHolidays'),

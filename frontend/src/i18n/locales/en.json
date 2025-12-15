@@ -4,12 +4,11 @@
     "profile": "Profile",
     "settings": "Settings",
     "timeTracking": "Time Tracking",
+    "schedule": "Schedule",
     "timeEntries": "Time Entries",
     "timeOff": "Time Off",
-    "recurringOffDays": "Recurring Off-Days",
     "vacationBalance": "Vacation Balance",
     "publicHolidays": "Public Holidays",
-    "workingHours": "Working Hours",
     "adminUsers": "User Management",
     "logout": "Logout"
   },

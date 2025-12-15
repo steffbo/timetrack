@@ -4,12 +4,11 @@
     "profile": "Profil",
     "settings": "Einstellungen",
     "timeTracking": "Zeiterfassung",
+    "schedule": "Zeitplan",
     "timeEntries": "Zeiteinträge",
     "timeOff": "Abwesenheiten",
-    "recurringOffDays": "Wiederkehrende Freitage",
     "vacationBalance": "Urlaubskonto",
     "publicHolidays": "Feiertage",
-    "workingHours": "Arbeitszeiten",
     "adminUsers": "Benutzerverwaltung",
     "logout": "Abmelden"
   },
