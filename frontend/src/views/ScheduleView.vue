@@ -1,5 +1,7 @@
 <template>
   <div class="schedule-view">
+    <h1 class="page-title">{{ t('schedule.pageTitle') }}</h1>
+
     <!-- Working Hours Section -->
     <Card class="section-card">
       <template #title>
@@ -75,16 +77,16 @@
     <!-- Recurring Off-Days Section -->
     <Card class="section-card">
       <template #title>
-        <div class="flex justify-content-between align-items-center">
-          <span>{{ t('recurringOffDays.title') }}</span>
+        {{ t('recurringOffDays.title') }}
+      </template>
+      <template #content>
+        <div class="section-header">
           <Button
             :label="t('recurringOffDays.create')"
             icon="pi pi-plus"
             @click="openCreateDialog"
           />
         </div>
-      </template>
-      <template #content>
         <DataTable
           :value="offDays"
           :loading="isLoadingOffDays"
@@ -600,12 +602,25 @@ onMounted(async () => {
   padding: 1rem 2rem 2rem 2rem;
 }
 
+.page-title {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
 .section-card {
   margin-bottom: 2rem;
 }
 
 .section-card:last-child {
   margin-bottom: 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 
 .weekly-sum {
@@ -648,5 +663,49 @@ label {
   color: var(--p-primary-color);
   cursor: help;
   vertical-align: middle;
+}
+
+/* Make table columns more compact */
+:deep(.p-datatable) {
+  font-size: 0.95rem;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th),
+:deep(.p-datatable .p-datatable-tbody > tr > td) {
+  padding: 0.75rem 0.75rem;
+}
+
+/* Specific column widths for working hours table */
+:deep(.p-datatable .p-column-header-content) {
+  white-space: nowrap;
+}
+
+/* Reduce width of checkbox column */
+:deep(.p-datatable tbody td:has(.p-checkbox)),
+:deep(.p-datatable thead th:has(.p-checkbox)) {
+  width: 80px;
+  text-align: center;
+}
+
+/* Reduce width of time input columns */
+:deep(.p-datatable tbody td:has(input[type="time"])) {
+  width: 140px;
+}
+
+/* Reduce width of hours column */
+:deep(.p-datatable tbody td:has(.p-inputnumber)) {
+  width: 120px;
+}
+
+/* Reduce width of actions column in recurring off-days table */
+:deep(.p-datatable tbody td:last-child) {
+  width: 100px;
+  text-align: center;
+}
+
+/* Make Tag components more compact */
+:deep(.p-tag) {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
 }
 </style>

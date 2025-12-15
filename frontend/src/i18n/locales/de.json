@@ -39,6 +39,9 @@
     "BERLIN": "Berlin",
     "BRANDENBURG": "Brandenburg"
   },
+  "schedule": {
+    "pageTitle": "Zeitplan & Arbeitszeiten"
+  },
   "workingHours": {
     "title": "Arbeitszeiten konfigurieren",
     "weekdays": {
