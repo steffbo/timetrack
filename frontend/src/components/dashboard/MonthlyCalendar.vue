@@ -299,7 +299,20 @@ const getDayClasses = (day: number) => {
 
 // Get background color style for a day cell
 const getDayStyle = (day: number) => {
+  const summary = getSummaryForDay(day)
   const entryType = getPrimaryEntryType(day)
+
+  // Check if this is a half-day holiday (Dec 24 or 31) with vacation
+  const hasVacation = summary?.timeOffEntries?.some(e => e.timeOffType === 'VACATION')
+  const isDecHalfDay = isHalfDayHoliday(day, currentMonthIndex.value + 1)
+
+  // If it's a vacation on a half-day holiday, create diagonal split
+  // Bottom-left: cyan (vacation), Top-right: orange (half-day holiday)
+  if (hasVacation && isDecHalfDay) {
+    return {
+      background: 'linear-gradient(to top right, var(--p-cyan-50) 0%, var(--p-cyan-50) 49.5%, var(--p-orange-50) 50.5%, var(--p-orange-50) 100%)'
+    }
+  }
 
   const colorMap: Record<string, string> = {
     'WORK': 'var(--p-green-50)',
@@ -433,7 +446,22 @@ const getAdjacentDayClasses = (day: number, type: 'prev' | 'next') => {
 
 // Get background color style for adjacent month day
 const getAdjacentDayStyle = (day: number, type: 'prev' | 'next') => {
+  const summary = getAdjacentSummaryForDay(day, type)
   const entryType = getAdjacentPrimaryEntryType(day, type)
+
+  // Check if this is a half-day holiday (Dec 24 or 31) with vacation for adjacent month
+  const hasVacation = summary?.timeOffEntries?.some(e => e.timeOffType === 'VACATION')
+  const monthData = type === 'prev' ? previousMonthDays.value.find(d => d.day === day) : nextMonthDays.value.find(d => d.day === day)
+  const isDecHalfDay = monthData ? isHalfDayHoliday(day, monthData.month + 1) : false
+
+  // If it's a vacation on a half-day holiday, create diagonal split
+  // Bottom-left: cyan (vacation), Top-right: orange (half-day holiday)
+  if (hasVacation && isDecHalfDay) {
+    return {
+      background: 'linear-gradient(to top right, var(--p-cyan-50) 0%, var(--p-cyan-50) 49.5%, var(--p-orange-50) 50.5%, var(--p-orange-50) 100%)',
+      opacity: '0.5' // Muted appearance for adjacent months
+    }
+  }
 
   const colorMap: Record<string, string> = {
     'WORK': 'var(--p-green-50)',

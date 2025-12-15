@@ -267,6 +267,7 @@ const saveTimeOff = async () => {
     }
     dialogVisible.value = false
     await loadTimeOffs()
+    await loadBalance() // Refresh vacation balance after create/update
   } catch (error: any) {
     console.error('Failed to save time off:', error)
     toast.add({
@@ -296,6 +297,7 @@ const deleteTimeOff = async () => {
     })
     deleteDialogVisible.value = false
     await loadTimeOffs()
+    await loadBalance() // Refresh vacation balance after delete
   } catch (error) {
     toast.add({
       severity: 'error',
