@@ -35,15 +35,18 @@ export function useAuth() {
       const response = await authApi.login(credentials)
       accessTokenValue.value = response.accessToken!
       refreshTokenValue.value = response.refreshToken!
-      currentUser.value = response.user!
 
-      // Persist to localStorage
+      // Persist tokens to localStorage
       localStorage.setItem(ACCESS_TOKEN_KEY, response.accessToken!)
       localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken!)
-      localStorage.setItem(USER_KEY, JSON.stringify(response.user!))
 
       // Update the API client with the new token
       setAccessToken(response.accessToken!)
+
+      // Fetch complete user data from /me endpoint
+      const user = await authApi.getCurrentUser()
+      currentUser.value = user
+      localStorage.setItem(USER_KEY, JSON.stringify(user))
 
       return true
     } catch (error) {
