@@ -323,21 +323,22 @@ onMounted(() => {
 <template>
   <div class="time-off-view">
     <!-- Statistics Cards -->
-    <div class="stats-section mb-4">
-      <div class="flex justify-content-between align-items-center mb-3">
-        <h2 class="section-title">{{ t('timeOff.statistics') }}</h2>
-        <div class="flex gap-2 align-items-center">
+    <div class="stats-container">
+      <div class="stats-header">
+        <h3>{{ t('timeOff.statistics') }}</h3>
+        <div class="stats-controls">
           <Select
             v-model="selectedYear"
             :options="years"
             @change="onYearChange"
-            class="w-auto year-select"
+            class="year-select"
           />
           <Button
             v-if="balance"
             :label="t('edit')"
             icon="pi pi-pencil"
-            size="small"
+            severity="secondary"
+            outlined
             @click="openEditBalanceDialog"
           />
         </div>
@@ -400,9 +401,9 @@ onMounted(() => {
     </div>
 
     <!-- Time Off Entries -->
-    <div class="card">
-      <div class="flex justify-content-between align-items-center mb-4">
-        <h1>{{ t('timeOff.entries') }}</h1>
+    <div class="entries-container">
+      <div class="entries-header">
+        <h3>{{ t('timeOff.entries') }}</h3>
         <Button
           :label="t('timeOff.create')"
           icon="pi pi-plus"
@@ -410,7 +411,7 @@ onMounted(() => {
         />
       </div>
 
-      <div class="filters mb-4">
+      <div class="filters">
         <DateRangeFilter
           v-model:start-date="startDateFilter"
           v-model:end-date="endDateFilter"
@@ -659,18 +660,32 @@ onMounted(() => {
   padding: var(--tt-view-padding);
 }
 
-h1 {
-  font-size: 2rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0;
+/* Statistics Container - matches dashboard's quick-actions-section pattern */
+.stats-container {
+  background: #f8f9fa;
+  border-radius: var(--tt-radius-md);
+  padding: var(--tt-card-padding);
+  margin-bottom: var(--tt-card-gap);
 }
 
-.section-title {
-  font-size: 1.5rem;
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tt-spacing-md);
+}
+
+.stats-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #1f2937;
-  margin: 0;
+}
+
+.stats-controls {
+  display: flex;
+  gap: var(--tt-spacing-sm);
+  align-items: center;
 }
 
 .stats-grid {
@@ -683,6 +698,28 @@ h1 {
   font-size: 0.875rem;
   color: #9ca3af;
   font-weight: 500;
+}
+
+/* Entries Container - matches dashboard pattern */
+.entries-container {
+  background: white;
+  border-radius: var(--tt-radius-md);
+  padding: var(--tt-card-padding);
+  box-shadow: var(--tt-shadow-sm);
+}
+
+.entries-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--tt-spacing-lg);
+}
+
+.entries-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 /* Time-off specific stat colors */
@@ -727,7 +764,11 @@ h1 {
 }
 
 .year-select {
-  min-width: 100px;
+  min-width: 120px;
+}
+
+.filters {
+  margin-bottom: var(--tt-spacing-md);
 }
 
 .field small {
@@ -738,6 +779,10 @@ h1 {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  .time-off-view {
+    padding: var(--tt-view-padding-mobile);
+  }
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -745,9 +790,30 @@ h1 {
   .stat-value {
     font-size: 1.5rem;
   }
+
+  .stats-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--tt-spacing-sm);
+  }
+
+  .stats-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .entries-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--tt-spacing-sm);
+  }
 }
 
 @media (max-width: 480px) {
+  .time-off-view {
+    padding: var(--tt-view-padding-xs);
+  }
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
