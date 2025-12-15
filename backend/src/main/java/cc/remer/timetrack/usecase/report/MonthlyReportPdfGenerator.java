@@ -288,7 +288,7 @@ public class MonthlyReportPdfGenerator {
 
         contentStream.beginText();
         contentStream.newLineAtOffset(MARGIN, yPosition);
-        contentStream.showText(String.format("Gesamtuberstunden: %s", formatHoursWithSign(totalOvertime)));
+        contentStream.showText(String.format("Gesamtüberstunden: %s", formatHoursWithSign(totalOvertime)));
         contentStream.endText();
     }
 

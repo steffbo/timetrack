@@ -88,13 +88,18 @@ const loadBalance = async () => {
   }
 }
 
-const calculateSickDays = async () => {
+const calculateSickDays = (entries: TimeOffResponse[]) => {
   try {
-    const startDate = `${selectedYear.value}-01-01`
-    const endDate = `${selectedYear.value}-12-31`
+    // Filter for entries in the selected year
+    const yearStart = new Date(selectedYear.value, 0, 1)
+    const yearEnd = new Date(selectedYear.value, 11, 31)
 
-    const response = await TimeOffService.getTimeOffEntries(startDate, endDate)
-    const sickEntries = response.filter(entry => entry.timeOffType === 'SICK')
+    const sickEntries = entries.filter(entry => {
+      const entryDate = new Date(entry.startDate)
+      return entry.timeOffType === 'SICK' &&
+             entryDate >= yearStart &&
+             entryDate <= yearEnd
+    })
 
     // Use the 'days' field which counts working days
     const total = sickEntries.reduce((sum, entry) => sum + entry.days, 0)
@@ -105,13 +110,18 @@ const calculateSickDays = async () => {
   }
 }
 
-const calculateChildSickDays = async () => {
+const calculateChildSickDays = (entries: TimeOffResponse[]) => {
   try {
-    const startDate = `${selectedYear.value}-01-01`
-    const endDate = `${selectedYear.value}-12-31`
+    // Filter for entries in the selected year
+    const yearStart = new Date(selectedYear.value, 0, 1)
+    const yearEnd = new Date(selectedYear.value, 11, 31)
 
-    const response = await TimeOffService.getTimeOffEntries(startDate, endDate)
-    const childSickEntries = response.filter(entry => entry.timeOffType === 'CHILD_SICK')
+    const childSickEntries = entries.filter(entry => {
+      const entryDate = new Date(entry.startDate)
+      return entry.timeOffType === 'CHILD_SICK' &&
+             entryDate >= yearStart &&
+             entryDate <= yearEnd
+    })
 
     // Use the 'days' field which counts working days
     const total = childSickEntries.reduce((sum, entry) => sum + entry.days, 0)
@@ -163,8 +173,6 @@ const onYearChange = async () => {
 
   // Reload all data
   await loadBalance()
-  await calculateSickDays()
-  await calculateChildSickDays()
   await loadTimeOffs()
 }
 
@@ -189,8 +197,10 @@ const loadTimeOffs = async () => {
 
     const response = await TimeOffService.getTimeOffEntries(startDate, endDate)
     timeOffs.value = response
-    await calculateSickDays()
-    await calculateChildSickDays()
+
+    // Calculate sick days from the loaded data (no additional API calls)
+    calculateSickDays(response)
+    calculateChildSickDays(response)
   } catch (error: any) {
     console.error('Failed to load time offs:', error)
     toast.add({
@@ -338,10 +348,10 @@ const formatDisplayDate = (dateStr: string) => {
 }
 
 onMounted(() => {
-  // Default filter: previous month + current month
+  // Default filter: entire current year
   const now = new Date()
-  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  const yearStart = new Date(now.getFullYear(), 0, 1)
+  const yearEnd = new Date(now.getFullYear(), 11, 31)
 
   const formatDate = (date: Date) => {
     const year = date.getFullYear()
@@ -350,8 +360,8 @@ onMounted(() => {
     return `${year}-${month}-${day}`
   }
 
-  startDateFilter.value = formatDate(previousMonth)
-  endDateFilter.value = formatDate(endOfCurrentMonth)
+  startDateFilter.value = formatDate(yearStart)
+  endDateFilter.value = formatDate(yearEnd)
   loadBalance()
   loadTimeOffs()
 })

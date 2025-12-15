@@ -185,6 +185,7 @@ interface Props {
   currentMonth: Date
   dailySummaries: DailySummaryResponse[]
   workingHours: WorkingHoursResponse | null
+  halfDayHolidaysEnabled: boolean
 }
 
 const props = defineProps<Props>()
@@ -372,8 +373,9 @@ const getDayStatusIconColor = (day: number): string | null => {
 }
 
 // Check if a specific date is a half-day holiday (Dec 24 or Dec 31)
+// Only returns true if the user has enabled half-day holidays in their profile
 const isHalfDayHoliday = (day: number, month: number): boolean => {
-  return (month === 12 && (day === 24 || day === 31))
+  return props.halfDayHolidaysEnabled && (month === 12 && (day === 24 || day === 31))
 }
 
 // Get emoji indicators for a day's time-off entries

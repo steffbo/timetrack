@@ -7,6 +7,7 @@
           :current-month="currentMonth"
           :daily-summaries="dailySummaries"
           :working-hours="workingHours"
+          :half-day-holidays-enabled="currentUser?.halfDayHolidaysEnabled || false"
           @month-change="handleMonthChange"
         />
       </div>
