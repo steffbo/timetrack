@@ -3,57 +3,42 @@
     <!-- Quick Actions & Stats -->
     <div class="quick-panel">
       <!-- Quick Actions -->
-      <div class="quick-actions">
+      <div class="quick-actions-section">
         <h3>{{ t('dashboard.quickActions') }}</h3>
-        <div class="action-buttons">
-          <!-- Clock In/Out Button -->
-          <div v-if="!activeEntry" class="action-button-wrapper">
-            <Button
-              :label="t('dashboard.clockInNow')"
-              icon="pi pi-play-circle"
-              severity="success"
-              size="large"
-              @click="clockInNow"
-              :disabled="!hasTodayWorkingHours"
-              class="action-button"
-            />
-            <small v-if="!hasTodayWorkingHours" class="button-hint">
+        <div class="action-cards">
+          <!-- Clock In/Out Card -->
+          <div
+            v-if="!activeEntry"
+            class="action-card action-clock-in"
+            :class="{ disabled: !hasTodayWorkingHours }"
+            @click="hasTodayWorkingHours && clockInNow()"
+          >
+            <i class="pi pi-play-circle action-icon"></i>
+            <div class="action-label">{{ t('dashboard.clockInNow') }}</div>
+            <small v-if="!hasTodayWorkingHours" class="action-hint">
               {{ t('dashboard.noWorkingHoursToday') }}
             </small>
           </div>
-          <div v-else class="active-entry-actions">
-            <Button
-              :label="t('dashboard.clockOutNow')"
-              icon="pi pi-stop-circle"
-              severity="danger"
-              size="large"
-              @click="clockOutNow"
-              class="action-button"
-            />
-            <Button
-              :label="t('dashboard.cancelEntry')"
-              icon="pi pi-times"
-              severity="secondary"
-              size="large"
-              outlined
-              @click="cancelEntry"
-              class="action-button"
-            />
+          <div v-else class="active-entry-cards">
+            <div class="action-card action-clock-out" @click="clockOutNow">
+              <i class="pi pi-stop-circle action-icon"></i>
+              <div class="action-label">{{ t('dashboard.clockOutNow') }}</div>
+            </div>
+            <div class="action-card action-cancel" @click="cancelEntry">
+              <i class="pi pi-times action-icon"></i>
+              <div class="action-label">{{ t('dashboard.cancelEntry') }}</div>
+            </div>
           </div>
 
-          <!-- Quick Work Entry -->
-          <div class="action-button-wrapper">
-            <Button
-              :label="t('dashboard.quickWorkEntry')"
-              icon="pi pi-bolt"
-              severity="info"
-              size="large"
-              outlined
-              @click="createQuickWorkEntry"
-              :disabled="!hasTodayWorkingHours"
-              class="action-button"
-            />
-            <small v-if="!hasTodayWorkingHours" class="button-hint">
+          <!-- Quick Work Entry Card -->
+          <div
+            class="action-card action-quick-entry"
+            :class="{ disabled: !hasTodayWorkingHours }"
+            @click="hasTodayWorkingHours && createQuickWorkEntry()"
+          >
+            <i class="pi pi-bolt action-icon"></i>
+            <div class="action-label">{{ t('dashboard.quickWorkEntry') }}</div>
+            <small v-if="!hasTodayWorkingHours" class="action-hint">
               {{ t('dashboard.noWorkingHoursToday') }}
             </small>
           </div>
@@ -61,44 +46,24 @@
       </div>
 
       <!-- Statistics -->
-      <div class="quick-stats">
+      <div class="stats-section">
         <h3>{{ t('dashboard.overview') }}</h3>
         <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="pi pi-calendar-plus"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-label">{{ t('dashboard.nextVacation') }}</span>
-              <span class="stat-value">{{ nextVacationText }}</span>
-            </div>
+          <div class="stat-card stat-vacation">
+            <div class="stat-label">{{ t('dashboard.nextVacation') }}</div>
+            <div class="stat-value">{{ nextVacationText }}</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="pi pi-clock"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-label">{{ t('dashboard.overtimeThisMonth') }}</span>
-              <span class="stat-value">{{ formatOvertime(overtimeThisMonth) }}</span>
-            </div>
+          <div class="stat-card stat-current">
+            <div class="stat-label">{{ t('dashboard.overtimeThisMonth') }}</div>
+            <div class="stat-value">{{ formatOvertime(overtimeThisMonth) }}</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="pi pi-history"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-label">{{ t('dashboard.overtimeLastMonth') }}</span>
-              <span class="stat-value">{{ formatOvertime(overtimeLastMonth) }}</span>
-            </div>
+          <div class="stat-card stat-last">
+            <div class="stat-label">{{ t('dashboard.overtimeLastMonth') }}</div>
+            <div class="stat-value">{{ formatOvertime(overtimeLastMonth) }}</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="pi pi-chart-line"></i>
-            </div>
-            <div class="stat-content">
-              <span class="stat-label">{{ t('dashboard.overtimeAverage') }}</span>
-              <span class="stat-value">{{ formatOvertime(overtimeAverage) }}</span>
-            </div>
+          <div class="stat-card stat-average">
+            <div class="stat-label">{{ t('dashboard.overtimeAverage') }}</div>
+            <div class="stat-value">{{ formatOvertime(overtimeAverage) }}</div>
           </div>
         </div>
       </div>
@@ -285,34 +250,28 @@ const calculateOvertime = async () => {
   try {
     const today = new Date()
 
-    // This month - calculate daily average instead of total
+    // This month - only count days with actual entries (missing days are neutral)
     const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
     const todayStr = today.toISOString().split('T')[0]
     const thisMonthSummaries = await TimeEntriesService.getDailySummary(thisMonthStart, todayStr)
 
-    // Filter to only completed days (not future days)
-    const completedDays = thisMonthSummaries.filter(day => {
-      const dayDate = new Date(day.date)
-      return dayDate <= today
-    })
+    // Only count days with time entries
+    const daysWithEntries = thisMonthSummaries.filter(day => day.actualHours > 0)
+    overtimeThisMonth.value = daysWithEntries.reduce((sum, day) => sum + (day.actualHours - day.expectedHours), 0)
 
-    if (completedDays.length > 0) {
-      const totalOvertime = completedDays.reduce((sum, day) => sum + (day.actualHours - day.expectedHours), 0)
-      overtimeThisMonth.value = totalOvertime / completedDays.length
-    } else {
-      overtimeThisMonth.value = 0
-    }
-
-    // Last month
+    // Last month - only count days with actual entries (missing days are neutral)
     const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().split('T')[0]
     const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0]
     const lastMonthSummaries = await TimeEntriesService.getDailySummary(lastMonthStart, lastMonthEnd)
-    overtimeLastMonth.value = lastMonthSummaries.reduce((sum, day) => sum + (day.actualHours - day.expectedHours), 0)
+    overtimeLastMonth.value = lastMonthSummaries
+      .filter(day => day.actualHours > 0) // Only count days with time entries
+      .reduce((sum, day) => sum + (day.actualHours - day.expectedHours), 0)
 
-    // 12-month average
+    // 12-month average - only count days with actual entries (missing days are neutral)
     const twelveMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 11, 1).toISOString().split('T')[0]
-    const twelveMonthSummaries = await TimeEntriesService.getDailySummary(twelveMonthsAgo, thisMonthEnd)
-    const totalOvertime = twelveMonthSummaries.reduce((sum, day) => sum + (day.actualHours - day.expectedHours), 0)
+    const twelveMonthSummaries = await TimeEntriesService.getDailySummary(twelveMonthsAgo, todayStr)
+    const daysWithEntriesYear = twelveMonthSummaries.filter(day => day.actualHours > 0)
+    const totalOvertime = daysWithEntriesYear.reduce((sum, day) => sum + (day.actualHours - day.expectedHours), 0)
     overtimeAverage.value = totalOvertime / 12
   } catch (error) {
     console.error('Error calculating overtime:', error)
@@ -457,7 +416,7 @@ onMounted(async () => {
 
 <style scoped>
 .dashboard {
-  padding: 0;
+  padding: 1rem 2rem 2rem 2rem;
 }
 
 /* Quick Panel */
@@ -466,48 +425,121 @@ onMounted(async () => {
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: var(--surface-card);
-  border-radius: var(--border-radius);
-  border: 1px solid var(--surface-border);
 }
 
 .quick-panel h3 {
   margin: 0 0 1rem 0;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: var(--p-text-color);
+  color: #1f2937;
 }
 
-/* Quick Actions */
-.action-buttons {
+/* Quick Actions Section */
+.quick-actions-section {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.action-cards {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.action-button-wrapper {
+.action-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+}
+
+.action-card:hover:not(.disabled) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.action-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.action-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.action-hint {
+  display: block;
+  margin-top: 0.5rem;
+  color: #6c757d;
+  font-size: 0.75rem;
+}
+
+.active-entry-cards {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  gap: 1rem;
 }
 
-.action-button {
-  width: 100%;
+.active-entry-cards .action-card {
+  flex: 1;
 }
 
-.active-entry-actions {
-  display: flex;
-  gap: 0.75rem;
+/* Action card colors */
+.action-card.action-clock-in {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
-.button-hint {
-  color: var(--p-text-muted-color);
-  font-size: 0.875rem;
-  margin-left: 0.5rem;
+.action-card.action-clock-in .action-icon,
+.action-card.action-clock-in .action-label {
+  color: white;
 }
 
-/* Statistics */
+.action-card.action-clock-out {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.action-card.action-clock-out .action-icon,
+.action-card.action-clock-out .action-label {
+  color: white;
+}
+
+.action-card.action-cancel {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+.action-card.action-cancel .action-icon,
+.action-card.action-cancel .action-label {
+  color: white;
+}
+
+.action-card.action-quick-entry {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.action-card.action-quick-entry .action-icon,
+.action-card.action-quick-entry .action-label {
+  color: white;
+}
+
+/* Statistics Section */
+.stats-section {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -515,43 +547,68 @@ onMounted(async () => {
 }
 
 .stat-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--surface-50);
-  border-radius: var(--border-radius);
-  border: 1px solid var(--surface-200);
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  text-align: center;
 }
 
-.stat-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 50%;
-  background: var(--primary-color);
-  color: white;
-  font-size: 1.5rem;
-}
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 1;
+.stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
 .stat-label {
-  font-size: 0.875rem;
-  color: var(--p-text-muted-color);
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
 }
 
 .stat-value {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--p-text-color);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1;
+}
+
+/* Stat card gradient colors */
+.stat-card.stat-vacation {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.stat-card.stat-vacation .stat-label,
+.stat-card.stat-vacation .stat-value {
+  color: white;
+}
+
+.stat-card.stat-current {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.stat-card.stat-current .stat-label,
+.stat-card.stat-current .stat-value {
+  color: white;
+}
+
+.stat-card.stat-last {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.stat-card.stat-last .stat-label,
+.stat-card.stat-last .stat-value {
+  color: white;
+}
+
+.stat-card.stat-average {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.stat-card.stat-average .stat-label,
+.stat-card.stat-average .stat-value {
+  color: white;
 }
 
 /* Calendar */
@@ -578,6 +635,16 @@ onMounted(async () => {
   .calendar-section {
     width: 100%;
     min-height: auto;
+  }
+
+  .active-entry-cards {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
