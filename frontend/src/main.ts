@@ -13,6 +13,15 @@ import { OpenAPI } from './api/generated'
 import 'primeicons/primeicons.css'
 import './style.css'
 
+// Shared styles
+import './styles/variables.css'
+import './styles/utilities.css'
+import './styles/layouts.css'
+import './styles/components/action-cards.css'
+import './styles/components/data-tables.css'
+import './styles/components/forms.css'
+import './styles/components/stat-cards.css'
+
 // Storage keys
 const ACCESS_TOKEN_KEY = 'timetrack_access_token'
 

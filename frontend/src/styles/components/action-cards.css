@@ -1,0 +1,159 @@
+/**
+ * Action Card Styles
+ * Shared styles for action cards used in Dashboard and Time Entries views
+ */
+
+/* Action Cards Container */
+.action-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--tt-spacing-md);
+}
+
+/* Base Action Card - Large (Dashboard) */
+.action-card {
+  background: white;
+  border-radius: var(--tt-radius-sm);
+  padding: var(--tt-spacing-md);
+  box-shadow: var(--tt-shadow-sm);
+  transition: var(--tt-transition);
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+}
+
+.action-card:hover:not(.disabled) {
+  box-shadow: var(--tt-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.action-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-icon {
+  font-size: 1.75rem;
+  margin-bottom: var(--tt-spacing-xs);
+  display: block;
+}
+
+.action-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.action-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: #6c757d;
+  font-size: 0.7rem;
+}
+
+/* Active Entry Cards Layout */
+.active-entry-cards {
+  display: flex;
+  gap: var(--tt-spacing-sm);
+}
+
+.active-entry-cards .action-card {
+  flex: 1;
+}
+
+/* Small Action Cards (Time Entries View) */
+.action-card-small {
+  background: white;
+  border-radius: var(--tt-radius-sm);
+  padding: var(--tt-spacing-md);
+  box-shadow: var(--tt-shadow-md);
+  transition: var(--tt-transition);
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+}
+
+.action-card-small:hover {
+  box-shadow: var(--tt-shadow-hover-lg);
+  transform: translateY(-2px);
+}
+
+.action-icon-small {
+  font-size: 1.75rem;
+  margin-bottom: var(--tt-spacing-xs);
+  display: block;
+}
+
+.action-label-small {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Action Card Color Variants */
+.action-card.action-clock-in,
+.action-card-small.action-clock-in {
+  background: linear-gradient(135deg, var(--tt-green-from) 0%, var(--tt-green-to) 100%);
+}
+
+.action-card.action-clock-in .action-icon,
+.action-card.action-clock-in .action-label,
+.action-card-small.action-clock-in .action-icon-small,
+.action-card-small.action-clock-in .action-label-small {
+  color: white;
+}
+
+.action-card.action-clock-out,
+.action-card-small.action-clock-out {
+  background: linear-gradient(135deg, var(--tt-red-from) 0%, var(--tt-red-to) 100%);
+}
+
+.action-card.action-clock-out .action-icon,
+.action-card.action-clock-out .action-label,
+.action-card-small.action-clock-out .action-icon-small,
+.action-card-small.action-clock-out .action-label-small {
+  color: white;
+}
+
+.action-card.action-cancel,
+.action-card-small.action-cancel {
+  background: linear-gradient(135deg, var(--tt-gray-from) 0%, var(--tt-gray-to) 100%);
+}
+
+.action-card.action-cancel .action-icon,
+.action-card.action-cancel .action-label,
+.action-card-small.action-cancel .action-icon-small,
+.action-card-small.action-cancel .action-label-small {
+  color: white;
+}
+
+.action-card.action-quick-entry,
+.action-card-small.action-quick-entry {
+  background: linear-gradient(135deg, var(--tt-blue-from) 0%, var(--tt-blue-to) 100%);
+}
+
+.action-card.action-quick-entry .action-icon,
+.action-card.action-quick-entry .action-label,
+.action-card-small.action-quick-entry .action-icon-small,
+.action-card-small.action-quick-entry .action-label-small {
+  color: white;
+}
+
+.action-card.action-manual-entry,
+.action-card-small.action-manual-entry {
+  background: linear-gradient(135deg, var(--tt-purple-from) 0%, var(--tt-purple-to) 100%);
+}
+
+.action-card.action-manual-entry .action-icon,
+.action-card.action-manual-entry .action-label,
+.action-card-small.action-manual-entry .action-icon-small,
+.action-card-small.action-manual-entry .action-label-small {
+  color: white;
+}
+
+/* Responsive - Dashboard Layout */
+@media (max-width: 1024px) {
+  .active-entry-cards {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,94 @@
+/**
+ * DataTable Customizations
+ * PrimeVue DataTable overrides for consistent styling
+ */
+
+/* Make table columns more compact */
+:deep(.p-datatable) {
+  font-size: 0.95rem;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th),
+:deep(.p-datatable .p-datatable-tbody > tr > td) {
+  padding: 0.75rem 0.75rem;
+}
+
+:deep(.p-datatable .p-column-header-content) {
+  white-space: nowrap;
+}
+
+/* Reduce width of checkbox column */
+:deep(.p-datatable tbody td:has(.p-checkbox)),
+:deep(.p-datatable thead th:has(.p-checkbox)) {
+  width: 80px;
+  text-align: center;
+}
+
+/* Reduce width of time input columns */
+:deep(.p-datatable tbody td:has(input[type="time"])) {
+  width: 140px;
+}
+
+/* Reduce width of hours column */
+:deep(.p-datatable tbody td:has(.p-inputnumber)) {
+  width: 120px;
+}
+
+/* Reduce width of actions column */
+:deep(.p-datatable tbody td:last-child) {
+  width: 100px;
+  text-align: center;
+}
+
+/* Make Tag components more compact */
+:deep(.p-tag) {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* Type emojis display */
+.type-emojis {
+  display: flex;
+  gap: var(--tt-spacing-xs);
+  justify-content: center;
+  align-items: center;
+}
+
+.type-emoji {
+  font-size: 1.5rem;
+  cursor: help;
+  transition: transform 0.2s ease;
+}
+
+.type-emoji:hover {
+  transform: scale(1.2);
+}
+
+/* Row background colors based on primary type */
+:deep(.row-bg-work) {
+  background-color: var(--tt-row-bg-work) !important;
+}
+
+:deep(.row-bg-public-holiday) {
+  background-color: var(--tt-row-bg-public-holiday) !important;
+}
+
+:deep(.row-bg-vacation) {
+  background-color: var(--tt-row-bg-vacation) !important;
+}
+
+:deep(.row-bg-sick) {
+  background-color: var(--tt-row-bg-sick) !important;
+}
+
+:deep(.row-bg-personal) {
+  background-color: var(--tt-row-bg-personal) !important;
+}
+
+:deep(.row-bg-recurring-off) {
+  background-color: var(--tt-row-bg-recurring-off) !important;
+}
+
+:deep(.row-bg-weekend) {
+  background-color: var(--tt-row-bg-weekend) !important;
+}

@@ -172,23 +172,8 @@ async function handleSave() {
 </script>
 
 <style scoped>
+/* Using shared form and utility styles */
 .profile {
   padding: 0;
-}
-
-.field {
-  margin-bottom: 1.5rem;
-}
-
-.field label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-.button-group {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
 }
 </style>

@@ -1,0 +1,71 @@
+/**
+ * Form Styles
+ * Shared form and dialog styling
+ */
+
+/* Form Container */
+.manual-entry-form .field {
+  margin-bottom: 1.5rem;
+}
+
+.field {
+  margin-bottom: 1.5rem;
+}
+
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--tt-spacing-xs);
+}
+
+.manual-entry-form .checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: var(--tt-spacing-xs);
+  margin-bottom: 1.5rem;
+}
+
+.manual-entry-form .checkbox-label {
+  margin: 0;
+  cursor: pointer;
+  font-weight: 400;
+  font-size: 0.875rem;
+}
+
+.manual-entry-form .field-row {
+  display: flex;
+  gap: var(--tt-spacing-md);
+  margin-bottom: 1.5rem;
+}
+
+.manual-entry-form .field-half {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.manual-entry-form .field label,
+.field label,
+label {
+  display: block;
+  margin-bottom: var(--tt-spacing-xs);
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-color);
+}
+
+.manual-entry-form .field label {
+  font-weight: 500;
+  min-width: 150px;
+}
+
+.field label {
+  font-weight: 600;
+}
+
+.manual-entry-form .field :deep(.p-inputtext),
+.manual-entry-form .field :deep(.p-dropdown),
+.manual-entry-form .field :deep(.p-inputnumber),
+.manual-entry-form .field :deep(.p-calendar),
+.manual-entry-form .field :deep(.p-inputtextarea) {
+  width: 100%;
+}

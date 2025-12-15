@@ -1,0 +1,89 @@
+/**
+ * Statistics Card Styles
+ * Used in dashboard for displaying statistics
+ */
+
+/* Statistics Section */
+.stats-section {
+  background: #f8f9fa;
+  border-radius: var(--tt-radius-md);
+  padding: var(--tt-card-padding);
+}
+
+.stats-section h3 {
+  margin: 0 0 var(--tt-spacing-md) 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--tt-spacing-sm);
+}
+
+.stat-card {
+  background: white;
+  border-radius: var(--tt-radius-sm);
+  padding: var(--tt-spacing-md);
+  box-shadow: var(--tt-shadow-sm);
+  transition: var(--tt-transition);
+  text-align: center;
+}
+
+.stat-card:hover {
+  box-shadow: var(--tt-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1;
+}
+
+/* Stat card gradient colors */
+.stat-card.stat-vacation {
+  background: linear-gradient(135deg, var(--tt-purple-from) 0%, var(--tt-purple-to) 100%);
+}
+
+.stat-card.stat-vacation .stat-label,
+.stat-card.stat-vacation .stat-value {
+  color: white;
+}
+
+.stat-card.stat-current {
+  background: linear-gradient(135deg, var(--tt-blue-from) 0%, var(--tt-blue-to) 100%);
+}
+
+.stat-card.stat-current .stat-label,
+.stat-card.stat-current .stat-value {
+  color: white;
+}
+
+.stat-card.stat-last {
+  background: linear-gradient(135deg, var(--tt-orange-from) 0%, var(--tt-orange-to) 100%);
+}
+
+.stat-card.stat-last .stat-label,
+.stat-card.stat-last .stat-value {
+  color: white;
+}
+
+.stat-card.stat-average {
+  background: linear-gradient(135deg, var(--tt-green-from) 0%, var(--tt-green-to) 100%);
+}
+
+.stat-card.stat-average .stat-label,
+.stat-card.stat-average .stat-value {
+  color: white;
+}

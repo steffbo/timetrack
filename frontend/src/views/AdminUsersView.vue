@@ -285,6 +285,7 @@ async function handleDelete(userId: number) {
 </script>
 
 <style scoped>
+/* Using shared form and utility styles */
 .admin-users {
   padding: 0;
 }
@@ -292,30 +293,13 @@ async function handleDelete(userId: number) {
 .table-header {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 1rem;
-}
-
-.field {
-  margin-bottom: 1.5rem;
-}
-
-.field label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-.field-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--tt-spacing-md);
 }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
+  gap: var(--tt-spacing-md);
+  margin-top: var(--tt-card-gap);
 }
 </style>

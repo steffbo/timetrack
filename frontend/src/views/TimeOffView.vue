@@ -654,8 +654,9 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Using shared layout, form, and stat-card styles */
 .time-off-view {
-  padding: 1rem 2rem 2rem 2rem;
+  padding: var(--tt-view-padding);
 }
 
 h1 {
@@ -665,13 +666,6 @@ h1 {
   margin: 0;
 }
 
-/* Statistics Section */
-.stats-section {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 1.5rem;
-}
-
 .section-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -679,40 +673,10 @@ h1 {
   margin: 0;
 }
 
-/* Stat Cards Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 8px;
-  padding: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-  text-align: center;
-}
-
-.stat-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.stat-label {
-  font-size: 0.85rem;
-  color: #6c757d;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.stat-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 0.25rem;
-  line-height: 1;
+  gap: var(--tt-spacing-md);
 }
 
 .stat-unit {
@@ -721,6 +685,7 @@ h1 {
   font-weight: 500;
 }
 
+/* Time-off specific stat colors */
 .stat-card.stat-used {
   background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
 }
@@ -742,7 +707,7 @@ h1 {
 }
 
 .stat-card.stat-remaining {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--tt-green-from) 0%, var(--tt-green-to) 100%);
 }
 
 .stat-card.stat-remaining .stat-label,
@@ -763,16 +728,6 @@ h1 {
 
 .year-select {
   min-width: 100px;
-}
-
-.field {
-  margin-bottom: 1.5rem;
-}
-
-.field label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
 }
 
 .field small {

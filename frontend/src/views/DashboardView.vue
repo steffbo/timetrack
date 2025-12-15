@@ -416,7 +416,7 @@ onMounted(async () => {
 
 <style scoped>
 .dashboard {
-  padding: 1rem 2rem 2rem 2rem;
+  padding: var(--tt-view-padding);
   max-width: 100%;
   overflow-x: hidden;
 }
@@ -441,11 +441,11 @@ onMounted(async () => {
 .sidebar-section {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--tt-spacing-lg);
 }
 
 .sidebar-section h3 {
-  margin: 0 0 1rem 0;
+  margin: 0 0 var(--tt-spacing-md) 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: #1f2937;
@@ -454,179 +454,17 @@ onMounted(async () => {
 /* Quick Actions Section */
 .quick-actions-section {
   background: #f8f9fa;
-  border-radius: 12px;
-  padding: 1.25rem;
+  border-radius: var(--tt-radius-md);
+  padding: var(--tt-card-padding);
 }
 
 .action-cards {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--tt-spacing-sm);
 }
 
-.action-card {
-  background: white;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s ease;
-  cursor: pointer;
-  text-align: center;
-  position: relative;
-}
-
-.action-card:hover:not(.disabled) {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-  transform: translateY(-1px);
-}
-
-.action-card.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.action-icon {
-  font-size: 1.75rem;
-  margin-bottom: 0.5rem;
-  display: block;
-}
-
-.action-label {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.action-hint {
-  display: block;
-  margin-top: 0.35rem;
-  color: #6c757d;
-  font-size: 0.7rem;
-}
-
-.active-entry-cards {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.active-entry-cards .action-card {
-  flex: 1;
-}
-
-/* Action card colors */
-.action-card.action-clock-in {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.action-card.action-clock-in .action-icon,
-.action-card.action-clock-in .action-label {
-  color: white;
-}
-
-.action-card.action-clock-out {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-}
-
-.action-card.action-clock-out .action-icon,
-.action-card.action-clock-out .action-label {
-  color: white;
-}
-
-.action-card.action-cancel {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-}
-
-.action-card.action-cancel .action-icon,
-.action-card.action-cancel .action-label {
-  color: white;
-}
-
-.action-card.action-quick-entry {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
-
-.action-card.action-quick-entry .action-icon,
-.action-card.action-quick-entry .action-label {
-  color: white;
-}
-
-/* Statistics Section */
-.stats-section {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 1.25rem;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
-}
-
-.stat-card {
-  background: white;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s ease;
-  text-align: center;
-}
-
-.stat-card:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-  transform: translateY(-1px);
-}
-
-.stat-label {
-  font-size: 0.8rem;
-  color: #6c757d;
-  margin-bottom: 0.4rem;
-  font-weight: 500;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  line-height: 1;
-}
-
-/* Stat card gradient colors */
-.stat-card.stat-vacation {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-}
-
-.stat-card.stat-vacation .stat-label,
-.stat-card.stat-vacation .stat-value {
-  color: white;
-}
-
-.stat-card.stat-current {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
-
-.stat-card.stat-current .stat-label,
-.stat-card.stat-current .stat-value {
-  color: white;
-}
-
-.stat-card.stat-last {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-}
-
-.stat-card.stat-last .stat-label,
-.stat-card.stat-last .stat-value {
-  color: white;
-}
-
-.stat-card.stat-average {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.stat-card.stat-average .stat-label,
-.stat-card.stat-average .stat-value {
-  color: white;
-}
+/* Styles for action cards are now in shared CSS */
 
 /* Responsive layout */
 @media (max-width: 1200px) {
@@ -638,7 +476,7 @@ onMounted(async () => {
 @media (max-width: 1024px) {
   .dashboard-layout {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: var(--tt-spacing-lg);
   }
 
   .sidebar-section {
@@ -648,24 +486,20 @@ onMounted(async () => {
   .calendar-section {
     min-height: auto;
   }
-
-  .active-entry-cards {
-    flex-direction: column;
-  }
 }
 
 @media (max-width: 768px) {
   .dashboard {
-    padding: 0.75rem 1rem 1rem 1rem;
+    padding: var(--tt-view-padding-mobile);
   }
 
   .dashboard-layout {
-    gap: 1rem;
+    gap: var(--tt-spacing-md);
   }
 
   .quick-actions-section,
   .stats-section {
-    padding: 1rem;
+    padding: var(--tt-spacing-md);
   }
 
   .sidebar-section h3 {
@@ -675,25 +509,25 @@ onMounted(async () => {
 
 @media (max-width: 480px) {
   .dashboard {
-    padding: 0.5rem 0.75rem 0.75rem 0.75rem;
+    padding: var(--tt-view-padding-xs);
   }
 
   .dashboard-layout {
-    gap: 0.75rem;
+    gap: var(--tt-spacing-sm);
   }
 
   .quick-actions-section,
   .stats-section {
-    padding: 0.75rem;
-    border-radius: 8px;
+    padding: var(--tt-spacing-sm);
+    border-radius: var(--tt-radius-sm);
   }
 
   .action-card {
-    padding: 0.75rem;
+    padding: var(--tt-spacing-sm);
   }
 
   .stat-card {
-    padding: 0.75rem;
+    padding: var(--tt-spacing-sm);
   }
 }
 </style>

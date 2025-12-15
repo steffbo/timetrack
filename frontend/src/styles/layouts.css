@@ -1,0 +1,72 @@
+/**
+ * Layout Styles
+ * Common page and section layouts used across views
+ */
+
+/* View Container */
+.view-container {
+  padding: var(--tt-view-padding);
+}
+
+/* Page Title */
+.page-title {
+  margin: var(--tt-title-margin);
+  font-size: var(--tt-title-size);
+  font-weight: var(--tt-title-weight);
+  color: var(--p-text-color);
+}
+
+/* Section Card */
+.section-card {
+  margin-bottom: var(--tt-card-gap);
+}
+
+.section-card:last-child {
+  margin-bottom: 0;
+}
+
+/* Section Header */
+.section-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--tt-spacing-md);
+}
+
+/* Filters Section */
+.filters-section {
+  background: var(--surface-50);
+  padding: var(--tt-spacing-md);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--surface-200);
+}
+
+/* Active Entry Card */
+.active-entry-card {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .view-container {
+    padding: var(--tt-view-padding-mobile);
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .view-container {
+    padding: var(--tt-view-padding-xs);
+  }
+}
