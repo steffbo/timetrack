@@ -69,7 +69,7 @@
             <span class="day-number">{{ day.day }}</span>
             <i
               v-if="getAdjacentDayStatusIcon(day.day, 'prev')"
-              :class="['status-icon', getAdjacentDayStatusIcon(day.day, 'prev')]"
+              :class="['status-icon', getAdjacentDayStatusIcon(day.day, 'prev'), getAdjacentDayStatusIconColor(day.day, 'prev')]"
             />
           </div>
         </div>
@@ -90,7 +90,7 @@
             <span class="day-number">{{ day }}</span>
             <i
               v-if="getDayStatusIcon(day)"
-              :class="['status-icon', getDayStatusIcon(day)]"
+              :class="['status-icon', getDayStatusIcon(day), getDayStatusIconColor(day)]"
             />
           </div>
         </div>
@@ -111,7 +111,7 @@
             <span class="day-number">{{ day.day }}</span>
             <i
               v-if="getAdjacentDayStatusIcon(day.day, 'next')"
-              :class="['status-icon', getAdjacentDayStatusIcon(day.day, 'next')]"
+              :class="['status-icon', getAdjacentDayStatusIcon(day.day, 'next'), getAdjacentDayStatusIconColor(day.day, 'next')]"
             />
           </div>
         </div>
@@ -366,6 +366,28 @@ const getDayStatusIcon = (day: number): string | null => {
   return iconMap[summary.status] || null
 }
 
+// Get color class for status icon based on time difference
+const getDayStatusIconColor = (day: number): string | null => {
+  const summary = getSummaryForDay(day)
+  if (!summary || summary.status === 'NO_ENTRY') return null
+
+  // Calculate time difference in minutes
+  const expectedHours = summary.expectedHours || 0
+  const actualHours = summary.actualHours || 0
+  const diffHours = Math.abs(actualHours - expectedHours)
+  const diffMinutes = Math.round(diffHours * 60)
+
+  // Apply same color logic as TimeEntriesView
+  // Within 15 minutes: green
+  if (diffMinutes <= 15) return 'status-icon-success'
+
+  // Between 15-45 minutes: yellow
+  if (diffMinutes <= 45) return 'status-icon-warn'
+
+  // Over 45 minutes: red
+  return 'status-icon-danger'
+}
+
 // Helper to get summary for adjacent month day
 const getAdjacentSummaryForDay = (day: number, type: 'prev' | 'next'): DailySummaryResponse | undefined => {
   const monthData = type === 'prev' ? previousMonthDays.value.find(d => d.day === day) : nextMonthDays.value.find(d => d.day === day)
@@ -450,6 +472,28 @@ const getAdjacentDayStatusIcon = (day: number, type: 'prev' | 'next'): string | 
   }
 
   return iconMap[summary.status] || null
+}
+
+// Get color class for adjacent day status icon based on time difference
+const getAdjacentDayStatusIconColor = (day: number, type: 'prev' | 'next'): string | null => {
+  const summary = getAdjacentSummaryForDay(day, type)
+  if (!summary || summary.status === 'NO_ENTRY') return null
+
+  // Calculate time difference in minutes
+  const expectedHours = summary.expectedHours || 0
+  const actualHours = summary.actualHours || 0
+  const diffHours = Math.abs(actualHours - expectedHours)
+  const diffMinutes = Math.round(diffHours * 60)
+
+  // Apply same color logic as TimeEntriesView
+  // Within 15 minutes: green
+  if (diffMinutes <= 15) return 'status-icon-success'
+
+  // Between 15-45 minutes: yellow
+  if (diffMinutes <= 45) return 'status-icon-warn'
+
+  // Over 45 minutes: red
+  return 'status-icon-danger'
 }
 
 // Handle adjacent day click
@@ -951,7 +995,20 @@ const formatDayDetailsHtml = (day: number | string): string => {
   right: 0;
   font-size: 0.875rem;
   color: var(--p-text-color);
-  opacity: 0.7;
+  opacity: 0.9;
+}
+
+/* Color classes for status icons based on time difference */
+.status-icon.status-icon-success {
+  color: var(--p-green-600);
+}
+
+.status-icon.status-icon-warn {
+  color: var(--p-yellow-600);
+}
+
+.status-icon.status-icon-danger {
+  color: var(--p-red-600);
 }
 
 /* Day details overlay styles */
