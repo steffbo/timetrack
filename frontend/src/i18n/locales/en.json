@@ -217,12 +217,14 @@
     "entries": "Time Off Entries",
     "statistics": "Time Off Statistics",
     "sickDaysThisYear": "Sick Days",
+    "childSickDaysThisYear": "Child Sick Days",
     "create": "New Time Off",
     "edit": "Edit Time Off",
     "type": {
       "label": "Type",
       "VACATION": "Vacation",
       "SICK": "Sick",
+      "CHILD_SICK": "Child Sick",
       "PERSONAL": "Personal",
       "PUBLIC_HOLIDAY": "Public Holiday"
     },

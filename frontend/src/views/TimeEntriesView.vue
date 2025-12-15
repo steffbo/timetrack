@@ -830,6 +830,8 @@ const getTypeEmoji = (typeEntry: TypeEntry): string => {
         return '🏝️'
       case 'SICK':
         return '😵‍💫'
+      case 'CHILD_SICK':
+        return '👩‍👧'
       case 'PERSONAL':
         return '🏠'
       case 'PUBLIC_HOLIDAY':
@@ -878,6 +880,8 @@ const getRowBackgroundClass = (entry: DisplayEntry): string => {
         case 'VACATION':
           return 'row-bg-vacation'
         case 'SICK':
+          return 'row-bg-sick'
+        case 'CHILD_SICK':
           return 'row-bg-sick'
         case 'PERSONAL':
           return 'row-bg-personal'

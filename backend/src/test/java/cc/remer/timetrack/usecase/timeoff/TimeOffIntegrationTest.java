@@ -97,6 +97,25 @@ class TimeOffIntegrationTest extends RepositoryTestBase {
     }
 
     @Test
+    @DisplayName("Should create child sick time-off")
+    void shouldCreateChildSickTimeOff() {
+        // Arrange
+        CreateTimeOffRequest request = new CreateTimeOffRequest();
+        request.setStartDate(LocalDate.of(2025, 4, 15));
+        request.setEndDate(LocalDate.of(2025, 4, 17));
+        request.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.CHILD_SICK);
+        request.setNotes("Child has flu");
+
+        // Act
+        TimeOffResponse response = createTimeOff.execute(testUser.getId(), request);
+
+        // Assert
+        assertThat(response.getTimeOffType()).isEqualTo(TimeOffResponse.TimeOffTypeEnum.CHILD_SICK);
+        assertThat(response.getNotes()).isEqualTo("Child has flu");
+        assertThat(response.getUserId()).isEqualTo(testUser.getId());
+    }
+
+    @Test
     @DisplayName("Should create time-off with custom hours per day")
     void shouldCreateTimeOffWithCustomHoursPerDay() {
         // Arrange

@@ -202,7 +202,8 @@ public class ExportMonthlyReportUseCase {
                 // Prioritize sick days over other types
                 TimeOffType existingType = timeOffByDate.get(currentDate);
                 if (existingType == null ||
-                    (timeOff.getTimeOffType() == TimeOffType.SICK && existingType != TimeOffType.SICK)) {
+                    (timeOff.getTimeOffType() == TimeOffType.SICK && existingType != TimeOffType.SICK && existingType != TimeOffType.CHILD_SICK) ||
+                    (timeOff.getTimeOffType() == TimeOffType.CHILD_SICK && existingType != TimeOffType.SICK && existingType != TimeOffType.CHILD_SICK)) {
                     timeOffByDate.put(currentDate, timeOff.getTimeOffType());
                 }
                 currentDate = currentDate.plusDays(1);
@@ -307,6 +308,7 @@ public class ExportMonthlyReportUseCase {
         if (timeOffType != null) {
             return switch (timeOffType) {
                 case SICK -> DayType.SICK;
+                case CHILD_SICK -> DayType.SICK;
                 case VACATION -> DayType.VACATION;
                 case PUBLIC_HOLIDAY -> DayType.PUBLIC_HOLIDAY;
                 default -> DayType.REGULAR;

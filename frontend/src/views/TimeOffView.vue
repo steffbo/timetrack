@@ -52,10 +52,12 @@ const editBalanceForm = ref<UpdateVacationBalanceRequest>({
 
 // Sick days statistics
 const sickDaysCount = ref(0)
+const childSickDaysCount = ref(0)
 
 const timeOffTypeOptions = [
   { label: t('timeOff.type.VACATION'), value: 'VACATION' },
   { label: t('timeOff.type.SICK'), value: 'SICK' },
+  { label: t('timeOff.type.CHILD_SICK'), value: 'CHILD_SICK' },
   { label: t('timeOff.type.PERSONAL'), value: 'PERSONAL' },
   { label: t('timeOff.type.PUBLIC_HOLIDAY'), value: 'PUBLIC_HOLIDAY' }
 ]
@@ -103,6 +105,23 @@ const calculateSickDays = async () => {
   }
 }
 
+const calculateChildSickDays = async () => {
+  try {
+    const startDate = `${selectedYear.value}-01-01`
+    const endDate = `${selectedYear.value}-12-31`
+
+    const response = await TimeOffService.getTimeOffEntries(startDate, endDate)
+    const childSickEntries = response.filter(entry => entry.timeOffType === 'CHILD_SICK')
+
+    // Use the 'days' field which counts working days
+    const total = childSickEntries.reduce((sum, entry) => sum + entry.days, 0)
+    childSickDaysCount.value = total
+  } catch (error) {
+    console.error('Failed to calculate child sick days:', error)
+    childSickDaysCount.value = 0
+  }
+}
+
 const openEditBalanceDialog = () => {
   if (!balance.value || !currentUser.value) return
 
@@ -140,6 +159,7 @@ const saveBalance = async () => {
 const onYearChange = async () => {
   await loadBalance()
   await calculateSickDays()
+  await calculateChildSickDays()
 }
 
 const loadTimeOffs = async () => {
@@ -164,6 +184,7 @@ const loadTimeOffs = async () => {
     const response = await TimeOffService.getTimeOffEntries(startDate, endDate)
     timeOffs.value = response
     await calculateSickDays()
+    await calculateChildSickDays()
   } catch (error: any) {
     console.error('Failed to load time offs:', error)
     toast.add({
@@ -352,44 +373,51 @@ onMounted(() => {
         <!-- Vacation Cards -->
         <div class="stat-card">
           <div class="stat-label">{{ t('vacationBalance.annualAllowanceDays') }}</div>
-          <div class="stat-value">{{ balance.annualAllowanceDays.toFixed(1) }}</div>
+          <div class="stat-value">{{ balance.annualAllowanceDays.toFixed(0) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <div class="stat-card stat-planned">
           <div class="stat-label">{{ t('vacationBalance.plannedDays') }}</div>
-          <div class="stat-value">{{ balance.plannedDays.toFixed(1) }}</div>
+          <div class="stat-value">{{ balance.plannedDays.toFixed(0) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <div class="stat-card stat-used">
           <div class="stat-label">{{ t('vacationBalance.usedDays') }}</div>
-          <div class="stat-value">{{ balance.usedDays.toFixed(1) }}</div>
+          <div class="stat-value">{{ balance.usedDays.toFixed(0) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <div class="stat-card stat-remaining">
           <div class="stat-label">{{ t('vacationBalance.leftForPlanning') }}</div>
-          <div class="stat-value">{{ remainingDays.toFixed(1) }}</div>
+          <div class="stat-value">{{ remainingDays.toFixed(0) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <div class="stat-card">
           <div class="stat-label">{{ t('vacationBalance.carriedOverDays') }}</div>
-          <div class="stat-value">{{ balance.carriedOverDays.toFixed(1) }}</div>
+          <div class="stat-value">{{ balance.carriedOverDays.toFixed(0) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <div class="stat-card">
           <div class="stat-label">{{ t('vacationBalance.adjustmentDays') }}</div>
-          <div class="stat-value">{{ balance.adjustmentDays.toFixed(1) }}</div>
+          <div class="stat-value">{{ balance.adjustmentDays.toFixed(0) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <!-- Sick Days Card -->
         <div class="stat-card stat-sick">
           <div class="stat-label">{{ t('timeOff.sickDaysThisYear') }}</div>
-          <div class="stat-value">{{ sickDaysCount.toFixed(1) }}</div>
+          <div class="stat-value">{{ sickDaysCount.toFixed(0) }}</div>
+          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+        </div>
+
+        <!-- Child Sick Days Card -->
+        <div class="stat-card stat-sick">
+          <div class="stat-label">{{ t('timeOff.childSickDaysThisYear') }}</div>
+          <div class="stat-value">{{ childSickDaysCount.toFixed(0) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
       </div>

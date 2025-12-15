@@ -217,12 +217,14 @@
     "entries": "Abwesenheitseinträge",
     "statistics": "Abwesenheitsstatistik",
     "sickDaysThisYear": "Krankheitstage",
+    "childSickDaysThisYear": "Kind krank Tage",
     "create": "Neue Abwesenheit",
     "edit": "Abwesenheit bearbeiten",
     "type": {
       "label": "Typ",
       "VACATION": "Urlaub",
       "SICK": "Krank",
+      "CHILD_SICK": "Kind krank",
       "PERSONAL": "Persönlich",
       "PUBLIC_HOLIDAY": "Feiertag"
     },

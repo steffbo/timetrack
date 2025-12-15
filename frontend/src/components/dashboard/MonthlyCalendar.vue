@@ -300,6 +300,7 @@ const getDayStyle = (day: number) => {
   const colorMap: Record<string, string> = {
     'WORK': 'var(--p-green-50)',
     'SICK': 'var(--p-red-50)',
+    'CHILD_SICK': 'var(--p-red-50)',
     'PTO': 'var(--p-blue-50)',
     'EVENT': 'var(--p-purple-50)',
     'VACATION': 'var(--p-cyan-50)',
@@ -365,12 +366,14 @@ const getDayEmojis = (day: number): string[] => {
   // Check time-off entries in precedence order
   if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
     const hasSick = summary.timeOffEntries.some(e => e.timeOffType === 'SICK')
+    const hasChildSick = summary.timeOffEntries.some(e => e.timeOffType === 'CHILD_SICK')
     const hasPersonal = summary.timeOffEntries.some(e => e.timeOffType === 'PERSONAL')
     const hasVacation = summary.timeOffEntries.some(e => e.timeOffType === 'VACATION')
     const hasPublicHoliday = summary.timeOffEntries.some(e => e.timeOffType === 'PUBLIC_HOLIDAY')
 
     if (hasPublicHoliday) emojis.push('🎊')
     if (hasSick) emojis.push('😵‍💫')
+    if (hasChildSick) emojis.push('👩‍👧')
     if (hasPersonal) emojis.push('🏠')
     if (hasVacation) emojis.push('🏝️')
   }
@@ -418,6 +421,7 @@ const getAdjacentDayStyle = (day: number, type: 'prev' | 'next') => {
   const colorMap: Record<string, string> = {
     'WORK': 'var(--p-green-50)',
     'SICK': 'var(--p-red-50)',
+    'CHILD_SICK': 'var(--p-red-50)',
     'PTO': 'var(--p-blue-50)',
     'EVENT': 'var(--p-purple-50)',
     'VACATION': 'var(--p-cyan-50)',
@@ -483,12 +487,14 @@ const getAdjacentDayEmojis = (day: number, type: 'prev' | 'next'): string[] => {
   // Check time-off entries in precedence order
   if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
     const hasSick = summary.timeOffEntries.some(e => e.timeOffType === 'SICK')
+    const hasChildSick = summary.timeOffEntries.some(e => e.timeOffType === 'CHILD_SICK')
     const hasPersonal = summary.timeOffEntries.some(e => e.timeOffType === 'PERSONAL')
     const hasVacation = summary.timeOffEntries.some(e => e.timeOffType === 'VACATION')
     const hasPublicHoliday = summary.timeOffEntries.some(e => e.timeOffType === 'PUBLIC_HOLIDAY')
 
     if (hasPublicHoliday) emojis.push('🎊')
     if (hasSick) emojis.push('😵‍💫')
+    if (hasChildSick) emojis.push('👩‍👧')
     if (hasPersonal) emojis.push('🏠')
     if (hasVacation) emojis.push('🏝️')
   }
@@ -789,6 +795,7 @@ const formatDayDetailsHtml = (day: number | string): string => {
     const emojiMap: Record<string, string> = {
       'VACATION': '🏝️',
       'SICK': '😵‍💫',
+      'CHILD_SICK': '👩‍👧',
       'PUBLIC_HOLIDAY': '🎊',
       'PERSONAL': '🏠'
     }

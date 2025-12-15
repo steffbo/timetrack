@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Child Sick Leave Type**: New absence type "Kind krank" (Child Sick) with 👩‍👧 emoji
+  - Backend: Added CHILD_SICK enum value to TimeOffType
+  - Frontend: Added translations in German ("Kind krank") and English ("Child Sick")
+  - Calendar: Child sick days displayed with 👩‍👧 emoji in monthly calendar
+  - Time Off View: Added statistics card showing total child sick days for the year
+  - Behavior: Same validation and precedence as regular sick leave (no overlapping entries)
+  - Database migration V11 added to support the new type
+
 - **State Selection**: Users can now select their German state (Bundesland) in their profile settings
   - State dropdown in profile view with Berlin and Brandenburg options
   - State field exposed in user API (UserResponse, CreateUserRequest, UpdateUserRequest)

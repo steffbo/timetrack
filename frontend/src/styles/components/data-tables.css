@@ -65,30 +65,30 @@
 }
 
 /* Row background colors based on primary type */
-:deep(.row-bg-work) {
+.row-bg-work {
   background-color: var(--tt-row-bg-work) !important;
 }
 
-:deep(.row-bg-public-holiday) {
+.row-bg-public-holiday {
   background-color: var(--tt-row-bg-public-holiday) !important;
 }
 
-:deep(.row-bg-vacation) {
+.row-bg-vacation {
   background-color: var(--tt-row-bg-vacation) !important;
 }
 
-:deep(.row-bg-sick) {
+.row-bg-sick {
   background-color: var(--tt-row-bg-sick) !important;
 }
 
-:deep(.row-bg-personal) {
+.row-bg-personal {
   background-color: var(--tt-row-bg-personal) !important;
 }
 
-:deep(.row-bg-recurring-off) {
+.row-bg-recurring-off {
   background-color: var(--tt-row-bg-recurring-off) !important;
 }
 
-:deep(.row-bg-weekend) {
+.row-bg-weekend {
   background-color: var(--tt-row-bg-weekend) !important;
 }
