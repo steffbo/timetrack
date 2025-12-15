@@ -354,8 +354,8 @@ const getDayStatusIconColor = (day: number): string | null => {
 }
 
 // Get emoji indicators for a day's time-off entries
-// Shows emojis in precedence order: sick > personal > recurring > vacation
-// Uses same emojis as the overlay panel for consistency
+// Shows emojis in precedence order: public-holiday > timeoff (sick/personal/vacation) > recurring
+// Uses same emojis as the time entries view for consistency
 const getDayEmojis = (day: number): string[] => {
   const summary = getSummaryForDay(day)
   if (!summary) return []

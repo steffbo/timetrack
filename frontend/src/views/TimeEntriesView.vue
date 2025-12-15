@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
+import Card from 'primevue/card'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -15,8 +16,8 @@ import Toast from 'primevue/toast'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
-import { TimeEntriesService, WorkingHoursService, TimeOffService, RecurringOffDaysService } from '@/api/generated'
-import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, TimeOffResponse, RecurringOffDayResponse, WorkingHoursResponse } from '@/api/generated'
+import { TimeEntriesService, WorkingHoursService, TimeOffService, RecurringOffDaysService, PublicHolidaysService } from '@/api/generated'
+import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, TimeOffResponse, RecurringOffDayResponse, WorkingHoursResponse, PublicHolidayResponse } from '@/api/generated'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -24,92 +25,120 @@ const toast = useToast()
 const timeEntries = ref<TimeEntryResponse[]>([])
 const timeOffEntries = ref<TimeOffResponse[]>([])
 const recurringOffDays = ref<RecurringOffDayResponse[]>([])
+const publicHolidays = ref<PublicHolidayResponse[]>([])
 const workingHours = ref<WorkingHoursResponse | null>(null)
 const showTimeOff = ref(false)
 const loading = ref(false)
 
-// Combined entries for display
+// Combined entries for display - now groups multiple types per date
+type TypeEntry = {
+  type: 'work' | 'timeoff' | 'recurring-off' | 'weekend' | 'public-holiday'
+  data: TimeEntryResponse | TimeOffResponse | RecurringOffDayResponse | PublicHolidayResponse | { description: string }
+}
+
 type DisplayEntry = {
-  type: 'work' | 'timeoff' | 'recurring-off' | 'weekend'
   date: string
-  data: TimeEntryResponse | TimeOffResponse | RecurringOffDayResponse | { description: string }
+  types: TypeEntry[]
+  workEntry?: TimeEntryResponse // The main work entry if exists
 }
 
 const displayEntries = computed<DisplayEntry[]>(() => {
-  const entries: DisplayEntry[] = []
-  const dateMap = new Map<string, boolean>() // Track dates with work entries
+  // Group entries by date
+  const dateGroups = new Map<string, TypeEntry[]>()
 
-  // Add work entries
+  // Helper to add entry to a date
+  const addEntry = (date: string, typeEntry: TypeEntry) => {
+    if (!dateGroups.has(date)) {
+      dateGroups.set(date, [])
+    }
+    dateGroups.get(date)!.push(typeEntry)
+  }
+
+  // Add work entries (always show these)
   timeEntries.value.forEach(entry => {
     const date = entry.entryDate || ''
-    dateMap.set(date, true)
-    entries.push({
+    addEntry(date, {
       type: 'work',
-      date,
       data: entry
     })
   })
 
   // Add time-off entries if toggle is enabled
   if (showTimeOff.value) {
+    // Add public holidays (only within the filter date range)
+    publicHolidays.value.forEach(holiday => {
+      const dateStr = holiday.date || ''
+      // Only add if within the filter range
+      if (startDateFilter.value && endDateFilter.value) {
+        if (dateStr >= startDateFilter.value && dateStr <= endDateFilter.value) {
+          addEntry(dateStr, {
+            type: 'public-holiday',
+            data: holiday
+          })
+        }
+      } else {
+        addEntry(dateStr, {
+          type: 'public-holiday',
+          data: holiday
+        })
+      }
+    })
+
+    // Add time-off entries (vacation, sick, personal)
     timeOffEntries.value.forEach(timeOff => {
-      // Create entries for each day in the time-off range
       const start = new Date(timeOff.startDate)
       const end = new Date(timeOff.endDate)
 
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0]
-        // Only add if no work entry exists for this date
-        if (!dateMap.has(dateStr)) {
-          entries.push({
-            type: 'timeoff',
-            date: dateStr,
-            data: timeOff
-          })
-        }
+        addEntry(dateStr, {
+          type: 'timeoff',
+          data: timeOff
+        })
       }
     })
 
-    // Add recurring off-days for the date range
+    // Add recurring off-days
     if (recurringOffDays.value.length > 0 && startDateFilter.value && endDateFilter.value) {
       const start = new Date(startDateFilter.value)
       const end = new Date(endDateFilter.value)
 
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0]
-        const dayOfWeek = d.getDay() === 0 ? 7 : d.getDay() // Convert to 1=Mon, 7=Sun
+        const dayOfWeek = d.getDay() === 0 ? 7 : d.getDay()
 
-        // Check if this date matches any recurring off-day
         recurringOffDays.value.forEach(rod => {
-          if (rod.weekday === dayOfWeek && !dateMap.has(dateStr)) {
-            // Check if it matches the recurrence pattern
-            if (rod.recurrencePattern === 'EVERY_NTH_WEEK') {
-              // For now, we'll show all matching weekdays if it's an EVERY_NTH_WEEK pattern
-              // A more sophisticated implementation would check the week intervals
-              entries.push({
+          if (!rod.isActive) return
+          if (rod.weekday !== dayOfWeek) return
+
+          const rodStart = new Date(rod.startDate)
+          const rodEnd = rod.endDate ? new Date(rod.endDate) : null
+          if (d < rodStart || (rodEnd && d > rodEnd)) return
+
+          if (rod.recurrencePattern === 'EVERY_NTH_WEEK' && rod.referenceDate && rod.weekInterval) {
+            const refDate = new Date(rod.referenceDate)
+            const daysDiff = Math.floor((d.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24))
+            const weeksDiff = Math.floor(daysDiff / 7)
+            if (weeksDiff % rod.weekInterval === 0 && d.getDay() === refDate.getDay()) {
+              addEntry(dateStr, {
                 type: 'recurring-off',
-                date: dateStr,
                 data: rod
               })
-              dateMap.set(dateStr, true)
-            } else if (rod.recurrencePattern === 'NTH_WEEKDAY_OF_MONTH') {
-              // Check if it's the Nth occurrence of this weekday in the month
-              const nthOccurrence = Math.ceil(d.getDate() / 7)
-              if (rod.intervalValue === nthOccurrence) {
-                entries.push({
-                  type: 'recurring-off',
-                  date: dateStr,
-                  data: rod
-                })
-                dateMap.set(dateStr, true)
-              }
+            }
+          } else if (rod.recurrencePattern === 'NTH_WEEKDAY_OF_MONTH' && rod.weekOfMonth) {
+            const nthOccurrence = Math.ceil(d.getDate() / 7)
+            if (rod.weekOfMonth === nthOccurrence) {
+              addEntry(dateStr, {
+                type: 'recurring-off',
+                data: rod
+              })
             }
           }
         })
       }
     }
 
-    // Add weekend days
+    // Add weekend days (only actual Saturday/Sunday based on working hours config)
     if (workingHours.value && startDateFilter.value && endDateFilter.value) {
       const start = new Date(startDateFilter.value)
       const end = new Date(endDateFilter.value)
@@ -118,28 +147,41 @@ const displayEntries = computed<DisplayEntry[]>(() => {
         const dateStr = d.toISOString().split('T')[0]
         const dayOfWeek = d.getDay() === 0 ? 7 : d.getDay()
 
-        // Check if this day is not a working day
+        // Only add weekend entry for days marked as non-working in the config
+        // This typically means Saturday (6) and Sunday (7), but respects user's working hours setup
         const workingDay = workingHours.value.workingDays?.find(wd => wd.weekday === dayOfWeek)
-        if (!workingDay?.isWorkingDay && !dateMap.has(dateStr)) {
-          entries.push({
+        if (workingDay && !workingDay.isWorkingDay) {
+          addEntry(dateStr, {
             type: 'weekend',
-            date: dateStr,
             data: { description: t('timeEntries.weekend') }
           })
-          dateMap.set(dateStr, true)
         }
       }
     }
   }
 
+  // Convert to display entries and sort types by precedence
+  const entries: DisplayEntry[] = []
+  dateGroups.forEach((types, date) => {
+    // Sort by precedence: work, public-holiday, timeoff, recurring-off, weekend
+    const precedence = { 'work': 0, 'public-holiday': 1, 'timeoff': 2, 'recurring-off': 3, 'weekend': 4 }
+    types.sort((a, b) => precedence[a.type] - precedence[b.type])
+
+    const workEntry = types.find(t => t.type === 'work')?.data as TimeEntryResponse | undefined
+
+    entries.push({
+      date,
+      types,
+      workEntry
+    })
+  })
+
   // Sort by date descending
   return entries.sort((a, b) => b.date.localeCompare(a.date))
 })
-const clockInDialogVisible = ref(false)
 const clockOutDialogVisible = ref(false)
 const manualEntryDialogVisible = ref(false)
 const editDialogVisible = ref(false)
-const clockInNotes = ref('')
 const clockOutNotes = ref('')
 const activeEntry = ref<TimeEntryResponse | null>(null)
 const currentTimeEntry = ref<Partial<UpdateTimeEntryRequest>>({})
@@ -224,6 +266,16 @@ const loadRecurringOffDays = async () => {
   }
 }
 
+const loadPublicHolidays = async () => {
+  try {
+    const year = new Date().getFullYear()
+    const response = await PublicHolidaysService.getPublicHolidays(year)
+    publicHolidays.value = response
+  } catch (error) {
+    console.error('Error loading public holidays:', error)
+  }
+}
+
 const loadWorkingHours = async () => {
   try {
     const response = await WorkingHoursService.getWorkingHours()
@@ -241,6 +293,7 @@ const toggleTimeOff = async () => {
       await Promise.all([
         loadTimeOff(),
         loadRecurringOffDays(),
+        loadPublicHolidays(),
         loadWorkingHours()
       ])
     } finally {
@@ -249,15 +302,10 @@ const toggleTimeOff = async () => {
   }
 }
 
-const openClockInDialog = () => {
-  clockInNotes.value = ''
-  clockInDialogVisible.value = true
-}
-
 const clockIn = async () => {
   try {
     const request: ClockInRequest = {
-      notes: clockInNotes.value || undefined
+      notes: undefined
     }
     const response = await TimeEntriesService.clockIn(request)
     activeEntry.value = response
@@ -269,7 +317,6 @@ const clockIn = async () => {
       life: 3000
     })
 
-    clockInDialogVisible.value = false
     await loadTimeEntries()
   } catch (error: any) {
     toast.add({
@@ -662,12 +709,18 @@ const formatDateTime = (dateTime: string | undefined) => {
 
 const formatDate = (date: string | undefined) => {
   if (!date) return '-'
-  return new Date(date).toLocaleDateString(t('locale'))
+  const dateObj = new Date(date)
+  const day = String(dateObj.getDate()).padStart(2, '0')
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+  const year = dateObj.getFullYear()
+  return `${day}.${month}.${year}`
 }
 
 const formatHours = (hours: number | undefined) => {
   if (hours === undefined || hours === null) return '-'
-  return hours.toFixed(2) + 'h'
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  return m > 0 ? `${h}h ${m}m` : `${h}h`
 }
 
 const getExpectedHoursForEntry = (entry: TimeEntryResponse): number | null => {
@@ -725,6 +778,96 @@ const isActiveEntry = (entry: TimeEntryResponse) => {
   return entry.isActive
 }
 
+const getTimeOffSeverity = (type: string): 'success' | 'warn' | 'danger' | 'info' | 'secondary' | 'contrast' | null => {
+  switch (type) {
+    case 'VACATION':
+      return 'success' // Green for vacation
+    case 'SICK':
+      return 'warn' // Yellow/Orange for sick days
+    case 'PERSONAL':
+      return 'info' // Blue for personal days
+    case 'PUBLIC_HOLIDAY':
+      return 'danger' // Red for public holidays
+    default:
+      return 'secondary'
+  }
+}
+
+const getTypeEmoji = (typeEntry: TypeEntry): string => {
+  if (typeEntry.type === 'work') {
+    return '🏢'
+  } else if (typeEntry.type === 'public-holiday') {
+    return '🎊'
+  } else if (typeEntry.type === 'timeoff') {
+    const timeOff = typeEntry.data as TimeOffResponse
+    switch (timeOff.timeOffType) {
+      case 'VACATION':
+        return '🏝️'
+      case 'SICK':
+        return '😵‍💫'
+      case 'PERSONAL':
+        return '🏠'
+      case 'PUBLIC_HOLIDAY':
+        return '🎊'
+      default:
+        return '📅'
+    }
+  } else if (typeEntry.type === 'recurring-off') {
+    return '📴'
+  } else if (typeEntry.type === 'weekend') {
+    return '🗓️'
+  }
+  return '📅'
+}
+
+const getTypeTooltip = (typeEntry: TypeEntry): string => {
+  if (typeEntry.type === 'work') {
+    return t('timeEntries.type.WORK')
+  } else if (typeEntry.type === 'public-holiday') {
+    return (typeEntry.data as PublicHolidayResponse).name || ''
+  } else if (typeEntry.type === 'timeoff') {
+    const timeOff = typeEntry.data as TimeOffResponse
+    return t(`timeOff.type.${timeOff.timeOffType}`)
+  } else if (typeEntry.type === 'recurring-off') {
+    return t('timeEntries.recurringOffDay')
+  } else if (typeEntry.type === 'weekend') {
+    return t('timeEntries.weekend')
+  }
+  return ''
+}
+
+const getRowBackgroundClass = (entry: DisplayEntry): string => {
+  // Get the highest precedence type (first in the array after sorting)
+  if (entry.types.length === 0) return ''
+
+  const primaryType = entry.types[0].type
+
+  switch (primaryType) {
+    case 'work':
+      return 'row-bg-work'
+    case 'public-holiday':
+      return 'row-bg-public-holiday'
+    case 'timeoff':
+      const timeOff = entry.types[0].data as TimeOffResponse
+      switch (timeOff.timeOffType) {
+        case 'VACATION':
+          return 'row-bg-vacation'
+        case 'SICK':
+          return 'row-bg-sick'
+        case 'PERSONAL':
+          return 'row-bg-personal'
+        default:
+          return ''
+      }
+    case 'recurring-off':
+      return 'row-bg-recurring-off'
+    case 'weekend':
+      return 'row-bg-weekend'
+    default:
+      return ''
+  }
+}
+
 onMounted(() => {
   loadTimeEntries()
 })
@@ -732,42 +875,48 @@ onMounted(() => {
 
 <template>
   <div class="time-entries-view">
-    <div class="card">
-      <div class="flex justify-content-between align-items-center mb-4">
-        <h2>{{ t('timeEntries.title') }}</h2>
-        <div class="flex gap-2">
-          <Button
-            v-if="!activeEntry"
-            :label="t('timeEntries.clockIn')"
-            icon="pi pi-play"
-            severity="success"
-            @click="openClockInDialog"
-          />
-          <Button
-            v-else
-            :label="t('timeEntries.clockOut')"
-            icon="pi pi-stop"
-            severity="danger"
-            @click="openClockOutDialog"
-          />
-          <Button
-            :label="t('timeEntries.quickWorkEntry')"
-            icon="pi pi-bolt"
-            severity="success"
-            @click="createQuickWorkEntry"
-            outlined
-          />
-          <Button
-            :label="t('timeEntries.addManualEntry')"
-            icon="pi pi-plus"
-            severity="secondary"
-            @click="openManualEntryDialog"
-            outlined
-          />
-        </div>
+    <h1 class="page-title">{{ t('timeEntries.title') }}</h1>
+
+    <!-- Action Cards -->
+    <div class="action-cards-container mb-3">
+      <div
+        v-if="!activeEntry"
+        class="action-card-small action-clock-in"
+        @click="clockIn"
+      >
+        <i class="pi pi-play-circle action-icon-small"></i>
+        <div class="action-label-small">{{ t('timeEntries.clockIn') }}</div>
+      </div>
+      <div
+        v-else
+        class="action-card-small action-clock-out"
+        @click="openClockOutDialog"
+      >
+        <i class="pi pi-stop-circle action-icon-small"></i>
+        <div class="action-label-small">{{ t('timeEntries.clockOut') }}</div>
       </div>
 
-      <!-- Active Entry Card -->
+      <div
+        class="action-card-small action-quick-entry"
+        @click="createQuickWorkEntry"
+      >
+        <i class="pi pi-bolt action-icon-small"></i>
+        <div class="action-label-small">{{ t('timeEntries.quickWorkEntry') }}</div>
+      </div>
+
+      <div
+        class="action-card-small action-manual-entry"
+        @click="openManualEntryDialog"
+      >
+        <i class="pi pi-plus action-icon-small"></i>
+        <div class="action-label-small">{{ t('timeEntries.addManualEntry') }}</div>
+      </div>
+    </div>
+
+    <Card class="section-card">
+      <template #content>
+
+        <!-- Active Entry Card -->
       <div v-if="activeEntry" class="active-entry-card mb-4 p-3 border-round" style="background: var(--green-50); border: 1px solid var(--green-200)">
         <div class="flex align-items-center gap-3">
           <i class="pi pi-clock text-3xl text-green-600"></i>
@@ -806,7 +955,7 @@ onMounted(() => {
       <DataTable
         :value="displayEntries"
         :loading="loading"
-        striped-rows
+        :row-class="getRowBackgroundClass"
         responsive-layout="scroll"
         :empty-message="t('timeEntries.noEntries')"
       >
@@ -817,56 +966,46 @@ onMounted(() => {
         </Column>
         <Column :header="t('timeEntries.type.label')">
           <template #body="{ data: entry }">
-            <Tag
-              v-if="entry.type === 'work'"
-              :value="t('timeEntries.type.WORK')"
-              severity="info"
-            />
-            <Tag
-              v-else-if="entry.type === 'timeoff'"
-              :value="t(`timeOff.type.${(entry.data as TimeOffResponse).timeOffType}`)"
-              severity="success"
-            />
-            <Tag
-              v-else-if="entry.type === 'recurring-off'"
-              :value="t('timeEntries.recurringOffDay')"
-              severity="secondary"
-            />
-            <Tag
-              v-else-if="entry.type === 'weekend'"
-              :value="t('timeEntries.weekend')"
-              severity="secondary"
-            />
+            <div class="type-emojis">
+              <span
+                v-for="(typeEntry, idx) in entry.types"
+                :key="idx"
+                class="type-emoji"
+                v-tooltip.top="getTypeTooltip(typeEntry)"
+              >
+                {{ getTypeEmoji(typeEntry) }}
+              </span>
+            </div>
           </template>
         </Column>
         <Column field="clockIn" :header="t('timeEntries.clockIn')">
           <template #body="{ data: entry }">
-            <span v-if="entry.type === 'work'">
-              {{ formatDateTime((entry.data as TimeEntryResponse).clockIn) }}
+            <span v-if="entry.workEntry">
+              {{ formatDateTime(entry.workEntry.clockIn) }}
             </span>
             <span v-else>-</span>
           </template>
         </Column>
         <Column field="clockOut" :header="t('timeEntries.clockOut')">
           <template #body="{ data: entry }">
-            <span v-if="entry.type === 'work'">
-              {{ formatDateTime((entry.data as TimeEntryResponse).clockOut) }}
+            <span v-if="entry.workEntry">
+              {{ formatDateTime(entry.workEntry.clockOut) }}
             </span>
             <span v-else>-</span>
           </template>
         </Column>
         <Column field="breakMinutes" :header="t('timeEntries.breakMinutes')">
           <template #body="{ data: entry }">
-            <span v-if="entry.type === 'work'">
-              {{ (entry.data as TimeEntryResponse).breakMinutes || 0 }} min
+            <span v-if="entry.workEntry">
+              {{ entry.workEntry.breakMinutes || 0 }} min
             </span>
             <span v-else>-</span>
           </template>
         </Column>
         <Column field="hoursWorked" :header="t('timeEntries.hoursWorked')">
           <template #body="{ data: entry }">
-            <span v-if="entry.type === 'work'">
-              {{ formatHours((entry.data as TimeEntryResponse).hoursWorked) }}
+            <span v-if="entry.workEntry">
+              {{ formatHours(entry.workEntry.hoursWorked) }}
             </span>
             <span v-else>-</span>
           </template>
@@ -874,75 +1013,59 @@ onMounted(() => {
         <Column field="difference" :header="t('timeEntries.difference')">
           <template #body="{ data: entry }">
             <Tag
-              v-if="entry.type === 'work' && getDifferenceSeverity(entry.data as TimeEntryResponse)"
-              :value="getHoursDifference(entry.data as TimeEntryResponse)"
-              :severity="getDifferenceSeverity(entry.data as TimeEntryResponse)"
+              v-if="entry.workEntry && getDifferenceSeverity(entry.workEntry)"
+              :value="getHoursDifference(entry.workEntry)"
+              :severity="getDifferenceSeverity(entry.workEntry)"
             />
             <span v-else>-</span>
           </template>
         </Column>
         <Column field="notes" :header="t('timeEntries.notes')">
           <template #body="{ data: entry }">
-            <span v-if="entry.type === 'recurring-off'">
-              {{ (entry.data as RecurringOffDayResponse).description || '-' }}
-            </span>
-            <span v-else-if="entry.type === 'weekend'">
-              -
-            </span>
-            <span v-else>
-              {{ entry.data.notes || '-' }}
-            </span>
+            <template v-if="entry.types.length === 1">
+              <span v-if="entry.types[0].type === 'recurring-off'">
+                {{ (entry.types[0].data as RecurringOffDayResponse).description || '-' }}
+              </span>
+              <span v-else-if="entry.types[0].type === 'weekend'">
+                -
+              </span>
+              <span v-else-if="entry.types[0].type === 'public-holiday'">
+                {{ (entry.types[0].data as PublicHolidayResponse).name || '-' }}
+              </span>
+              <span v-else>
+                {{ entry.types[0].data.notes || '-' }}
+              </span>
+            </template>
+            <template v-else>
+              <span v-if="entry.workEntry">
+                {{ entry.workEntry.notes || '-' }}
+              </span>
+              <span v-else>-</span>
+            </template>
           </template>
         </Column>
         <Column :header="t('actions')">
           <template #body="{ data: entry }">
-            <div v-if="entry.type === 'work'" class="flex gap-2">
+            <template v-if="entry.workEntry">
               <Button
                 icon="pi pi-pencil"
-                text
-                rounded
-                severity="info"
-                @click="openEditDialog(entry.data as TimeEntryResponse)"
-                :disabled="isActiveEntry(entry.data as TimeEntryResponse)"
+                class="p-button-text p-button-sm"
+                @click="openEditDialog(entry.workEntry)"
+                :disabled="isActiveEntry(entry.workEntry)"
               />
               <Button
                 icon="pi pi-trash"
-                text
-                rounded
-                severity="danger"
-                @click="deleteTimeEntry(entry.data as TimeEntryResponse)"
-                :disabled="isActiveEntry(entry.data as TimeEntryResponse)"
+                class="p-button-text p-button-danger p-button-sm"
+                @click="deleteTimeEntry(entry.workEntry)"
+                :disabled="isActiveEntry(entry.workEntry)"
               />
-            </div>
+            </template>
             <span v-else>-</span>
           </template>
         </Column>
       </DataTable>
-
-    </div>
-
-    <!-- Clock In Dialog -->
-    <Dialog
-      v-model:visible="clockInDialogVisible"
-      :header="t('timeEntries.clockIn')"
-      :modal="true"
-      :style="{ width: '400px' }"
-    >
-      <div class="field">
-        <label for="clockInNotes">{{ t('timeEntries.notes') }}</label>
-        <Textarea
-          id="clockInNotes"
-          v-model="clockInNotes"
-          rows="3"
-          :placeholder="t('timeEntries.notesPlaceholder')"
-          class="w-full"
-        />
-      </div>
-      <template #footer>
-        <Button :label="t('cancel')" severity="secondary" @click="clockInDialogVisible = false" />
-        <Button :label="t('timeEntries.clockIn')" severity="success" @click="clockIn" />
       </template>
-    </Dialog>
+    </Card>
 
     <!-- Clock Out Dialog -->
     <Dialog
@@ -1129,14 +1252,90 @@ onMounted(() => {
 
 <style scoped>
 .time-entries-view {
-  padding: 0;
+  padding: 1rem 2rem 2rem 2rem;
 }
 
-h2 {
-  font-size: 2rem;
+.page-title {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.section-card {
+  margin-bottom: 2rem;
+}
+
+/* Action Cards - smaller version */
+.action-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.action-card-small {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+}
+
+.action-card-small:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.action-icon-small {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.action-label-small {
+  font-size: 0.9rem;
   font-weight: 600;
   color: #1f2937;
-  margin: 0;
+}
+
+/* Action card colors - matching dashboard but for small cards */
+.action-card-small.action-clock-in {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.action-card-small.action-clock-in .action-icon-small,
+.action-card-small.action-clock-in .action-label-small {
+  color: white;
+}
+
+.action-card-small.action-clock-out {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.action-card-small.action-clock-out .action-icon-small,
+.action-card-small.action-clock-out .action-label-small {
+  color: white;
+}
+
+.action-card-small.action-quick-entry {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.action-card-small.action-quick-entry .action-icon-small,
+.action-card-small.action-quick-entry .action-label-small {
+  color: white;
+}
+
+.action-card-small.action-manual-entry {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.action-card-small.action-manual-entry .action-icon-small,
+.action-card-small.action-manual-entry .action-label-small {
+  color: white;
 }
 
 .active-entry-card {
@@ -1204,5 +1403,78 @@ h2 {
 .manual-entry-form .field :deep(.p-calendar),
 .manual-entry-form .field :deep(.p-inputtextarea) {
   width: 100%;
+}
+
+/* Make table columns more compact - reused from schedule page */
+:deep(.p-datatable) {
+  font-size: 0.95rem;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th),
+:deep(.p-datatable .p-datatable-tbody > tr > td) {
+  padding: 0.75rem 0.75rem;
+}
+
+:deep(.p-datatable .p-column-header-content) {
+  white-space: nowrap;
+}
+
+/* Reduce width of actions column */
+:deep(.p-datatable tbody td:last-child) {
+  width: 100px;
+  text-align: center;
+}
+
+/* Make Tag components more compact */
+:deep(.p-tag) {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* Type emojis display */
+.type-emojis {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.type-emoji {
+  font-size: 1.5rem;
+  cursor: help;
+  transition: transform 0.2s ease;
+}
+
+.type-emoji:hover {
+  transform: scale(1.2);
+}
+
+/* Row background colors based on primary type */
+:deep(.row-bg-work) {
+  background-color: rgba(255, 255, 255, 1) !important;
+}
+
+:deep(.row-bg-public-holiday) {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+
+:deep(.row-bg-vacation) {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+:deep(.row-bg-sick) {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+:deep(.row-bg-personal) {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+:deep(.row-bg-recurring-off) {
+  background-color: rgba(139, 92, 246, 0.1) !important;
+}
+
+:deep(.row-bg-weekend) {
+  background-color: rgba(107, 114, 128, 0.1) !important;
 }
 </style>
