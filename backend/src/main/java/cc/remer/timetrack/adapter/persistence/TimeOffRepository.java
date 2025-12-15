@@ -48,6 +48,7 @@ public interface TimeOffRepository extends JpaRepository<TimeOff, Long> {
 
     /**
      * Find time off entries for a user by type and year.
+     * Uses overlap logic to include entries that span year boundaries.
      *
      * @param userId the user ID
      * @param timeOffType the time off type
@@ -57,7 +58,7 @@ public interface TimeOffRepository extends JpaRepository<TimeOff, Long> {
      */
     @Query("SELECT t FROM TimeOff t WHERE t.user.id = :userId " +
            "AND t.timeOffType = :timeOffType " +
-           "AND t.startDate >= :yearStart AND t.endDate <= :yearEnd")
+           "AND t.startDate <= :yearEnd AND t.endDate >= :yearStart")
     List<TimeOff> findByUserIdAndTypeAndYear(@Param("userId") Long userId,
                                               @Param("timeOffType") TimeOffType timeOffType,
                                               @Param("yearStart") LocalDate yearStart,

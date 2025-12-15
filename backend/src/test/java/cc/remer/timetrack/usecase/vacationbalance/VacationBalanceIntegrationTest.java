@@ -132,7 +132,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         request.setAdjustmentDays(1.0);
 
         // Act
-        VacationBalanceResponse response = updateVacationBalance.execute(request);
+        VacationBalanceResponse response = updateVacationBalance.execute(testUser.getId(), testUser.getRole(), request);
 
         // Assert
         assertThat(response.getId()).isNotNull();
@@ -156,7 +156,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         request.setAdjustmentDays(2.0); // Add bonus days
 
         // Act
-        VacationBalanceResponse response = updateVacationBalance.execute(request);
+        VacationBalanceResponse response = updateVacationBalance.execute(testUser.getId(), testUser.getRole(), request);
 
         // Assert
         assertThat(response.getCarriedOverDays()).isEqualTo(5.0);
@@ -177,7 +177,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Used days will be 0 initially
 
         // Act
-        VacationBalanceResponse response = updateVacationBalance.execute(request);
+        VacationBalanceResponse response = updateVacationBalance.execute(testUser.getId(), testUser.getRole(), request);
 
         // Assert - 30 + 5 + (-1) - 0 = 34
         assertThat(response.getRemainingDays()).isEqualTo(34.0);
@@ -195,7 +195,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         request.setAdjustmentDays(3.0); // Only update adjustment
 
         // Act
-        VacationBalanceResponse response = updateVacationBalance.execute(request);
+        VacationBalanceResponse response = updateVacationBalance.execute(testUser.getId(), testUser.getRole(), request);
 
         // Assert - Other fields should remain unchanged
         assertThat(response.getAnnualAllowanceDays()).isEqualTo(30.0);
@@ -215,7 +215,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Not setting annualAllowanceDays
 
         // Act
-        VacationBalanceResponse response = updateVacationBalance.execute(request);
+        VacationBalanceResponse response = updateVacationBalance.execute(testUser.getId(), testUser.getRole(), request);
 
         // Assert - Should default to 30 days
         assertThat(response.getAnnualAllowanceDays()).isEqualTo(30.0);
@@ -233,7 +233,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         request.setAdjustmentDays(-5.0); // Deduct 5 days
 
         // Act
-        VacationBalanceResponse response = updateVacationBalance.execute(request);
+        VacationBalanceResponse response = updateVacationBalance.execute(testUser.getId(), testUser.getRole(), request);
 
         // Assert - 30 + 0 + (-5) - 0 = 25
         assertThat(response.getAdjustmentDays()).isEqualTo(-5.0);
@@ -820,6 +820,82 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Assert - Vacation balance should deduct 4.5 days
         assertThat(balance.getPlannedDays()).isEqualTo(4.5);
         assertThat(balance.getRemainingDays()).isEqualTo(25.5); // 30 - 4.5 = 25.5
+    }
+
+    // ==================== Authorization Tests ====================
+
+    @Test
+    @DisplayName("Should allow user to update their own vacation balance")
+    void shouldAllowUserToUpdateOwnVacationBalance() {
+        // Arrange
+        UpdateVacationBalanceRequest request = new UpdateVacationBalanceRequest();
+        request.setUserId(testUser.getId());
+        request.setYear(2025);
+        request.setAnnualAllowanceDays(28.0);
+
+        // Act - User updating their own balance
+        VacationBalanceResponse response = updateVacationBalance.execute(testUser.getId(), testUser.getRole(), request);
+
+        // Assert - Should succeed
+        assertThat(response).isNotNull();
+        assertThat(response.getAnnualAllowanceDays()).isEqualTo(28.0);
+    }
+
+    @Test
+    @DisplayName("Should prevent regular user from updating another user's vacation balance")
+    void shouldPreventUserFromUpdatingOtherUsersBalance() {
+        // Arrange - Create another user
+        User otherUser = User.builder()
+                .email("other@timetrack.local")
+                .passwordHash(passwordEncoder.encode("password"))
+                .firstName("Other")
+                .lastName("User")
+                .role(Role.USER)
+                .active(true)
+                .state(GermanState.BERLIN)
+                .halfDayHolidaysEnabled(false)
+                .build();
+        otherUser = userRepository.save(otherUser);
+
+        UpdateVacationBalanceRequest request = new UpdateVacationBalanceRequest();
+        request.setUserId(otherUser.getId());
+        request.setYear(2025);
+        request.setAnnualAllowanceDays(28.0);
+
+        // Act & Assert - testUser (regular user) trying to update otherUser's balance
+        assertThatThrownBy(() -> updateVacationBalance.execute(testUser.getId(), testUser.getRole(), request))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("You can only update your own vacation balance");
+    }
+
+    @Test
+    @DisplayName("Should allow admin to update any user's vacation balance")
+    void shouldAllowAdminToUpdateAnyUsersBalance() {
+        // Arrange - Create an admin user
+        User adminUser = User.builder()
+                .email("admin2@timetrack.local")
+                .passwordHash(passwordEncoder.encode("admin"))
+                .firstName("Admin")
+                .lastName("User")
+                .role(Role.ADMIN)
+                .active(true)
+                .state(GermanState.BERLIN)
+                .halfDayHolidaysEnabled(false)
+                .build();
+        adminUser = userRepository.save(adminUser);
+
+        UpdateVacationBalanceRequest request = new UpdateVacationBalanceRequest();
+        request.setUserId(testUser.getId()); // Admin updating testUser's balance
+        request.setYear(2025);
+        request.setAnnualAllowanceDays(35.0);
+
+        // Act - Admin updating another user's balance
+        VacationBalanceResponse response = updateVacationBalance.execute(adminUser.getId(), adminUser.getRole(), request);
+
+        // Assert - Should succeed
+        assertThat(response).isNotNull();
+        assertThat(response.getUserId()).isEqualTo(testUser.getId());
+        assertThat(response.getAnnualAllowanceDays()).isEqualTo(35.0);
     }
 
 }

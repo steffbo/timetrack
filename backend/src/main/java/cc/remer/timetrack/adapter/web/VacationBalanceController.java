@@ -9,7 +9,6 @@ import cc.remer.timetrack.usecase.vacationbalance.UpdateVacationBalance;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,11 +35,16 @@ public class VacationBalanceController implements VacationBalanceApi {
     }
 
     @Override
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<VacationBalanceResponse> updateVacationBalance(UpdateVacationBalanceRequest updateVacationBalanceRequest) {
         log.info("PUT /vacation-balance - Updating vacation balance");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
 
-        VacationBalanceResponse response = updateVacationBalance.execute(updateVacationBalanceRequest);
+        VacationBalanceResponse response = updateVacationBalance.execute(
+                principal.getId(),
+                principal.getRole(),
+                updateVacationBalanceRequest
+        );
         return ResponseEntity.ok(response);
     }
 }

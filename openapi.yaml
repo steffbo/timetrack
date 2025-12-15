@@ -639,7 +639,7 @@ paths:
       tags:
         - Vacation Balance
       summary: Update vacation balance
-      description: Update vacation balance (Admin only)
+      description: Update vacation balance (Users can update their own, admins can update any user's balance)
       operationId: updateVacationBalance
       requestBody:
         required: true
