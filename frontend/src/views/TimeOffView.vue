@@ -157,9 +157,15 @@ const saveBalance = async () => {
 }
 
 const onYearChange = async () => {
+  // Update date filters to cover entire selected year
+  startDateFilter.value = `${selectedYear.value}-01-01`
+  endDateFilter.value = `${selectedYear.value}-12-31`
+
+  // Reload all data
   await loadBalance()
   await calculateSickDays()
   await calculateChildSickDays()
+  await loadTimeOffs()
 }
 
 const loadTimeOffs = async () => {
@@ -345,16 +351,25 @@ onMounted(() => {
 
 <template>
   <div class="time-off-view">
-    <!-- Statistics Cards -->
-    <div class="stats-container">
-      <div class="stats-header">
-        <h3>{{ t('timeOff.statistics') }}</h3>
-        <div class="stats-controls">
+    <h1 class="page-title">{{ t('timeOff.title') }}</h1>
+
+    <!-- Statistics Container with Year Selection -->
+    <div class="stats-layout">
+      <!-- Year Selection Card -->
+      <div class="year-selection-card">
+        <div class="year-selection-content">
+          <div class="year-selection-info">
+            <h3>{{ t('timeOff.yearSelection.title') }}</h3>
+            <p class="year-selection-hint">{{ t('timeOff.yearSelection.hint') }}</p>
+          </div>
           <Select
             v-model="selectedYear"
             :options="years"
             @change="onYearChange"
             class="year-select"
+            :pt="{
+              root: { class: 'year-select-large' }
+            }"
           />
           <Button
             v-if="balance"
@@ -362,71 +377,76 @@ onMounted(() => {
             icon="pi pi-pencil"
             severity="secondary"
             outlined
+            size="large"
             @click="openEditBalanceDialog"
+            class="edit-balance-button"
           />
         </div>
       </div>
 
-      <div v-if="balanceLoading" class="flex justify-content-center py-4">
-        <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-      </div>
-
-      <div v-else-if="balance" class="stats-grid">
-        <!-- Vacation Cards -->
-        <div class="stat-card">
-          <div class="stat-label">{{ t('vacationBalance.annualAllowanceDays') }}</div>
-          <div class="stat-value">{{ balance.annualAllowanceDays.toFixed(1) }}</div>
-          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+      <!-- Statistics Cards -->
+      <div class="stats-container">
+        <div v-if="balanceLoading" class="flex justify-content-center align-items-center" style="height: 100%;">
+          <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
         </div>
 
-        <div class="stat-card stat-planned">
-          <div class="stat-label">{{ t('vacationBalance.plannedDays') }}</div>
-          <div class="stat-value">{{ balance.plannedDays.toFixed(1) }}</div>
-          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+        <div v-else-if="balance" class="stats-grid">
+          <!-- Vacation Cards -->
+          <div class="stat-card">
+            <div class="stat-label">{{ t('vacationBalance.annualAllowanceDays') }}</div>
+            <div class="stat-value">{{ balance.annualAllowanceDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <div class="stat-card stat-planned">
+            <div class="stat-label">{{ t('vacationBalance.plannedDays') }}</div>
+            <div class="stat-value">{{ balance.plannedDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <div class="stat-card stat-used">
+            <div class="stat-label">{{ t('vacationBalance.usedDays') }}</div>
+            <div class="stat-value">{{ balance.usedDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <div class="stat-card stat-remaining">
+            <div class="stat-label">{{ t('vacationBalance.leftForPlanning') }}</div>
+            <div class="stat-value">{{ remainingDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">{{ t('vacationBalance.carriedOverDays') }}</div>
+            <div class="stat-value">{{ balance.carriedOverDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">{{ t('vacationBalance.adjustmentDays') }}</div>
+            <div class="stat-value">{{ balance.adjustmentDays.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <!-- Sick Days Card -->
+          <div class="stat-card stat-sick">
+            <div class="stat-label">{{ t('timeOff.sickDaysThisYear') }}</div>
+            <div class="stat-value">{{ sickDaysCount.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
+
+          <!-- Child Sick Days Card -->
+          <div class="stat-card stat-sick">
+            <div class="stat-label">{{ t('timeOff.childSickDaysThisYear') }}</div>
+            <div class="stat-value">{{ childSickDaysCount.toFixed(1) }}</div>
+            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+          </div>
         </div>
 
-        <div class="stat-card stat-used">
-          <div class="stat-label">{{ t('vacationBalance.usedDays') }}</div>
-          <div class="stat-value">{{ balance.usedDays.toFixed(1) }}</div>
-          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
+        <div v-else class="text-center py-3 text-gray-500">
+          <i class="pi pi-info-circle text-2xl mb-2" />
+          <p class="text-sm">{{ t('vacationBalance.noData') }}</p>
         </div>
-
-        <div class="stat-card stat-remaining">
-          <div class="stat-label">{{ t('vacationBalance.leftForPlanning') }}</div>
-          <div class="stat-value">{{ remainingDays.toFixed(1) }}</div>
-          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-label">{{ t('vacationBalance.carriedOverDays') }}</div>
-          <div class="stat-value">{{ balance.carriedOverDays.toFixed(1) }}</div>
-          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-label">{{ t('vacationBalance.adjustmentDays') }}</div>
-          <div class="stat-value">{{ balance.adjustmentDays.toFixed(1) }}</div>
-          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-        </div>
-
-        <!-- Sick Days Card -->
-        <div class="stat-card stat-sick">
-          <div class="stat-label">{{ t('timeOff.sickDaysThisYear') }}</div>
-          <div class="stat-value">{{ sickDaysCount.toFixed(1) }}</div>
-          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-        </div>
-
-        <!-- Child Sick Days Card -->
-        <div class="stat-card stat-sick">
-          <div class="stat-label">{{ t('timeOff.childSickDaysThisYear') }}</div>
-          <div class="stat-value">{{ childSickDaysCount.toFixed(1) }}</div>
-          <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-        </div>
-      </div>
-
-      <div v-else class="text-center py-3 text-gray-500">
-        <i class="pi pi-info-circle text-2xl mb-2" />
-        <p class="text-sm">{{ t('vacationBalance.noData') }}</p>
       </div>
     </div>
 
@@ -690,38 +710,97 @@ onMounted(() => {
   padding: var(--tt-view-padding);
 }
 
-/* Statistics Container - matches dashboard's quick-actions-section pattern */
-.stats-container {
-  background: #f8f9fa;
-  border-radius: var(--tt-radius-md);
-  padding: var(--tt-card-padding);
-  margin-bottom: var(--tt-card-gap);
-}
-
-.stats-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--tt-spacing-md);
-}
-
-.stats-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.stats-controls {
-  display: flex;
+/* Main Statistics Layout - 6 columns: 2 for year selection, 4 for stats */
+.stats-layout {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: minmax(120px, auto);
   gap: var(--tt-spacing-sm);
-  align-items: center;
+  margin-bottom: var(--tt-spacing-lg);
+}
+
+/* Year Selection Card - Takes 2 columns, 2 rows high */
+.year-selection-card {
+  grid-column: span 2;
+  grid-row: span 2;
+  background: linear-gradient(135deg, var(--tt-blue-from) 0%, var(--tt-blue-to) 100%);
+  border-radius: var(--tt-radius-sm);
+  padding: var(--tt-spacing-md);
+  box-shadow: var(--tt-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.year-selection-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tt-spacing-sm);
+}
+
+.year-selection-info h3 {
+  margin: 0 0 var(--tt-spacing-xs) 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: white;
+}
+
+.year-selection-hint {
+  margin: 0 0 var(--tt-spacing-sm) 0;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.4;
+}
+
+.year-select {
+  width: 100%;
+}
+
+.edit-balance-button {
+  width: 100%;
+  margin-top: var(--tt-spacing-xs);
+  background: white;
+  border: none;
+  color: var(--tt-blue-to);
+  font-weight: 600;
+}
+
+.edit-balance-button:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--tt-blue-to);
+}
+
+/* Statistics Container - Spans remaining 4 columns, 2 rows */
+.stats-container {
+  grid-column: span 4;
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--tt-spacing-md);
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: var(--tt-spacing-sm);
+  flex: 1;
+}
+
+/* Override stat card sizing to be more compact */
+.stat-card {
+  padding: 0.5rem 0.75rem;
+  min-height: 0;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  margin-bottom: 0.125rem;
+  line-height: 1.2;
 }
 
 .stat-unit {
@@ -808,28 +887,49 @@ onMounted(() => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
-  .time-off-view {
-    padding: var(--tt-view-padding-mobile);
+@media (max-width: 1200px) {
+  .stats-layout {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .stats-layout {
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
 
-  .stat-value {
-    font-size: 1.5rem;
+@media (max-width: 768px) {
+  .time-off-view {
+    padding: var(--tt-view-padding-mobile);
   }
 
-  .stats-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--tt-spacing-sm);
+  .stats-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
   }
 
-  .stats-controls {
-    width: 100%;
-    justify-content: space-between;
+  .year-selection-card {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .stats-container {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto;
   }
 
   .entries-header {

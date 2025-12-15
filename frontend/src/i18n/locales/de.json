@@ -229,6 +229,10 @@
     "title": "Abwesenheiten",
     "entries": "Abwesenheitseinträge",
     "statistics": "Abwesenheitsstatistik",
+    "yearSelection": {
+      "title": "Jahr auswählen",
+      "hint": "Wähle ein Jahr, um Statistiken anzuzeigen und Urlaubseinstellungen zu bearbeiten"
+    },
     "sickDaysThisYear": "Krankheitstage",
     "childSickDaysThisYear": "Kind krank Tage",
     "create": "Neue Abwesenheit",

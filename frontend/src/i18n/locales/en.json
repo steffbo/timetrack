@@ -229,6 +229,10 @@
     "title": "Time Off",
     "entries": "Time Off Entries",
     "statistics": "Time Off Statistics",
+    "yearSelection": {
+      "title": "Year Selection",
+      "hint": "Select a year to view statistics and edit vacation settings"
+    },
     "sickDaysThisYear": "Sick Days",
     "childSickDaysThisYear": "Child Sick Days",
     "create": "New Time Off",

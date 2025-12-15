@@ -63,23 +63,20 @@
             />
           </div>
 
-          <div class="field">
-            <div class="flex align-items-center">
-              <Checkbox
-                id="halfDayHolidays"
-                v-model="formData.halfDayHolidaysEnabled"
-                :binary="true"
-                :disabled="isLoading"
-              />
-              <label for="halfDayHolidays" class="ml-2">
-                {{ t('profile.halfDayHolidays') }}
-                <i
-                  v-tooltip="t('profile.halfDayHolidaysTooltip')"
-                  class="pi pi-info-circle ml-1"
-                  style="font-size: 0.875rem; cursor: help;"
-                ></i>
-              </label>
-            </div>
+          <div class="checkbox-field">
+            <Checkbox
+              input-id="halfDayHolidays"
+              v-model="formData.halfDayHolidaysEnabled"
+              :binary="true"
+              :disabled="isLoading"
+            />
+            <label for="halfDayHolidays" class="checkbox-label">
+              {{ t('profile.halfDayHolidays') }}
+              <i
+                v-tooltip.right="t('profile.halfDayHolidaysTooltip')"
+                class="pi pi-info-circle info-icon"
+              ></i>
+            </label>
           </div>
 
           <div class="button-group">
@@ -195,8 +192,59 @@ async function handleSave() {
 </script>
 
 <style scoped>
-/* Using shared form and utility styles */
 .profile {
   padding: 0;
+}
+
+/* Compact form spacing */
+.field {
+  margin-bottom: var(--tt-spacing-md);
+}
+
+/* Checkbox field styling */
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: var(--tt-spacing-sm);
+  padding: var(--tt-spacing-sm);
+  border-radius: var(--tt-radius-sm);
+  background-color: var(--surface-50);
+  border: 1px solid var(--surface-200);
+  transition: var(--tt-transition);
+  margin-bottom: var(--tt-spacing-md);
+}
+
+.checkbox-field:hover {
+  background-color: var(--surface-100);
+  border-color: var(--primary-color);
+}
+
+.checkbox-label {
+  margin: 0;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: var(--tt-spacing-xs);
+}
+
+.info-icon {
+  font-size: 0.875rem;
+  color: var(--primary-color);
+  cursor: help;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.info-icon:hover {
+  opacity: 1;
+}
+
+.button-group {
+  margin-top: var(--tt-spacing-lg);
+  display: flex;
+  gap: var(--tt-spacing-sm);
 }
 </style>
