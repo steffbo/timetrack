@@ -134,7 +134,7 @@ public class MonthlyReportPdfGenerator {
      * Draw table header row.
      */
     private float drawTableHeaderRow(PDPageContentStream contentStream, float yPosition, float xStart, float[] columnWidths, float tableWidth) throws IOException {
-        String[] headers = {"Datum", "Anfang", "Pause", "Ende", "Gesamt", "Uberstd.", "Notiz"};
+        String[] headers = {"Datum", "Anfang", "Pause", "Ende", "Gesamt", "Überstd.", "Notiz"};
         float rowHeight = 20;
 
         // Draw background
@@ -178,7 +178,7 @@ public class MonthlyReportPdfGenerator {
         String[] values = {
                 entry.date().format(DATE_FORMATTER),
                 entry.startTime() != null ? entry.startTime().format(TIME_FORMATTER) : "-",
-                String.valueOf(entry.breakMinutes()),
+                formatBreakMinutes(entry.breakMinutes()),
                 entry.endTime() != null ? entry.endTime().format(TIME_FORMATTER) : "-",
                 entry.totalHours() != null ? formatHours(entry.totalHours()) : "-",
                 entry.overtime() != null ? formatHours(entry.overtime()) : "-",
@@ -304,13 +304,36 @@ public class MonthlyReportPdfGenerator {
     }
 
     /**
-     * Format hours as decimal with 2 decimal places.
+     * Format break minutes for display.
+     * Returns "-" if break is 0, otherwise returns the value with "min" unit.
+     */
+    private String formatBreakMinutes(Integer breakMinutes) {
+        if (breakMinutes == null || breakMinutes == 0) {
+            return "-";
+        }
+        return breakMinutes + " min";
+    }
+
+    /**
+     * Format hours as hours and minutes (e.g., "8h 30m").
      */
     private String formatHours(Double hours) {
         if (hours == null) {
             return "-";
         }
-        return String.format("%.2f", hours);
+        int h = (int) Math.floor(Math.abs(hours));
+        int m = (int) Math.round((Math.abs(hours) - h) * 60);
+
+        // Handle rounding edge case where 59.5 minutes rounds to 60
+        if (m == 60) {
+            h += 1;
+            m = 0;
+        }
+
+        if (hours < 0) {
+            return String.format("-%dh %dm", h, m);
+        }
+        return String.format("%dh %dm", h, m);
     }
 
     /**
@@ -320,8 +343,17 @@ public class MonthlyReportPdfGenerator {
         if (hours == null) {
             return "-";
         }
-        String sign = hours >= 0 ? "+" : "";
-        return String.format("%s%.2f", sign, hours);
+        int h = (int) Math.floor(Math.abs(hours));
+        int m = (int) Math.round((Math.abs(hours) - h) * 60);
+
+        // Handle rounding edge case where 59.5 minutes rounds to 60
+        if (m == 60) {
+            h += 1;
+            m = 0;
+        }
+
+        String sign = hours >= 0 ? "+" : "-";
+        return String.format("%s%dh %dm", sign, h, m);
     }
 
     /**
