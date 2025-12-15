@@ -181,7 +181,13 @@
         </div>
 
         <div v-if="currentOffDay.recurrencePattern === 'EVERY_NTH_WEEK'" class="field">
-          <label for="referenceDate">{{ t('recurringOffDays.referenceDate') }}</label>
+          <label for="referenceDate">
+            {{ t('recurringOffDays.referenceDate') }} *
+            <i
+              class="pi pi-info-circle info-icon"
+              v-tooltip.right="t('recurringOffDays.referenceDateTooltip')"
+            />
+          </label>
           <DatePicker
             id="referenceDate"
             v-model="currentOffDay.referenceDate"
@@ -200,7 +206,13 @@
         </div>
 
         <div class="field">
-          <label for="startDate">{{ t('recurringOffDays.startDate') }} *</label>
+          <label for="startDate">
+            {{ t('recurringOffDays.startDate') }} *
+            <i
+              class="pi pi-info-circle info-icon"
+              v-tooltip.right="t('recurringOffDays.startDateTooltip')"
+            />
+          </label>
           <DatePicker
             id="startDate"
             v-model="currentOffDay.startDate"
@@ -628,5 +640,13 @@ label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
+}
+
+.info-icon {
+  margin-left: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--p-primary-color);
+  cursor: help;
+  vertical-align: middle;
 }
 </style>

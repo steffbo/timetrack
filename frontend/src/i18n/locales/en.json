@@ -186,6 +186,7 @@
     "weekday": "Weekday",
     "weekInterval": "Week Interval",
     "referenceDate": "Reference Date",
+    "referenceDateTooltip": "Anchor point for calculating the recurrence pattern. The system counts weeks from this date to determine which dates match the pattern. Example: For 'every 4 weeks' with reference date Jan 6, 2025, only dates exactly 0, 4, 8, 12... weeks from this date will be marked.",
     "weekOfMonth": {
       "label": "Week of Month",
       "1": "First",
@@ -195,6 +196,7 @@
       "5": "Fifth"
     },
     "startDate": "Start Date",
+    "startDateTooltip": "Date when this rule becomes active. The rule will only apply to dates from this date forward. Example: If start date is June 1, 2025, the rule won't apply to any dates before June 1st.",
     "endDate": "End Date",
     "description": "Description",
     "noData": "No recurring off-days configured",

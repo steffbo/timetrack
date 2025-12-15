@@ -186,6 +186,7 @@
     "weekday": "Wochentag",
     "weekInterval": "Wochen-Intervall",
     "referenceDate": "Referenzdatum",
+    "referenceDateTooltip": "Ankerpunkt für die Berechnung des Musters. Das System zählt Wochen ab diesem Datum, um zu bestimmen, welche Termine mit dem Muster übereinstimmen. Beispiel: Bei 'alle 4 Wochen' mit Referenzdatum 06.01.2025 werden nur Termine markiert, die exakt 0, 4, 8, 12... Wochen von diesem Datum entfernt sind.",
     "weekOfMonth": {
       "label": "Woche im Monat",
       "1": "Erste",
@@ -195,6 +196,7 @@
       "5": "Fünfte"
     },
     "startDate": "Startdatum",
+    "startDateTooltip": "Datum, ab dem diese Regel aktiv wird. Die Regel wird nur auf Termine ab diesem Datum angewendet. Beispiel: Wenn das Startdatum der 01.06.2025 ist, gilt die Regel nicht für Termine vor diesem Datum.",
     "endDate": "Enddatum",
     "description": "Beschreibung",
     "noData": "Keine wiederkehrenden freien Tage konfiguriert",
