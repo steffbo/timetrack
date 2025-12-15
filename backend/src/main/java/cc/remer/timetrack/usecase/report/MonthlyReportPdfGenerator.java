@@ -290,17 +290,6 @@ public class MonthlyReportPdfGenerator {
         contentStream.newLineAtOffset(MARGIN, yPosition);
         contentStream.showText(String.format("Gesamtuberstunden: %s", formatHoursWithSign(totalOvertime)));
         contentStream.endText();
-
-        // Timestamp
-        yPosition -= 40;
-
-        contentStream.beginText();
-        contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_OBLIQUE), SMALL_FONT_SIZE);
-        String timestamp = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").format(java.time.LocalDateTime.now());
-        float timestampX = 515 - (timestamp.length() * 3); // Right align approximately
-        contentStream.newLineAtOffset(timestampX, yPosition);
-        contentStream.showText("Erstellt am: " + timestamp);
-        contentStream.endText();
     }
 
     /**
@@ -338,6 +327,7 @@ public class MonthlyReportPdfGenerator {
 
     /**
      * Format hours with sign (+ or -) for overtime display.
+     * Shows only minutes if less than 1 hour, otherwise shows hours and minutes.
      */
     private String formatHoursWithSign(Double hours) {
         if (hours == null) {
@@ -353,6 +343,13 @@ public class MonthlyReportPdfGenerator {
         }
 
         String sign = hours >= 0 ? "+" : "-";
+
+        // If less than 1 hour, show only minutes
+        if (h == 0) {
+            return String.format("%s%d min", sign, m);
+        }
+
+        // Otherwise show hours and minutes
         return String.format("%s%dh %dm", sign, h, m);
     }
 

@@ -329,6 +329,14 @@ const getTypeSeverity = (type: string) => {
   }
 }
 
+const formatDisplayDate = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}.${month}.${year}`
+}
+
 onMounted(() => {
   // Default filter: previous month + current month
   const now = new Date()
@@ -486,12 +494,12 @@ onMounted(() => {
         </Column>
         <Column field="startDate" :header="t('timeOff.startDate')" sortable>
           <template #body="{ data }">
-            {{ new Date(data.startDate).toLocaleDateString('de-DE') }}
+            {{ formatDisplayDate(data.startDate) }}
           </template>
         </Column>
         <Column field="endDate" :header="t('timeOff.endDate')" sortable>
           <template #body="{ data }">
-            {{ new Date(data.endDate).toLocaleDateString('de-DE') }}
+            {{ formatDisplayDate(data.endDate) }}
           </template>
         </Column>
         <Column field="days" :header="t('timeOff.days')">

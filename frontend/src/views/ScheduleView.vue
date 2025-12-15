@@ -107,12 +107,12 @@
           </Column>
           <Column field="startDate" :header="t('recurringOffDays.startDate')">
             <template #body="{ data }">
-              {{ new Date(data.startDate).toLocaleDateString('de-DE') }}
+              {{ formatDisplayDate(data.startDate) }}
             </template>
           </Column>
           <Column field="endDate" :header="t('recurringOffDays.endDate')">
             <template #body="{ data }">
-              {{ data.endDate ? new Date(data.endDate).toLocaleDateString('de-DE') : '-' }}
+              {{ data.endDate ? formatDisplayDate(data.endDate) : '-' }}
             </template>
           </Column>
           <Column field="description" :header="t('recurringOffDays.description')">
@@ -589,6 +589,14 @@ const getPatternDescription = (offDay: RecurringOffDayResponse) => {
       weekday: getWeekdayLabel(offDay.weekday)
     })
   }
+}
+
+const formatDisplayDate = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}.${month}.${year}`
 }
 
 onMounted(async () => {

@@ -20,6 +20,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class ExportMonthlyReportUseCase {
+
+    private static final ZoneId EUROPE_BERLIN = ZoneId.of("Europe/Berlin");
 
     private final TimeEntryRepository timeEntryRepository;
     private final TimeOffRepository timeOffRepository;
@@ -277,10 +280,11 @@ public class ExportMonthlyReportUseCase {
         }
 
         // Find first clock-in and last clock-out
+        // Convert from UTC (stored in DB) to Europe/Berlin timezone
         LocalTime startTime = entries.stream()
                 .map(TimeEntry::getClockIn)
                 .min(Comparator.naturalOrder())
-                .map(java.time.LocalDateTime::toLocalTime)
+                .map(ldt -> ldt.atZone(ZoneId.of("UTC")).withZoneSameInstant(EUROPE_BERLIN).toLocalTime())
                 .orElse(null);
 
         // Calculate total break minutes for the day
@@ -297,11 +301,12 @@ public class ExportMonthlyReportUseCase {
 
         if (!hasActiveEntry) {
             // All entries are clocked out, calculate totals
+            // Convert from UTC (stored in DB) to Europe/Berlin timezone
             endTime = entries.stream()
                     .map(TimeEntry::getClockOut)
                     .filter(Objects::nonNull)
                     .max(Comparator.naturalOrder())
-                    .map(java.time.LocalDateTime::toLocalTime)
+                    .map(ldt -> ldt.atZone(ZoneId.of("UTC")).withZoneSameInstant(EUROPE_BERLIN).toLocalTime())
                     .orElse(null);
 
             // Calculate total hours (already excludes breaks due to getHoursWorked() implementation)
