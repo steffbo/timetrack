@@ -93,7 +93,7 @@ public class ExportMonthlyReportUseCase {
                 .collect(Collectors.groupingBy(TimeEntry::getEntryDate));
 
         // Build map of time-off by date
-        Map<LocalDate, TimeOffType> timeOffByDate = buildTimeOffMap(timeOffEntries, startDate, endDate);
+        Map<LocalDate, TimeOff> timeOffByDate = buildTimeOffMap(timeOffEntries, startDate, endDate);
 
         // Generate daily report entries for each day in the month
         List<DailyReportEntry> dailyEntries = new ArrayList<>();
@@ -154,7 +154,7 @@ public class ExportMonthlyReportUseCase {
                 .collect(Collectors.groupingBy(TimeEntry::getEntryDate));
 
         // Build map of time-off by date
-        Map<LocalDate, TimeOffType> timeOffByDate = buildTimeOffMap(timeOffEntries, startDate, endDate);
+        Map<LocalDate, TimeOff> timeOffByDate = buildTimeOffMap(timeOffEntries, startDate, endDate);
 
         // Generate daily report entries for each day in the month
         List<DailyReportEntry> dailyEntries = new ArrayList<>();
@@ -190,9 +190,10 @@ public class ExportMonthlyReportUseCase {
     /**
      * Build a map of time-off entries by date.
      * If multiple time-off entries exist for the same date, prioritize sick days, then vacation.
+     * Returns the complete TimeOff object so we can access notes.
      */
-    private Map<LocalDate, TimeOffType> buildTimeOffMap(List<TimeOff> timeOffEntries, LocalDate startDate, LocalDate endDate) {
-        Map<LocalDate, TimeOffType> timeOffByDate = new HashMap<>();
+    private Map<LocalDate, TimeOff> buildTimeOffMap(List<TimeOff> timeOffEntries, LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, TimeOff> timeOffByDate = new HashMap<>();
 
         for (TimeOff timeOff : timeOffEntries) {
             LocalDate currentDate = timeOff.getStartDate().isBefore(startDate) ? startDate : timeOff.getStartDate();
@@ -200,11 +201,13 @@ public class ExportMonthlyReportUseCase {
 
             while (!currentDate.isAfter(lastDate)) {
                 // Prioritize sick days over other types
-                TimeOffType existingType = timeOffByDate.get(currentDate);
+                TimeOff existingTimeOff = timeOffByDate.get(currentDate);
+                TimeOffType existingType = existingTimeOff != null ? existingTimeOff.getTimeOffType() : null;
+
                 if (existingType == null ||
                     (timeOff.getTimeOffType() == TimeOffType.SICK && existingType != TimeOffType.SICK && existingType != TimeOffType.CHILD_SICK) ||
                     (timeOff.getTimeOffType() == TimeOffType.CHILD_SICK && existingType != TimeOffType.SICK && existingType != TimeOffType.CHILD_SICK)) {
-                    timeOffByDate.put(currentDate, timeOff.getTimeOffType());
+                    timeOffByDate.put(currentDate, timeOff);
                 }
                 currentDate = currentDate.plusDays(1);
             }
@@ -220,7 +223,7 @@ public class ExportMonthlyReportUseCase {
             LocalDate date,
             List<TimeEntry> entries,
             Map<Short, WorkingHours> workingHoursMap,
-            Map<LocalDate, TimeOffType> timeOffByDate
+            Map<LocalDate, TimeOff> timeOffByDate
     ) {
         // Get expected hours for this day of week
         DayOfWeek dayOfWeek = date.getDayOfWeek();
@@ -231,8 +234,21 @@ public class ExportMonthlyReportUseCase {
                 ? workingHours.getHours().doubleValue()
                 : 0.0;
 
+        // Get time-off for this date
+        TimeOff timeOff = timeOffByDate.get(date);
+
         // Determine day type
-        DayType dayType = determineDayType(date, timeOffByDate);
+        DayType dayType = determineDayType(date, timeOff);
+
+        // Determine notes: priority is time entry notes > time-off notes > time-off type
+        String notes = null;
+        TimeOffType timeOffType = null;
+
+        if (timeOff != null) {
+            timeOffType = timeOff.getTimeOffType();
+            // Use time-off notes if available, otherwise will use type name later
+            notes = timeOff.getNotes();
+        }
 
         if (entries.isEmpty()) {
             // No entries for this day
@@ -245,7 +261,19 @@ public class ExportMonthlyReportUseCase {
                     .expectedHours(expectedHours)
                     .overtime(null)
                     .dayType(dayType)
+                    .notes(notes)
+                    .timeOffType(timeOffType)
                     .build();
+        }
+
+        // Priority for notes: first non-null time entry notes > time-off notes
+        if (notes == null) {
+            notes = entries.stream()
+                    .map(TimeEntry::getNotes)
+                    .filter(Objects::nonNull)
+                    .filter(n -> !n.isBlank())
+                    .findFirst()
+                    .orElse(null);
         }
 
         // Find first clock-in and last clock-out
@@ -296,16 +324,17 @@ public class ExportMonthlyReportUseCase {
                 .expectedHours(expectedHours)
                 .overtime(overtime)
                 .dayType(dayType)
+                .notes(notes)
+                .timeOffType(timeOffType)
                 .build();
     }
 
     /**
      * Determine the day type based on time-off and weekend status.
      */
-    private DayType determineDayType(LocalDate date, Map<LocalDate, TimeOffType> timeOffByDate) {
-        TimeOffType timeOffType = timeOffByDate.get(date);
-
-        if (timeOffType != null) {
+    private DayType determineDayType(LocalDate date, TimeOff timeOff) {
+        if (timeOff != null) {
+            TimeOffType timeOffType = timeOff.getTimeOffType();
             return switch (timeOffType) {
                 case SICK -> DayType.SICK;
                 case CHILD_SICK -> DayType.SICK;

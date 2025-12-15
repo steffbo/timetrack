@@ -116,7 +116,7 @@ public class MonthlyReportPdfGenerator {
      */
     private float addTimeEntriesTable(PDPageContentStream contentStream, float yPosition, float pageWidth, List<DailyReportEntry> entries) throws IOException {
         float tableWidth = pageWidth - 2 * MARGIN;
-        float[] columnWidths = {0.30f, 0.12f, 0.12f, 0.12f, 0.12f, 0.12f}; // Relative widths
+        float[] columnWidths = {0.24f, 0.10f, 0.10f, 0.10f, 0.10f, 0.10f, 0.26f}; // Relative widths: Date, Start, Break, End, Total, Overtime, Notes
         float rowHeight = 18;
 
         // Draw header row
@@ -134,7 +134,7 @@ public class MonthlyReportPdfGenerator {
      * Draw table header row.
      */
     private float drawTableHeaderRow(PDPageContentStream contentStream, float yPosition, float xStart, float[] columnWidths, float tableWidth) throws IOException {
-        String[] headers = {"Datum", "Anfang", "Pause", "Ende", "Gesamt", "Uberstd."};
+        String[] headers = {"Datum", "Anfang", "Pause", "Ende", "Gesamt", "Uberstd.", "Notiz"};
         float rowHeight = 20;
 
         // Draw background
@@ -169,13 +169,20 @@ public class MonthlyReportPdfGenerator {
      * Draw table data row.
      */
     private float drawTableDataRow(PDPageContentStream contentStream, float yPosition, float xStart, float[] columnWidths, float tableWidth, DailyReportEntry entry, float rowHeight) throws IOException {
+        // Determine notes: use entry notes if present, otherwise use time-off type name
+        String notes = entry.notes();
+        if ((notes == null || notes.isBlank()) && entry.timeOffType() != null) {
+            notes = formatTimeOffType(entry.timeOffType());
+        }
+
         String[] values = {
                 entry.date().format(DATE_FORMATTER),
                 entry.startTime() != null ? entry.startTime().format(TIME_FORMATTER) : "-",
                 String.valueOf(entry.breakMinutes()),
                 entry.endTime() != null ? entry.endTime().format(TIME_FORMATTER) : "-",
                 entry.totalHours() != null ? formatHours(entry.totalHours()) : "-",
-                entry.overtime() != null ? formatHours(entry.overtime()) : "-"
+                entry.overtime() != null ? formatHours(entry.overtime()) : "-",
+                notes != null ? notes : ""
         };
 
         // Draw background color based on day type
@@ -238,8 +245,11 @@ public class MonthlyReportPdfGenerator {
                 .mapToDouble(DailyReportEntry::totalHours)
                 .sum();
 
+        // Only count expected hours for regular working days (exclude sick, vacation, public holidays)
         double totalExpectedHours = entries.stream()
                 .filter(e -> e.expectedHours() != null)
+                .filter(e -> e.dayType() == DayType.REGULAR || e.dayType() == DayType.WEEKEND)
+                .filter(e -> e.timeOffType() == null) // Exclude any time-off days
                 .mapToDouble(DailyReportEntry::expectedHours)
                 .sum();
 
@@ -312,6 +322,19 @@ public class MonthlyReportPdfGenerator {
         }
         String sign = hours >= 0 ? "+" : "";
         return String.format("%s%.2f", sign, hours);
+    }
+
+    /**
+     * Format time-off type for display in German.
+     */
+    private String formatTimeOffType(cc.remer.timetrack.domain.timeoff.TimeOffType timeOffType) {
+        return switch (timeOffType) {
+            case SICK -> "Krank";
+            case CHILD_SICK -> "Kind krank";
+            case VACATION -> "Urlaub";
+            case PUBLIC_HOLIDAY -> "Feiertag";
+            default -> timeOffType.name();
+        };
     }
 
     /**

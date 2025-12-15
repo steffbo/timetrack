@@ -1,5 +1,6 @@
 package cc.remer.timetrack.usecase.report;
 
+import cc.remer.timetrack.domain.timeoff.TimeOffType;
 import lombok.Builder;
 
 import java.time.LocalDate;
@@ -49,7 +50,17 @@ public record DailyReportEntry(
         /**
          * Type of day (weekend, sick, vacation, public holiday, or regular work day)
          */
-        DayType dayType
+        DayType dayType,
+
+        /**
+         * Notes from time entry or time-off entry
+         */
+        String notes,
+
+        /**
+         * Time-off type for this day (if applicable)
+         */
+        TimeOffType timeOffType
 ) {
     /**
      * Types of days for color coding in reports.
