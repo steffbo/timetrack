@@ -54,7 +54,55 @@ docker-compose logs -f app     # View backend logs
 docker-compose down            # Stop all services
 ```
 
-**Default Credentials**: admin@timetrack.local / admin
+**Default Credentials**: admin@timetrack.local / admin1
+
+## 🌐 Browser Testing with Chrome MCP
+
+Claude Code can interact with the running application via the Chrome DevTools MCP server, enabling automated browser testing and UI inspection.
+
+### Prerequisites
+- Chrome MCP server must be configured in Claude Code settings
+- Frontend dev server running on `http://localhost:5173`
+- Backend server running on `http://localhost:8080`
+
+### Common Browser Testing Tasks
+
+**Navigate and Login**:
+```
+Claude can navigate to http://localhost:5173/dashboard
+Fill login form with credentials
+Take snapshots of the page structure
+Take screenshots of the UI
+```
+
+**Inspect Page Elements**:
+- `take_snapshot` - Get accessibility tree with element UIDs
+- `take_screenshot` - Capture visual state
+- `list_console_messages` - Check for JavaScript errors
+- `list_network_requests` - Inspect API calls
+
+**Interact with UI**:
+- `fill` or `fill_form` - Enter data into form fields
+- `click` - Click buttons and links
+- `press_key` - Submit forms or keyboard shortcuts
+- `wait_for` - Wait for specific text to appear
+
+**Debug Issues**:
+- Check console for errors: `list_console_messages`
+- Inspect failed requests: `list_network_requests` with filters
+- Get request details: `get_network_request` by reqid
+
+### Example Workflow
+1. Ask Claude to access the dashboard: "Access http://localhost:5173/dashboard"
+2. Claude will navigate, detect login redirect, and fill credentials
+3. Once logged in, Claude can take screenshots or inspect elements
+4. Useful for verifying UI behavior, testing flows, or debugging issues
+
+### Tips
+- Snapshots show element UIDs - use these for interactions
+- Network requests help debug API communication issues
+- Console messages reveal JavaScript errors
+- Screenshots capture visual state for review
 
 ## 🧪 Testing Philosophy
 
