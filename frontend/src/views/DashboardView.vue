@@ -178,8 +178,24 @@ const loadDailySummaries = async () => {
     const startDate = new Date(year, month, 1)
     const endDate = new Date(year, month + 1, 0)
 
-    const startDateStr = startDate.toISOString().split('T')[0]
-    const endDateStr = endDate.toISOString().split('T')[0]
+    // Calculate how many days from adjacent months to fetch
+    const firstDayOfWeek = startDate.getDay()
+    const emptyDaysAtStart = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
+
+    // Calculate end padding days - only fill the last row
+    const daysInCurrentMonth = endDate.getDate()
+    const usedCells = emptyDaysAtStart + daysInCurrentMonth
+    const remainderInWeek = usedCells % 7
+    const emptyDaysAtEnd = remainderInWeek === 0 ? 0 : 7 - remainderInWeek
+
+    // Fetch data starting from the first day shown (including previous month days)
+    const fetchStartDate = new Date(year, month, 1 - emptyDaysAtStart)
+    // For end date, add emptyDaysAtEnd to the last day of current month
+    const fetchEndDate = new Date(year, month, daysInCurrentMonth + emptyDaysAtEnd)
+
+    // Format dates in local timezone to avoid timezone conversion issues
+    const startDateStr = `${fetchStartDate.getFullYear()}-${String(fetchStartDate.getMonth() + 1).padStart(2, '0')}-${String(fetchStartDate.getDate()).padStart(2, '0')}`
+    const endDateStr = `${fetchEndDate.getFullYear()}-${String(fetchEndDate.getMonth() + 1).padStart(2, '0')}-${String(fetchEndDate.getDate()).padStart(2, '0')}`
 
     // Fetch daily summaries, public holidays, and working hours in parallel
     const [summaries, publicHolidays, workingHoursData] = await Promise.all([

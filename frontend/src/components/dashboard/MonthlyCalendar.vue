@@ -53,18 +53,32 @@
           {{ weekday }}
         </div>
 
-        <!-- Empty cells for days before month starts -->
+        <!-- Days from previous month -->
         <div
-          v-for="n in emptyDaysAtStart"
-          :key="`empty-${n}`"
-          class="calendar-day empty"
-        />
+          v-for="day in previousMonthDays"
+          :key="`prev-${day.day}`"
+          :ref="el => setDayRef(day.day, el, 'prev')"
+          class="calendar-day adjacent-month"
+          :class="getAdjacentDayClasses(day.day, 'prev')"
+          :style="getAdjacentDayStyle(day.day, 'prev')"
+          @click="handleAdjacentDayClick(day.day, 'prev', $event)"
+          @mouseenter="handleAdjacentDayHover(day.day, 'prev', $event)"
+          @mouseleave="handleDayLeave()"
+        >
+          <div class="day-content">
+            <span class="day-number">{{ day.day }}</span>
+            <i
+              v-if="getAdjacentDayStatusIcon(day.day, 'prev')"
+              :class="['status-icon', getAdjacentDayStatusIcon(day.day, 'prev')]"
+            />
+          </div>
+        </div>
 
-        <!-- Days of the month -->
+        <!-- Days of the current month -->
         <div
           v-for="day in daysInMonth"
           :key="day"
-          :ref="el => setDayRef(day, el)"
+          :ref="el => setDayRef(day, el, 'current')"
           class="calendar-day"
           :class="getDayClasses(day)"
           :style="getDayStyle(day)"
@@ -77,6 +91,27 @@
             <i
               v-if="getDayStatusIcon(day)"
               :class="['status-icon', getDayStatusIcon(day)]"
+            />
+          </div>
+        </div>
+
+        <!-- Days from next month -->
+        <div
+          v-for="day in nextMonthDays"
+          :key="`next-${day.day}`"
+          :ref="el => setDayRef(day.day, el, 'next')"
+          class="calendar-day adjacent-month"
+          :class="getAdjacentDayClasses(day.day, 'next')"
+          :style="getAdjacentDayStyle(day.day, 'next')"
+          @click="handleAdjacentDayClick(day.day, 'next', $event)"
+          @mouseenter="handleAdjacentDayHover(day.day, 'next', $event)"
+          @mouseleave="handleDayLeave()"
+        >
+          <div class="day-content">
+            <span class="day-number">{{ day.day }}</span>
+            <i
+              v-if="getAdjacentDayStatusIcon(day.day, 'next')"
+              :class="['status-icon', getAdjacentDayStatusIcon(day.day, 'next')]"
             />
           </div>
         </div>
@@ -162,6 +197,39 @@ const emptyDaysAtStart = computed(() => {
   return firstDay === 0 ? 6 : firstDay - 1
 })
 
+//Calculate days from previous month to show
+const previousMonthDays = computed(() => {
+  const count = emptyDaysAtStart.value
+  if (count === 0) return []
+
+  const prevMonth = currentMonthIndex.value === 0 ? 11 : currentMonthIndex.value - 1
+  const prevYear = currentMonthIndex.value === 0 ? currentYear.value - 1 : currentYear.value
+  const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate()
+
+  const days = []
+  for (let i = 0; i < count; i++) {
+    days.push({ day: daysInPrevMonth - count + i + 1, month: prevMonth, year: prevYear })
+  }
+  return days
+})
+
+// Calculate days from next month to show - only fill the last row
+const nextMonthDays = computed(() => {
+  const usedCells = emptyDaysAtStart.value + daysInMonth.value
+  const remainderInWeek = usedCells % 7
+  const count = remainderInWeek === 0 ? 0 : 7 - remainderInWeek
+  if (count === 0) return []
+
+  const nextMonth = currentMonthIndex.value === 11 ? 0 : currentMonthIndex.value + 1
+  const nextYear = currentMonthIndex.value === 11 ? currentYear.value + 1 : currentYear.value
+
+  const days = []
+  for (let i = 1; i <= count; i++) {
+    days.push({ day: i, month: nextMonth, year: nextYear })
+  }
+  return days
+})
+
 const isCurrentMonth = computed(() => {
   const today = new Date()
   return currentYear.value === today.getFullYear() && currentMonthIndex.value === today.getMonth()
@@ -173,29 +241,61 @@ const getSummaryForDay = (day: number): DailySummaryResponse | undefined => {
   return props.dailySummaries.find(summary => summary.date === dateStr)
 }
 
+// Helper to check if a day is a working day according to working hours config
+const isWorkingDay = (day: number): boolean => {
+  const weekday = getWeekdayNumber(day)
+  const workingDayConfig = getWorkingDayConfig(weekday)
+  return workingDayConfig?.isWorkingDay ?? false
+}
+
 // Helper to determine primary entry type for a day
 const getPrimaryEntryType = (day: number): string => {
   const summary = getSummaryForDay(day)
-  if (!summary) return 'NO_ENTRY'
 
-  // Priority: TIME_OFF (specific types) > RECURRING_OFF > SICK > PTO > EVENT > WORK
+  // Check if it's a working day first
+  const isDayWorking = isWorkingDay(day)
+
+  // If no summary exists, check if it's a weekend
+  if (!summary) {
+    return isDayWorking ? 'NO_ENTRY' : 'WEEKEND'
+  }
+
+  // Priority: PUBLIC_HOLIDAY > RECURRING_OFF > SICK > PERSONAL > VACATION > EVENT > WORK > WEEKEND
+
+  // Public holidays always take precedence
   if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
-    // Check for specific time off types
     const publicHoliday = summary.timeOffEntries.find(e => e.timeOffType === 'PUBLIC_HOLIDAY')
     if (publicHoliday) return 'PUBLIC_HOLIDAY'
+  }
 
-    const vacation = summary.timeOffEntries.find(e => e.timeOffType === 'VACATION')
-    if (vacation) return 'VACATION'
+  // Recurring off-days take precedence over vacation
+  if (summary.recurringOffDays && summary.recurringOffDays.length > 0) {
+    return 'RECURRING_OFF'
+  }
 
+  // Other time-off types (sick, personal) take precedence over vacation
+  if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
     const sick = summary.timeOffEntries.find(e => e.timeOffType === 'SICK')
     if (sick) return 'SICK_LEAVE'
+
+    const personal = summary.timeOffEntries.find(e => e.timeOffType === 'PERSONAL')
+    if (personal) return 'PERSONAL'
+  }
+
+  // Only show vacation color if it's actually a working day
+  if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
+    const vacation = summary.timeOffEntries.find(e => e.timeOffType === 'VACATION')
+    if (vacation) {
+      // If it's a weekend/non-working day, show as weekend instead of vacation
+      if (!isDayWorking) return 'WEEKEND'
+      return 'VACATION'
+    }
 
     // Generic time off
     return 'TIME_OFF'
   }
-  if (summary.recurringOffDays && summary.recurringOffDays.length > 0) {
-    return 'RECURRING_OFF'
-  }
+
+  // Work entries
   if (summary.entries && summary.entries.length > 0) {
     // Check if SICK, PTO, or EVENT entries exist
     const hasSick = summary.entries.some(e => e.entryType === 'SICK')
@@ -207,6 +307,9 @@ const getPrimaryEntryType = (day: number): string => {
     if (hasEvent) return 'EVENT'
     return 'WORK'
   }
+
+  // No entries - check if it's a weekend
+  if (!isDayWorking) return 'WEEKEND'
 
   return 'NO_ENTRY'
 }
@@ -236,9 +339,11 @@ const getDayStyle = (day: number) => {
     'EVENT': 'var(--p-purple-50)',
     'VACATION': 'var(--p-cyan-50)',
     'SICK_LEAVE': 'var(--p-red-50)',
+    'PERSONAL': 'var(--p-blue-100)',
     'PUBLIC_HOLIDAY': 'var(--p-orange-50)',
     'TIME_OFF': 'var(--p-amber-50)',
-    'RECURRING_OFF': 'var(--p-gray-100)',
+    'RECURRING_OFF': 'var(--p-indigo-100)',
+    'WEEKEND': 'var(--p-surface-100)',
     'NO_ENTRY': 'var(--p-surface-0)'
   }
 
@@ -261,6 +366,141 @@ const getDayStatusIcon = (day: number): string | null => {
   return iconMap[summary.status] || null
 }
 
+// Helper to get summary for adjacent month day
+const getAdjacentSummaryForDay = (day: number, type: 'prev' | 'next'): DailySummaryResponse | undefined => {
+  const monthData = type === 'prev' ? previousMonthDays.value.find(d => d.day === day) : nextMonthDays.value.find(d => d.day === day)
+  if (!monthData) return undefined
+
+  const dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  return props.dailySummaries.find(summary => summary.date === dateStr)
+}
+
+// Helper to get primary entry type for adjacent month day
+const getAdjacentPrimaryEntryType = (day: number, type: 'prev' | 'next'): string => {
+  const summary = getAdjacentSummaryForDay(day, type)
+
+  // For adjacent months, we use simplified logic
+  if (!summary) return 'NO_ENTRY'
+
+  if (summary.timeOffEntries && summary.timeOffEntries.length > 0) {
+    const publicHoliday = summary.timeOffEntries.find(e => e.timeOffType === 'PUBLIC_HOLIDAY')
+    if (publicHoliday) return 'PUBLIC_HOLIDAY'
+
+    const vacation = summary.timeOffEntries.find(e => e.timeOffType === 'VACATION')
+    if (vacation) return 'VACATION'
+
+    const sick = summary.timeOffEntries.find(e => e.timeOffType === 'SICK')
+    if (sick) return 'SICK_LEAVE'
+
+    return 'TIME_OFF'
+  }
+
+  if (summary.recurringOffDays && summary.recurringOffDays.length > 0) {
+    return 'RECURRING_OFF'
+  }
+
+  if (summary.entries && summary.entries.length > 0) {
+    return 'WORK'
+  }
+
+  return 'NO_ENTRY'
+}
+
+// Get CSS classes for adjacent month day
+const getAdjacentDayClasses = (day: number, type: 'prev' | 'next') => {
+  return {
+    'is-sticky': false // Adjacent days can't be sticky
+  }
+}
+
+// Get background color style for adjacent month day
+const getAdjacentDayStyle = (day: number, type: 'prev' | 'next') => {
+  const entryType = getAdjacentPrimaryEntryType(day, type)
+
+  const colorMap: Record<string, string> = {
+    'WORK': 'var(--p-green-50)',
+    'SICK': 'var(--p-red-50)',
+    'PTO': 'var(--p-blue-50)',
+    'EVENT': 'var(--p-purple-50)',
+    'VACATION': 'var(--p-cyan-50)',
+    'SICK_LEAVE': 'var(--p-red-50)',
+    'PERSONAL': 'var(--p-blue-100)',
+    'PUBLIC_HOLIDAY': 'var(--p-orange-50)',
+    'TIME_OFF': 'var(--p-amber-50)',
+    'RECURRING_OFF': 'var(--p-indigo-100)',
+    'WEEKEND': 'var(--p-surface-100)',
+    'NO_ENTRY': 'var(--p-surface-0)'
+  }
+
+  return {
+    backgroundColor: colorMap[entryType] || colorMap['NO_ENTRY'],
+    opacity: '0.5' // Muted appearance for adjacent months
+  }
+}
+
+// Get status icon for adjacent month day
+const getAdjacentDayStatusIcon = (day: number, type: 'prev' | 'next'): string | null => {
+  const summary = getAdjacentSummaryForDay(day, type)
+  if (!summary || summary.status === 'NO_ENTRY') return null
+
+  const iconMap: Record<string, string> = {
+    'MATCHED': 'pi pi-check',
+    'ABOVE_EXPECTED': 'pi pi-arrow-up',
+    'BELOW_EXPECTED': 'pi pi-arrow-down'
+  }
+
+  return iconMap[summary.status] || null
+}
+
+// Handle adjacent day click
+const handleAdjacentDayClick = (day: number, type: 'prev' | 'next', event: MouseEvent) => {
+  // Clear any pending hover timeout
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout)
+    hoverTimeout = null
+  }
+
+  // Hide hover panel
+  hoverPanel.value?.hide()
+
+  // Show sticky panel for adjacent day
+  const key = `${type}-${day}`
+  const targetElement = dayRefs.value.get(key as any)
+  if (targetElement && stickyPanel.value) {
+    stickyDay.value = null // Clear previous sticky
+    setTimeout(() => {
+      stickyDay.value = key as any
+      if (stickyPanel.value && targetElement) {
+        stickyPanel.value.show(event, targetElement)
+      }
+    }, 50)
+  }
+}
+
+// Handle adjacent day hover
+const handleAdjacentDayHover = (day: number, type: 'prev' | 'next', event: MouseEvent) => {
+  // Clear any pending hover timeout
+  if (hoverTimeout) {
+    clearTimeout(hoverTimeout)
+    hoverTimeout = null
+  }
+
+  // Skip hover panel if this day is already sticky
+  const key = `${type}-${day}`
+  if (stickyDay.value === key as any) {
+    return
+  }
+
+  // Show hover overlay with reduced delay (100ms)
+  hoverTimeout = setTimeout(() => {
+    hoveredDay.value = key as any
+    const targetElement = dayRefs.value.get(key as any)
+    if (targetElement && hoverPanel.value) {
+      hoverPanel.value.show(event, targetElement)
+    }
+  }, 100)
+}
+
 // Navigation methods
 const previousMonth = () => {
   const newDate = new Date(currentYear.value, currentMonthIndex.value - 1, 1)
@@ -279,9 +519,11 @@ const goToToday = () => {
 }
 
 // Day ref management
-const setDayRef = (day: number, el: any) => {
+const setDayRef = (day: number, el: any, type: 'prev' | 'current' | 'next' = 'current') => {
   if (el) {
-    dayRefs.value.set(day, el as HTMLElement)
+    // Store refs with a unique key based on type and day
+    const key = type === 'current' ? day : `${type}-${day}`
+    dayRefs.value.set(key as any, el as HTMLElement)
   }
 }
 
@@ -455,14 +697,42 @@ const exportMonthlyPdf = async () => {
 }
 
 // Format day details as HTML for the overlay
-const formatDayDetailsHtml = (day: number): string => {
-  const summary = getSummaryForDay(day)
+const formatDayDetailsHtml = (day: number | string): string => {
+  // Check if this is an adjacent day
+  let summary: DailySummaryResponse | undefined
+  let dateStr: string
+  let actualDay: number
+  let isAdjacentDay = false
+
+  if (typeof day === 'string' && (day.startsWith('prev-') || day.startsWith('next-'))) {
+    // Adjacent month day
+    isAdjacentDay = true
+    const [type, dayNum] = day.split('-')
+    actualDay = parseInt(dayNum)
+    summary = getAdjacentSummaryForDay(actualDay, type as 'prev' | 'next')
+
+    // Get the actual date for this adjacent day
+    const monthData = type === 'prev'
+      ? previousMonthDays.value.find(d => d.day === actualDay)
+      : nextMonthDays.value.find(d => d.day === actualDay)
+
+    if (monthData) {
+      dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+    } else {
+      return `<p>${t('dashboard.calendar.noEntries')}</p>`
+    }
+  } else {
+    // Current month day
+    actualDay = typeof day === 'number' ? day : parseInt(day)
+    summary = getSummaryForDay(actualDay)
+    dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+  }
+
   if (!summary) return `<p>${t('dashboard.calendar.noEntries')}</p>`
 
   const parts: string[] = []
 
   // Date
-  const dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
   parts.push(`<div class="detail-row"><strong>📅 ${dateStr}</strong></div>`)
 
   // Get emoji for time off type
@@ -504,7 +774,23 @@ const formatDayDetailsHtml = (day: number): string => {
   const isAbsenceDay = hasPTOEntries || (summary.recurringOffDays && summary.recurringOffDays.length > 0)
   if (!isAbsenceDay) {
     // Get working day config for this day
-    const weekday = getWeekdayNumber(day)
+    let weekday: number
+    if (isAdjacentDay) {
+      // For adjacent days, calculate the weekday from the actual date
+      const monthData = typeof day === 'string' && day.startsWith('prev-')
+        ? previousMonthDays.value.find(d => d.day === actualDay)
+        : nextMonthDays.value.find(d => d.day === actualDay)
+
+      if (monthData) {
+        const date = new Date(monthData.year, monthData.month, actualDay)
+        const dayOfWeek = date.getDay()
+        weekday = dayOfWeek === 0 ? 7 : dayOfWeek
+      } else {
+        weekday = 1 // Fallback to Monday
+      }
+    } else {
+      weekday = getWeekdayNumber(actualDay)
+    }
     const workingDayConfig = getWorkingDayConfig(weekday)
 
     // Show planned times if available
@@ -611,6 +897,20 @@ const formatDayDetailsHtml = (day: number): string => {
   border-radius: 4px;
   transition: all 0.2s;
   position: relative;
+}
+
+.calendar-day.adjacent-month {
+  opacity: 0.6;
+}
+
+.calendar-day.adjacent-month .day-number {
+  color: var(--p-text-muted-color);
+  font-weight: 400;
+}
+
+.calendar-day.adjacent-month:hover {
+  opacity: 0.8;
+  cursor: pointer;
 }
 
 .calendar-day.empty {
