@@ -1,76 +1,7 @@
 <template>
   <div class="dashboard">
-    <!-- Quick Actions & Stats -->
-    <div class="quick-panel">
-      <!-- Quick Actions -->
-      <div class="quick-actions-section">
-        <h3>{{ t('dashboard.quickActions') }}</h3>
-        <div class="action-cards">
-          <!-- Clock In/Out Card -->
-          <div
-            v-if="!activeEntry"
-            class="action-card action-clock-in"
-            :class="{ disabled: !hasTodayWorkingHours }"
-            @click="hasTodayWorkingHours && clockInNow()"
-          >
-            <i class="pi pi-play-circle action-icon"></i>
-            <div class="action-label">{{ t('dashboard.clockInNow') }}</div>
-            <small v-if="!hasTodayWorkingHours" class="action-hint">
-              {{ t('dashboard.noWorkingHoursToday') }}
-            </small>
-          </div>
-          <div v-else class="active-entry-cards">
-            <div class="action-card action-clock-out" @click="clockOutNow">
-              <i class="pi pi-stop-circle action-icon"></i>
-              <div class="action-label">{{ t('dashboard.clockOutNow') }}</div>
-            </div>
-            <div class="action-card action-cancel" @click="cancelEntry">
-              <i class="pi pi-times action-icon"></i>
-              <div class="action-label">{{ t('dashboard.cancelEntry') }}</div>
-            </div>
-          </div>
-
-          <!-- Quick Work Entry Card -->
-          <div
-            class="action-card action-quick-entry"
-            :class="{ disabled: !hasTodayWorkingHours }"
-            @click="hasTodayWorkingHours && createQuickWorkEntry()"
-          >
-            <i class="pi pi-bolt action-icon"></i>
-            <div class="action-label">{{ t('dashboard.quickWorkEntry') }}</div>
-            <small v-if="!hasTodayWorkingHours" class="action-hint">
-              {{ t('dashboard.noWorkingHoursToday') }}
-            </small>
-          </div>
-        </div>
-      </div>
-
-      <!-- Statistics -->
-      <div class="stats-section">
-        <h3>{{ t('dashboard.overview') }}</h3>
-        <div class="stats-grid">
-          <div class="stat-card stat-vacation">
-            <div class="stat-label">{{ t('dashboard.nextVacation') }}</div>
-            <div class="stat-value">{{ nextVacationText }}</div>
-          </div>
-          <div class="stat-card stat-current">
-            <div class="stat-label">{{ t('dashboard.overtimeThisMonth') }}</div>
-            <div class="stat-value">{{ formatOvertime(overtimeThisMonth) }}</div>
-          </div>
-          <div class="stat-card stat-last">
-            <div class="stat-label">{{ t('dashboard.overtimeLastMonth') }}</div>
-            <div class="stat-value">{{ formatOvertime(overtimeLastMonth) }}</div>
-          </div>
-          <div class="stat-card stat-average">
-            <div class="stat-label">{{ t('dashboard.overtimeAverage') }}</div>
-            <div class="stat-value">{{ formatOvertime(overtimeAverage) }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Calendar -->
-    <div class="dashboard-grid">
+    <div class="dashboard-layout">
+      <!-- Left Side: Calendar -->
       <div class="calendar-section">
         <MonthlyCalendar
           :current-month="currentMonth"
@@ -78,6 +9,75 @@
           :working-hours="workingHours"
           @month-change="handleMonthChange"
         />
+      </div>
+
+      <!-- Right Side: Actions & Stats -->
+      <div class="sidebar-section">
+        <!-- Quick Actions -->
+        <div class="quick-actions-section">
+          <h3>{{ t('dashboard.quickActions') }}</h3>
+          <div class="action-cards">
+            <!-- Clock In/Out Card -->
+            <div
+              v-if="!activeEntry"
+              class="action-card action-clock-in"
+              :class="{ disabled: !hasTodayWorkingHours }"
+              @click="hasTodayWorkingHours && clockInNow()"
+            >
+              <i class="pi pi-play-circle action-icon"></i>
+              <div class="action-label">{{ t('dashboard.clockInNow') }}</div>
+              <small v-if="!hasTodayWorkingHours" class="action-hint">
+                {{ t('dashboard.noWorkingHoursToday') }}
+              </small>
+            </div>
+            <div v-else class="active-entry-cards">
+              <div class="action-card action-clock-out" @click="clockOutNow">
+                <i class="pi pi-stop-circle action-icon"></i>
+                <div class="action-label">{{ t('dashboard.clockOutNow') }}</div>
+              </div>
+              <div class="action-card action-cancel" @click="cancelEntry">
+                <i class="pi pi-times action-icon"></i>
+                <div class="action-label">{{ t('dashboard.cancelEntry') }}</div>
+              </div>
+            </div>
+
+            <!-- Quick Work Entry Card -->
+            <div
+              class="action-card action-quick-entry"
+              :class="{ disabled: !hasTodayWorkingHours }"
+              @click="hasTodayWorkingHours && createQuickWorkEntry()"
+            >
+              <i class="pi pi-bolt action-icon"></i>
+              <div class="action-label">{{ t('dashboard.quickWorkEntry') }}</div>
+              <small v-if="!hasTodayWorkingHours" class="action-hint">
+                {{ t('dashboard.noWorkingHoursToday') }}
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-section">
+          <h3>{{ t('dashboard.overview') }}</h3>
+          <div class="stats-grid">
+            <div class="stat-card stat-vacation">
+              <div class="stat-label">{{ t('dashboard.nextVacation') }}</div>
+              <div class="stat-value">{{ nextVacationText }}</div>
+            </div>
+            <div class="stat-card stat-current">
+              <div class="stat-label">{{ t('dashboard.overtimeThisMonth') }}</div>
+              <div class="stat-value">{{ formatOvertime(overtimeThisMonth) }}</div>
+            </div>
+            <div class="stat-card stat-last">
+              <div class="stat-label">{{ t('dashboard.overtimeLastMonth') }}</div>
+              <div class="stat-value">{{ formatOvertime(overtimeLastMonth) }}</div>
+            </div>
+            <div class="stat-card stat-average">
+              <div class="stat-label">{{ t('dashboard.overtimeAverage') }}</div>
+              <div class="stat-value">{{ formatOvertime(overtimeAverage) }}</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -417,19 +417,36 @@ onMounted(async () => {
 <style scoped>
 .dashboard {
   padding: 1rem 2rem 2rem 2rem;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
-/* Quick Panel */
-.quick-panel {
+/* Main Layout: Calendar Left, Sidebar Right */
+.dashboard-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 400px;
   gap: 2rem;
-  margin-bottom: 2rem;
+  align-items: start;
+  max-width: 100%;
 }
 
-.quick-panel h3 {
+/* Calendar Section */
+.calendar-section {
+  min-height: 600px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Sidebar Section */
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sidebar-section h3 {
   margin: 0 0 1rem 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #1f2937;
 }
@@ -438,20 +455,20 @@ onMounted(async () => {
 .quick-actions-section {
   background: #f8f9fa;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .action-cards {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .action-card {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   transition: all 0.2s ease;
   cursor: pointer;
   text-align: center;
@@ -459,8 +476,8 @@ onMounted(async () => {
 }
 
 .action-card:hover:not(.disabled) {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .action-card.disabled {
@@ -469,27 +486,27 @@ onMounted(async () => {
 }
 
 .action-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.75rem;
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
   display: block;
 }
 
 .action-label {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #1f2937;
 }
 
 .action-hint {
   display: block;
-  margin-top: 0.5rem;
+  margin-top: 0.35rem;
   color: #6c757d;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
 .active-entry-cards {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .active-entry-cards .action-card {
@@ -537,38 +554,38 @@ onMounted(async () => {
 .stats-section {
   background: #f8f9fa;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
 }
 
 .stat-card {
   background: white;
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   transition: all 0.2s ease;
   text-align: center;
 }
 
 .stat-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #6c757d;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
   font-weight: 500;
 }
 
 .stat-value {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #1f2937;
   line-height: 1;
@@ -611,29 +628,24 @@ onMounted(async () => {
   color: white;
 }
 
-/* Calendar */
-.dashboard-grid {
-  display: flex;
-  justify-content: center;
-}
-
-.calendar-section {
-  width: 75%;
-  min-height: 500px;
-}
-
 /* Responsive layout */
+@media (max-width: 1200px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr 350px;
+  }
+}
+
 @media (max-width: 1024px) {
-  .quick-panel {
+  .dashboard-layout {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .sidebar-section {
+    order: -1; /* Show sidebar before calendar on mobile */
   }
 
   .calendar-section {
-    width: 100%;
     min-height: auto;
   }
 
@@ -642,9 +654,46 @@ onMounted(async () => {
   }
 }
 
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 0.75rem 1rem 1rem 1rem;
+  }
+
+  .dashboard-layout {
+    gap: 1rem;
+  }
+
+  .quick-actions-section,
+  .stats-section {
+    padding: 1rem;
+  }
+
+  .sidebar-section h3 {
+    font-size: 1.1rem;
+  }
+}
+
 @media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .dashboard {
+    padding: 0.5rem 0.75rem 0.75rem 0.75rem;
+  }
+
+  .dashboard-layout {
+    gap: 0.75rem;
+  }
+
+  .quick-actions-section,
+  .stats-section {
+    padding: 0.75rem;
+    border-radius: 8px;
+  }
+
+  .action-card {
+    padding: 0.75rem;
+  }
+
+  .stat-card {
+    padding: 0.75rem;
   }
 }
 </style>

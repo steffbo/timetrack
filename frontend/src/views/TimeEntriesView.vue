@@ -360,6 +360,31 @@ const clockOut = async () => {
   }
 }
 
+const cancelActiveEntry = async () => {
+  try {
+    if (activeEntry.value?.id) {
+      await TimeEntriesService.deleteTimeEntry(activeEntry.value.id)
+      activeEntry.value = null
+
+      toast.add({
+        severity: 'success',
+        summary: t('success'),
+        detail: t('timeEntries.entryCancelled'),
+        life: 3000
+      })
+
+      await loadTimeEntries()
+    }
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: error.body?.message || t('timeEntries.cancelError'),
+      life: 3000
+    })
+  }
+}
+
 const openManualEntryDialog = () => {
   const now = new Date()
 
@@ -887,14 +912,22 @@ onMounted(() => {
         <i class="pi pi-play-circle action-icon-small"></i>
         <div class="action-label-small">{{ t('timeEntries.clockIn') }}</div>
       </div>
-      <div
-        v-else
-        class="action-card-small action-clock-out"
-        @click="openClockOutDialog"
-      >
-        <i class="pi pi-stop-circle action-icon-small"></i>
-        <div class="action-label-small">{{ t('timeEntries.clockOut') }}</div>
-      </div>
+      <template v-else>
+        <div
+          class="action-card-small action-clock-out"
+          @click="openClockOutDialog"
+        >
+          <i class="pi pi-stop-circle action-icon-small"></i>
+          <div class="action-label-small">{{ t('timeEntries.clockOut') }}</div>
+        </div>
+        <div
+          class="action-card-small action-cancel"
+          @click="cancelActiveEntry"
+        >
+          <i class="pi pi-times action-icon-small"></i>
+          <div class="action-label-small">{{ t('timeEntries.cancel') }}</div>
+        </div>
+      </template>
 
       <div
         class="action-card-small action-quick-entry"
@@ -1335,6 +1368,15 @@ onMounted(() => {
 
 .action-card-small.action-manual-entry .action-icon-small,
 .action-card-small.action-manual-entry .action-label-small {
+  color: white;
+}
+
+.action-card-small.action-cancel {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+.action-card-small.action-cancel .action-icon-small,
+.action-card-small.action-cancel .action-label-small {
   color: white;
 }
 
