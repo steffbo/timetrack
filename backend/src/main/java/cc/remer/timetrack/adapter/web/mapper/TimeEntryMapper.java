@@ -5,6 +5,7 @@ import cc.remer.timetrack.api.model.RecurringOffDayResponse;
 import cc.remer.timetrack.api.model.TimeEntryResponse;
 import cc.remer.timetrack.api.model.TimeOffResponse;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
+import cc.remer.timetrack.usecase.recurringoffday.RecurringOffDayConflictWarningMapper;
 import cc.remer.timetrack.usecase.recurringoffday.RecurringOffDayMapper;
 import cc.remer.timetrack.usecase.timeentry.model.DailySummary;
 import cc.remer.timetrack.usecase.timeoff.TimeOffMapper;
@@ -28,6 +29,7 @@ public class TimeEntryMapper {
 
     private final TimeOffMapper timeOffMapper;
     private final RecurringOffDayMapper recurringOffDayMapper;
+    private final RecurringOffDayConflictWarningMapper conflictWarningMapper;
 
     /**
      * Convert LocalDateTime to OffsetDateTime.
@@ -95,6 +97,11 @@ public class TimeEntryMapper {
                     .map(recurringOffDayMapper::toResponse)
                     .collect(Collectors.toList());
             response.setRecurringOffDays(recurringOffDayResponses);
+        }
+
+        // Map conflict warning if present
+        if (summary.getConflictWarning() != null) {
+            response.setConflictWarning(conflictWarningMapper.toResponse(summary.getConflictWarning()));
         }
 
         return response;

@@ -20,6 +20,8 @@ tags:
     description: Working hours configuration per weekday
   - name: Recurring Off-Days
     description: Recurring off-day patterns (e.g., every 4th Monday)
+  - name: Recurring Off-Day Warnings
+    description: Warnings when work entries occur on recurring off-days
   - name: Time Off
     description: Time-off tracking (vacation, sick, personal days, holidays)
   - name: Vacation Balance
@@ -431,6 +433,59 @@ paths:
       responses:
         '204':
           description: Recurring off-day deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/recurring-off-day-warnings:
+    get:
+      tags:
+        - Recurring Off-Day Warnings
+      summary: Get conflict warnings
+      description: Get all recurring off-day conflict warnings for the authenticated user
+      operationId: getConflictWarnings
+      parameters:
+        - name: unacknowledgedOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Return only unacknowledged warnings
+      responses:
+        '200':
+          description: Warnings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecurringOffDayConflictWarningResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/recurring-off-day-warnings/{id}/acknowledge:
+    post:
+      tags:
+        - Recurring Off-Day Warnings
+      summary: Acknowledge a warning
+      description: Mark a warning as acknowledged (warning persists for calendar highlighting)
+      operationId: acknowledgeWarning
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Warning acknowledged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringOffDayConflictWarningResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '404':
@@ -1353,6 +1408,52 @@ components:
           type: string
           description: Optional description of this off-day rule
 
+    RecurringOffDayConflictWarningResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - conflictDate
+        - acknowledged
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        conflictDate:
+          type: string
+          format: date
+          description: Date when the conflict occurred
+          example: "2024-11-24"
+        timeEntryId:
+          type: integer
+          format: int64
+          description: ID of the time entry that conflicts
+        recurringOffDayId:
+          type: integer
+          format: int64
+          description: ID of the recurring off-day rule
+        recurringOffDayDescription:
+          type: string
+          description: Description of the conflicting recurring off-day
+          example: "Every 4th Monday"
+        acknowledged:
+          type: boolean
+          description: Whether the user has acknowledged this warning
+          example: false
+        acknowledgedAt:
+          type: string
+          format: date-time
+          description: When the warning was acknowledged
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
     TimeOffResponse:
       type: object
       required:
@@ -1738,6 +1839,9 @@ components:
           description: List of recurring off-days that apply to this date
           items:
             $ref: '#/components/schemas/RecurringOffDayResponse'
+        conflictWarning:
+          $ref: '#/components/schemas/RecurringOffDayConflictWarningResponse'
+          description: Warning if work entry conflicts with recurring off-day
 
   responses:
     UnauthorizedError:

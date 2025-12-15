@@ -287,9 +287,13 @@ const getDayClasses = (day: number) => {
     currentMonthIndex.value === today.getMonth() &&
     currentYear.value === today.getFullYear()
 
+  const summary = getSummaryForDay(day)
+  const hasConflict = summary?.conflictWarning != null
+
   return {
     'is-today': isToday,
-    'is-sticky': day === stickyDay.value
+    'is-sticky': day === stickyDay.value,
+    'has-conflict': hasConflict
   }
 }
 
@@ -409,8 +413,12 @@ const getAdjacentPrimaryEntryType = (day: number, type: 'prev' | 'next'): string
 
 // Get CSS classes for adjacent month day
 const getAdjacentDayClasses = (day: number, type: 'prev' | 'next') => {
+  const summary = getAdjacentSummaryForDay(day, type)
+  const hasConflict = summary?.conflictWarning != null
+
   return {
-    'is-sticky': false // Adjacent days can't be sticky
+    'is-sticky': false, // Adjacent days can't be sticky
+    'has-conflict': hasConflict
   }
 }
 
@@ -985,6 +993,19 @@ const formatDayDetailsHtml = (day: number | string): string => {
 .calendar-day.is-today {
   border: 2px solid var(--p-primary-color);
   box-shadow: 0 0 0 1px var(--p-primary-color);
+}
+
+.calendar-day.has-conflict {
+  outline: 3px solid var(--p-orange-500);
+  outline-offset: -3px;
+  position: relative;
+}
+
+.calendar-day.has-conflict.is-today {
+  /* When both today and conflict, show both borders */
+  border: 2px solid var(--p-primary-color);
+  outline: 3px solid var(--p-orange-500);
+  outline-offset: -5px;
 }
 
 .day-content {

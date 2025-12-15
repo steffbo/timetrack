@@ -110,6 +110,17 @@
     "overtimeThisMonth": "Overtime Avg This Month",
     "overtimeLastMonth": "Overtime Last Month",
     "overtimeAverage": "Average (12 Months)",
+    "warnings": {
+      "title": "Warnings & Alerts",
+      "conflictTitle": "Work on Recurring Off-Day",
+      "conflictMessage": "Work entry on {date}, which is configured as a recurring off-day ({description}). Vacation days may need adjustment if this was intentional.",
+      "acknowledge": "Acknowledge",
+      "acknowledged": "Warning acknowledged",
+      "acknowledgeError": "Error acknowledging warning",
+      "viewDetails": "View Details",
+      "unacknowledgedWarnings": "{count} unacknowledged warning(s)",
+      "noWarnings": "No warnings or conflicts"
+    },
     "calendar": {
       "title": "Time Tracking Overview",
       "previousMonth": "Previous Month",
@@ -270,6 +281,7 @@
     "usedDaysAutoCalculated": "Used days are automatically calculated from vacation time-off entries"
   },
   "timeEntries": {
+    "conflictWarning": "Work on recurring off-day",
     "title": "Time Entries",
     "showTimeOff": "Show Time Off",
     "hideTimeOff": "Hide Time Off",

@@ -1,10 +1,12 @@
 package cc.remer.timetrack.usecase.timeentry;
 
+import cc.remer.timetrack.adapter.persistence.RecurringOffDayConflictWarningRepository;
 import cc.remer.timetrack.adapter.persistence.RecurringOffDayRepository;
 import cc.remer.timetrack.adapter.persistence.TimeEntryRepository;
 import cc.remer.timetrack.adapter.persistence.TimeOffRepository;
 import cc.remer.timetrack.adapter.persistence.WorkingHoursRepository;
 import cc.remer.timetrack.domain.recurringoffday.RecurringOffDay;
+import cc.remer.timetrack.domain.recurringoffday.RecurringOffDayConflictWarning;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
 import cc.remer.timetrack.domain.timeoff.TimeOff;
 import cc.remer.timetrack.domain.user.User;
@@ -37,6 +39,7 @@ public class GetDailySummaryUseCase {
     private final TimeOffRepository timeOffRepository;
     private final RecurringOffDayRepository recurringOffDayRepository;
     private final WorkingHoursRepository workingHoursRepository;
+    private final RecurringOffDayConflictWarningRepository conflictWarningRepository;
     private final RecurringOffDayEvaluator recurringOffDayEvaluator;
 
     private static final double TOLERANCE = 0.1; // 6 minutes tolerance for "matched"
@@ -77,6 +80,12 @@ public class GetDailySummaryUseCase {
         List<RecurringOffDay> allRecurringOffDays = recurringOffDayRepository
                 .findByUserIdAndIsActiveTrue(user.getId());
 
+        // Get conflict warnings for the date range
+        List<RecurringOffDayConflictWarning> warnings = conflictWarningRepository
+                .findByUserIdAndDateRange(user.getId(), startDate, endDate);
+        Map<LocalDate, RecurringOffDayConflictWarning> warningsByDate = warnings.stream()
+                .collect(Collectors.toMap(RecurringOffDayConflictWarning::getConflictDate, w -> w, (w1, w2) -> w1));
+
         // Group entries by date
         Map<LocalDate, List<TimeEntry>> entriesByDate = entries.stream()
                 .collect(Collectors.groupingBy(TimeEntry::getEntryDate));
@@ -107,6 +116,7 @@ public class GetDailySummaryUseCase {
                     .entries(dayEntries)
                     .timeOffEntries(dayTimeOffEntries)
                     .recurringOffDays(dayRecurringOffDays)
+                    .conflictWarning(warningsByDate.get(currentDate))
                     .build();
 
             summaries.add(summary);

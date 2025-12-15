@@ -3,6 +3,7 @@ package cc.remer.timetrack.usecase.timeentry;
 import cc.remer.timetrack.adapter.persistence.TimeEntryRepository;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
 import cc.remer.timetrack.domain.user.User;
+import cc.remer.timetrack.usecase.recurringoffday.RecurringOffDayConflictDetector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 public class ClockOutUseCase {
 
     private final TimeEntryRepository timeEntryRepository;
+    private final RecurringOffDayConflictDetector conflictDetector;
 
     /**
      * Clock out for the authenticated user.
@@ -45,6 +47,9 @@ public class ClockOutUseCase {
         TimeEntry saved = timeEntryRepository.save(activeEntry);
         log.info("User {} clocked out at {}, duration: {} hours",
                 user.getId(), now, saved.getHoursWorked());
+
+        // Check for conflicts with recurring off-days
+        conflictDetector.detectAndCreateWarningIfNeeded(saved);
 
         return saved;
     }

@@ -110,6 +110,17 @@
     "overtimeThisMonth": "Überstunden Ø Dieser Monat",
     "overtimeLastMonth": "Überstunden Letzter Monat",
     "overtimeAverage": "Durchschnitt (12 Monate)",
+    "warnings": {
+      "title": "Warnungen & Hinweise",
+      "conflictTitle": "Arbeit an wiederkehrendem freien Tag",
+      "conflictMessage": "Arbeitseintrag am {date}, welcher als wiederkehrender freier Tag ({description}) konfiguriert ist. Bei Bedarf können Urlaubstage angepasst werden.",
+      "acknowledge": "Bestätigen",
+      "acknowledged": "Warnung bestätigt",
+      "acknowledgeError": "Fehler beim Bestätigen der Warnung",
+      "viewDetails": "Details ansehen",
+      "unacknowledgedWarnings": "{count} unbestätigte Warnung(en)",
+      "noWarnings": "Keine Warnungen oder Konflikte"
+    },
     "calendar": {
       "title": "Zeiterfassungs-Übersicht",
       "previousMonth": "Vorheriger Monat",
@@ -270,6 +281,7 @@
     "usedDaysAutoCalculated": "Die verbrauchten Tage werden automatisch aus den Urlaubs-Abwesenheiten berechnet"
   },
   "timeEntries": {
+    "conflictWarning": "Arbeit an wiederkehrendem freien Tag",
     "title": "Zeiteinträge",
     "showTimeOff": "Abwesenheiten anzeigen",
     "hideTimeOff": "Abwesenheiten ausblenden",

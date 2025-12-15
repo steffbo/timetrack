@@ -4,6 +4,7 @@ import cc.remer.timetrack.adapter.persistence.TimeEntryRepository;
 import cc.remer.timetrack.domain.timeentry.EntryType;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
 import cc.remer.timetrack.domain.user.User;
+import cc.remer.timetrack.usecase.recurringoffday.RecurringOffDayConflictDetector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.List;
 public class CreateTimeEntryUseCase {
 
     private final TimeEntryRepository timeEntryRepository;
+    private final RecurringOffDayConflictDetector conflictDetector;
 
     /**
      * Create a manual time entry for the authenticated user.
@@ -71,6 +73,9 @@ public class CreateTimeEntryUseCase {
         TimeEntry saved = timeEntryRepository.save(timeEntry);
         log.info("Manual time entry created for user {} from {} to {}",
             user.getId(), clockIn, clockOut);
+
+        // Check for conflicts with recurring off-days
+        conflictDetector.detectAndCreateWarningIfNeeded(saved);
 
         return saved;
     }

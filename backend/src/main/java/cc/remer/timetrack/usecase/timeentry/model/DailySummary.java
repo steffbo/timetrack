@@ -1,6 +1,7 @@
 package cc.remer.timetrack.usecase.timeentry.model;
 
 import cc.remer.timetrack.domain.recurringoffday.RecurringOffDay;
+import cc.remer.timetrack.domain.recurringoffday.RecurringOffDayConflictWarning;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
 import cc.remer.timetrack.domain.timeoff.TimeOff;
 import lombok.AllArgsConstructor;
@@ -24,4 +25,5 @@ public class DailySummary {
     private List<TimeEntry> entries;
     private List<TimeOff> timeOffEntries;
     private List<RecurringOffDay> recurringOffDays;
+    private RecurringOffDayConflictWarning conflictWarning;
 }

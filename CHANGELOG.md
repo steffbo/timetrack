@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Recurring Off-Day Conflict Warnings**: System now detects and warns when work entries occur on configured recurring off-days
+  - Orange outline highlights conflicting days in the dashboard calendar (persists after acknowledgment)
+  - Warning icon (⚠️) appears in Time Entries view for affected rows with pulsing animation
+  - Warnings card in dashboard overview section shows all unacknowledged conflicts
+  - Users can acknowledge warnings while the visual indicators remain for reference
+  - Automatic cleanup: warnings are removed when the associated time entry is deleted
+  - Supports future expansion with additional warning types
+  - Backend: New database table, REST API endpoints, automatic conflict detection
+  - Frontend: WarningsCard component, calendar highlighting, time entries row indicator
+
 - **Child Sick Leave Type**: New absence type "Kind krank" (Child Sick) with 👩‍👧 emoji
   - Backend: Added CHILD_SICK enum value to TimeOffType
   - Frontend: Added translations in German ("Kind krank") and English ("Child Sick")

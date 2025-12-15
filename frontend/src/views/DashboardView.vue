@@ -13,6 +13,9 @@
 
       <!-- Right Side: Actions & Stats -->
       <div class="sidebar-section">
+        <!-- Warnings Card -->
+        <WarningsCard />
+
         <!-- Quick Actions -->
         <div class="quick-actions-section">
           <h3>{{ t('dashboard.quickActions') }}</h3>
@@ -90,6 +93,7 @@ import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import { useAuth } from '@/composables/useAuth'
 import MonthlyCalendar from '@/components/dashboard/MonthlyCalendar.vue'
+import WarningsCard from '@/components/dashboard/WarningsCard.vue'
 import { TimeEntriesService, PublicHolidaysService, WorkingHoursService, TimeOffService } from '@/api/generated'
 import type { DailySummaryResponse, PublicHolidayResponse, TimeOffResponse, WorkingHoursResponse, TimeEntryResponse } from '@/api/generated'
 

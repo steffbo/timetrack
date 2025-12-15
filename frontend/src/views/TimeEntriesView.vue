@@ -16,8 +16,8 @@ import Toast from 'primevue/toast'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
-import { TimeEntriesService, WorkingHoursService, TimeOffService, RecurringOffDaysService, PublicHolidaysService } from '@/api/generated'
-import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, TimeOffResponse, RecurringOffDayResponse, WorkingHoursResponse, PublicHolidayResponse } from '@/api/generated'
+import { TimeEntriesService, WorkingHoursService, TimeOffService, RecurringOffDaysService, PublicHolidaysService, RecurringOffDayWarningsService } from '@/api/generated'
+import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, TimeOffResponse, RecurringOffDayResponse, WorkingHoursResponse, PublicHolidayResponse, RecurringOffDayConflictWarningResponse } from '@/api/generated'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -27,6 +27,7 @@ const timeOffEntries = ref<TimeOffResponse[]>([])
 const recurringOffDays = ref<RecurringOffDayResponse[]>([])
 const publicHolidays = ref<PublicHolidayResponse[]>([])
 const workingHours = ref<WorkingHoursResponse | null>(null)
+const conflictWarnings = ref<RecurringOffDayConflictWarningResponse[]>([])
 const showTimeOff = ref(false)
 const loading = ref(false)
 
@@ -40,6 +41,7 @@ type DisplayEntry = {
   date: string
   types: TypeEntry[]
   workEntry?: TimeEntryResponse // The main work entry if exists
+  hasConflict?: boolean // True if work entry conflicts with recurring off-day
 }
 
 const displayEntries = computed<DisplayEntry[]>(() => {
@@ -169,10 +171,14 @@ const displayEntries = computed<DisplayEntry[]>(() => {
 
     const workEntry = types.find(t => t.type === 'work')?.data as TimeEntryResponse | undefined
 
+    // Check if this entry has a conflict warning
+    const hasConflict = conflictWarnings.value.some(w => w.conflictDate === date)
+
     entries.push({
       date,
       types,
-      workEntry
+      workEntry,
+      hasConflict
     })
   })
 
@@ -212,6 +218,16 @@ const entryTypeOptions = [
   { label: t('timeEntries.type.WORK'), value: 'WORK' }
 ]
 
+const loadConflictWarnings = async () => {
+  try {
+    // Load all warnings (both acknowledged and unacknowledged) for calendar highlighting
+    conflictWarnings.value = await RecurringOffDayWarningsService.getConflictWarnings(false)
+  } catch (error) {
+    console.error('Error loading conflict warnings:', error)
+    conflictWarnings.value = []
+  }
+}
+
 const loadTimeEntries = async () => {
   loading.value = true
   try {
@@ -225,6 +241,9 @@ const loadTimeEntries = async () => {
     if (!workingHours.value) {
       await loadWorkingHours()
     }
+
+    // Load conflict warnings
+    await loadConflictWarnings()
 
     // Load time-off entries if toggle is enabled
     if (showTimeOff.value) {
@@ -1012,6 +1031,11 @@ onMounted(() => {
               >
                 {{ getTypeEmoji(typeEntry) }}
               </span>
+              <i
+                v-if="entry.hasConflict"
+                class="pi pi-exclamation-triangle conflict-warning-icon"
+                v-tooltip.top="t('timeEntries.conflictWarning')"
+              ></i>
             </div>
           </template>
         </Column>
@@ -1299,4 +1323,29 @@ onMounted(() => {
    - /styles/components/data-tables.css
    - /styles/layouts.css
 */
+
+.type-emojis {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.type-emoji {
+  font-size: 1.25rem;
+}
+
+.conflict-warning-icon {
+  color: var(--p-orange-500);
+  font-size: 1rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
 </style>
