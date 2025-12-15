@@ -575,4 +575,252 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         assertThat(balance.getRemainingDays()).isEqualTo(25.0); // 30 - 5 planned = 25
     }
 
+    // ==================== Half-Day Holidays Tests ====================
+
+    @Test
+    @DisplayName("Should count Dec 24 as 0.5 days when half-day holidays enabled")
+    void shouldCountDecember24AsHalfDay() {
+        // Arrange - Enable half-day holidays for user
+        testUser.setHalfDayHolidaysEnabled(true);
+        userRepository.save(testUser);
+
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Dec 23 (Tue) = 1.0, Dec 24 (Wed) = 0.5, Dec 25-26 = holidays, Dec 27 (Sat) = weekend
+        // Expected: 1.5 working days
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 12, 23));
+        vacationRequest.setEndDate(LocalDate.of(2025, 12, 27));
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        TimeOffResponse timeOff = createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Assert - TimeOff days should show 1.5
+        assertThat(timeOff.getDays()).isEqualTo(1.5);
+
+        // Act
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Vacation balance should deduct 1.5 days
+        assertThat(balance.getPlannedDays()).isEqualTo(1.5);
+        assertThat(balance.getRemainingDays()).isEqualTo(28.5); // 30 - 1.5 = 28.5
+    }
+
+    @Test
+    @DisplayName("Should count Dec 31 as 0.5 days when half-day holidays enabled")
+    void shouldCountDecember31AsHalfDay() {
+        // Arrange - Enable half-day holidays for user
+        testUser.setHalfDayHolidaysEnabled(true);
+        userRepository.save(testUser);
+
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Dec 29 (Mon) = 1.0, Dec 30 (Tue) = 1.0, Dec 31 (Wed) = 0.5
+        // Expected: 2.5 working days
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 12, 29));
+        vacationRequest.setEndDate(LocalDate.of(2025, 12, 31));
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        TimeOffResponse timeOff = createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Assert - TimeOff days should show 2.5
+        assertThat(timeOff.getDays()).isEqualTo(2.5);
+
+        // Act
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Vacation balance should deduct 2.5 days
+        assertThat(balance.getPlannedDays()).isEqualTo(2.5);
+        assertThat(balance.getRemainingDays()).isEqualTo(27.5); // 30 - 2.5 = 27.5
+    }
+
+    @Test
+    @DisplayName("Should count both Dec 24 and 31 as 0.5 days each")
+    void shouldCountBothHalfDayHolidays() {
+        // Arrange - Enable half-day holidays for user
+        testUser.setHalfDayHolidaysEnabled(true);
+        userRepository.save(testUser);
+
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Dec 22 (Mon) = 1.0, Dec 23 (Tue) = 1.0, Dec 24 (Wed) = 0.5
+        // Dec 25-26 = holidays, Dec 27-28 = weekend
+        // Dec 29 (Mon) = 1.0, Dec 30 (Tue) = 1.0, Dec 31 (Wed) = 0.5
+        // Expected: 5.0 working days
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 12, 22));
+        vacationRequest.setEndDate(LocalDate.of(2025, 12, 31));
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        TimeOffResponse timeOff = createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Assert - TimeOff days should show 5.0
+        assertThat(timeOff.getDays()).isEqualTo(5.0);
+
+        // Act
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Vacation balance should deduct 5.0 days
+        assertThat(balance.getPlannedDays()).isEqualTo(5.0);
+        assertThat(balance.getRemainingDays()).isEqualTo(25.0); // 30 - 5.0 = 25.0
+    }
+
+    @Test
+    @DisplayName("Should count Dec 24 and 31 as full days when feature disabled")
+    void shouldCountFullDaysWhenHalfDayHolidaysDisabled() {
+        // Arrange - Half-day holidays NOT enabled (default false)
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Dec 23 (Tue) = 1.0, Dec 24 (Wed) = 1.0 (full day, not half)
+        // Dec 25-26 = holidays, Dec 27 (Sat) = weekend
+        // Expected: 2.0 working days
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 12, 23));
+        vacationRequest.setEndDate(LocalDate.of(2025, 12, 27));
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        TimeOffResponse timeOff = createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Assert - TimeOff days should show 2.0 (not 1.5)
+        assertThat(timeOff.getDays()).isEqualTo(2.0);
+
+        // Act
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Vacation balance should deduct 2.0 days (not 1.5)
+        assertThat(balance.getPlannedDays()).isEqualTo(2.0);
+        assertThat(balance.getRemainingDays()).isEqualTo(28.0); // 30 - 2.0 = 28.0
+    }
+
+    @Test
+    @DisplayName("Should count only Dec 24 as 0.5 days when taking single day")
+    void shouldCountSingleDecember24AsHalfDay() {
+        // Arrange - Enable half-day holidays for user
+        testUser.setHalfDayHolidaysEnabled(true);
+        userRepository.save(testUser);
+
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Only Dec 24 (Wed) = 0.5
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 12, 24));
+        vacationRequest.setEndDate(LocalDate.of(2025, 12, 24));
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        TimeOffResponse timeOff = createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Assert - TimeOff days should show 0.5
+        assertThat(timeOff.getDays()).isEqualTo(0.5);
+
+        // Act
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Vacation balance should deduct 0.5 days
+        assertThat(balance.getPlannedDays()).isEqualTo(0.5);
+        assertThat(balance.getRemainingDays()).isEqualTo(29.5); // 30 - 0.5 = 29.5
+    }
+
+    @Test
+    @DisplayName("Should correctly calculate when deleting vacation with half-day holidays")
+    void shouldRecalculateWhenDeletingVacationWithHalfDays() {
+        // Arrange - Enable half-day holidays for user
+        testUser.setHalfDayHolidaysEnabled(true);
+        userRepository.save(testUser);
+
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create vacation with Dec 24 (0.5 days)
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 12, 24));
+        vacationRequest.setEndDate(LocalDate.of(2025, 12, 24));
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        TimeOffResponse timeOff = createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Verify balance after creation
+        VacationBalanceResponse balanceAfterCreate = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balanceAfterCreate.getPlannedDays()).isEqualTo(0.5);
+        assertThat(balanceAfterCreate.getRemainingDays()).isEqualTo(29.5);
+
+        // Act - Delete the vacation
+        deleteTimeOff.execute(testUser.getId(), timeOff.getId());
+
+        // Assert - Balance should be restored
+        VacationBalanceResponse balanceAfterDelete = getVacationBalance.execute(testUser.getId(), 2025);
+        assertThat(balanceAfterDelete.getPlannedDays()).isEqualTo(0.0);
+        assertThat(balanceAfterDelete.getRemainingDays()).isEqualTo(30.0); // Restored to full 30
+    }
+
+    @Test
+    @DisplayName("Should handle multiple vacations with mixed half-day and full-day periods")
+    void shouldHandleMultipleVacationsWithMixedDays() {
+        // Arrange - Enable half-day holidays for user
+        testUser.setHalfDayHolidaysEnabled(true);
+        userRepository.save(testUser);
+
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Vacation 1: Dec 24 only = 0.5 days
+        CreateTimeOffRequest vacation1 = new CreateTimeOffRequest();
+        vacation1.setStartDate(LocalDate.of(2025, 12, 24));
+        vacation1.setEndDate(LocalDate.of(2025, 12, 24));
+        vacation1.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), vacation1);
+
+        // Vacation 2: Regular week in October = 5.0 days
+        CreateTimeOffRequest vacation2 = new CreateTimeOffRequest();
+        vacation2.setStartDate(LocalDate.of(2025, 10, 20)); // Mon
+        vacation2.setEndDate(LocalDate.of(2025, 10, 24)); // Fri
+        vacation2.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), vacation2);
+
+        // Vacation 3: Dec 31 only = 0.5 days
+        CreateTimeOffRequest vacation3 = new CreateTimeOffRequest();
+        vacation3.setStartDate(LocalDate.of(2025, 12, 31));
+        vacation3.setEndDate(LocalDate.of(2025, 12, 31));
+        vacation3.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        createTimeOff.execute(testUser.getId(), vacation3);
+
+        // Act
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Total: 0.5 + 5.0 + 0.5 = 6.0 days
+        assertThat(balance.getPlannedDays()).isEqualTo(6.0);
+        assertThat(balance.getRemainingDays()).isEqualTo(24.0); // 30 - 6.0 = 24.0
+    }
+
+    @Test
+    @DisplayName("Should correctly calculate vacation for Dec 21-30, 2025 with half-day holidays")
+    void shouldCalculateDecember21to30WithHalfDayHolidays() {
+        // Arrange - Enable half-day holidays for user
+        testUser.setHalfDayHolidaysEnabled(true);
+        userRepository.save(testUser);
+
+        createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
+
+        // Create vacation from Dec 21-30, 2025
+        // Dec 21 (Sun) = 0 (weekend)
+        // Dec 22 (Mon) = 1.0
+        // Dec 23 (Tue) = 1.0
+        // Dec 24 (Wed) = 0.5 (half-day holiday)
+        // Dec 25 (Thu) = 0 (Christmas Day public holiday)
+        // Dec 26 (Fri) = 0 (Boxing Day public holiday)
+        // Dec 27 (Sat) = 0 (weekend)
+        // Dec 28 (Sun) = 0 (weekend)
+        // Dec 29 (Mon) = 1.0
+        // Dec 30 (Tue) = 1.0
+        // Expected: 4.5 working days
+        CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
+        vacationRequest.setStartDate(LocalDate.of(2025, 12, 21));
+        vacationRequest.setEndDate(LocalDate.of(2025, 12, 30));
+        vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
+        TimeOffResponse timeOff = createTimeOff.execute(testUser.getId(), vacationRequest);
+
+        // Assert - TimeOff days should show 4.5
+        assertThat(timeOff.getDays()).isEqualTo(4.5);
+
+        // Act
+        VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
+
+        // Assert - Vacation balance should deduct 4.5 days
+        assertThat(balance.getPlannedDays()).isEqualTo(4.5);
+        assertThat(balance.getRemainingDays()).isEqualTo(25.5); // 30 - 4.5 = 25.5
+    }
+
 }
+

@@ -32,6 +32,7 @@ public class UserMapper {
         response.setRole(UserResponse.RoleEnum.fromValue(user.getRole().name()));
         response.setActive(user.getActive());
         response.setState(UserResponse.StateEnum.fromValue(user.getState().name()));
+        response.setHalfDayHolidaysEnabled(user.getHalfDayHolidaysEnabled());
 
         if (user.getCreatedAt() != null) {
             response.setCreatedAt(OffsetDateTime.of(user.getCreatedAt(), ZoneOffset.UTC));

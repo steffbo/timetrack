@@ -1044,6 +1044,11 @@ components:
           enum: [BERLIN, BRANDENBURG]
           description: German state for public holiday calculation
           example: BERLIN
+        halfDayHolidaysEnabled:
+          type: boolean
+          description: Whether half-day holidays (Dec 24 & 31) are enabled for this user
+          default: false
+          example: false
         createdAt:
           type: string
           format: date-time
@@ -1093,6 +1098,11 @@ components:
           description: German state for public holiday calculation
           default: BERLIN
           example: BERLIN
+        halfDayHolidaysEnabled:
+          type: boolean
+          description: Whether half-day holidays (Dec 24 & 31) are enabled for this user
+          default: false
+          example: false
 
     UpdateUserRequest:
       type: object
@@ -1131,6 +1141,10 @@ components:
           enum: [BERLIN, BRANDENBURG]
           description: German state for public holiday calculation
           example: BERLIN
+        halfDayHolidaysEnabled:
+          type: boolean
+          description: Whether half-day holidays (Dec 24 & 31) are enabled for this user
+          example: false
 
     ErrorResponse:
       type: object
@@ -1485,9 +1499,10 @@ components:
           enum: [VACATION, SICK, CHILD_SICK, PERSONAL, PUBLIC_HOLIDAY]
           description: Type of time-off
         days:
-          type: integer
-          description: Number of working days (excludes weekends, holidays, and recurring off-days)
-          example: 10
+          type: number
+          format: double
+          description: Number of working days (excludes weekends, holidays, and recurring off-days; may include fractional days for half-day holidays)
+          example: 10.5
         hoursPerDay:
           type: number
           format: double

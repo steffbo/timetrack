@@ -373,51 +373,51 @@ onMounted(() => {
         <!-- Vacation Cards -->
         <div class="stat-card">
           <div class="stat-label">{{ t('vacationBalance.annualAllowanceDays') }}</div>
-          <div class="stat-value">{{ balance.annualAllowanceDays.toFixed(0) }}</div>
+          <div class="stat-value">{{ balance.annualAllowanceDays.toFixed(1) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <div class="stat-card stat-planned">
           <div class="stat-label">{{ t('vacationBalance.plannedDays') }}</div>
-          <div class="stat-value">{{ balance.plannedDays.toFixed(0) }}</div>
+          <div class="stat-value">{{ balance.plannedDays.toFixed(1) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <div class="stat-card stat-used">
           <div class="stat-label">{{ t('vacationBalance.usedDays') }}</div>
-          <div class="stat-value">{{ balance.usedDays.toFixed(0) }}</div>
+          <div class="stat-value">{{ balance.usedDays.toFixed(1) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <div class="stat-card stat-remaining">
           <div class="stat-label">{{ t('vacationBalance.leftForPlanning') }}</div>
-          <div class="stat-value">{{ remainingDays.toFixed(0) }}</div>
+          <div class="stat-value">{{ remainingDays.toFixed(1) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <div class="stat-card">
           <div class="stat-label">{{ t('vacationBalance.carriedOverDays') }}</div>
-          <div class="stat-value">{{ balance.carriedOverDays.toFixed(0) }}</div>
+          <div class="stat-value">{{ balance.carriedOverDays.toFixed(1) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <div class="stat-card">
           <div class="stat-label">{{ t('vacationBalance.adjustmentDays') }}</div>
-          <div class="stat-value">{{ balance.adjustmentDays.toFixed(0) }}</div>
+          <div class="stat-value">{{ balance.adjustmentDays.toFixed(1) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <!-- Sick Days Card -->
         <div class="stat-card stat-sick">
           <div class="stat-label">{{ t('timeOff.sickDaysThisYear') }}</div>
-          <div class="stat-value">{{ sickDaysCount.toFixed(0) }}</div>
+          <div class="stat-value">{{ sickDaysCount.toFixed(1) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
 
         <!-- Child Sick Days Card -->
         <div class="stat-card stat-sick">
           <div class="stat-label">{{ t('timeOff.childSickDaysThisYear') }}</div>
-          <div class="stat-value">{{ childSickDaysCount.toFixed(0) }}</div>
+          <div class="stat-value">{{ childSickDaysCount.toFixed(1) }}</div>
           <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
         </div>
       </div>
@@ -474,7 +474,7 @@ onMounted(() => {
         </Column>
         <Column field="days" :header="t('timeOff.days')">
           <template #body="{ data }">
-            {{ data.days }}
+            {{ typeof data.days === 'number' ? data.days.toFixed(1) : data.days }}
           </template>
         </Column>
         <Column field="hoursPerDay" :header="t('timeOff.hoursPerDay')">

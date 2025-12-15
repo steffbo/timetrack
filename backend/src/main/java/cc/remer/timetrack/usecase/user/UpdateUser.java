@@ -82,6 +82,11 @@ public class UpdateUser {
             user.setState(GermanState.valueOf(request.getState().getValue()));
         }
 
+        // Update half-day holidays setting (all users can update their own setting)
+        if (request.getHalfDayHolidaysEnabled() != null) {
+            user.setHalfDayHolidaysEnabled(request.getHalfDayHolidaysEnabled());
+        }
+
         // Only admins can update role and active status
         if (principal.getRole() == Role.ADMIN) {
             if (request.getRole() != null) {

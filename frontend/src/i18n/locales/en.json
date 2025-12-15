@@ -29,6 +29,8 @@
     "state": "State",
     "role": "Role",
     "active": "Active",
+    "halfDayHolidays": "Half-Day Holidays (Dec 24 & 31)",
+    "halfDayHolidaysTooltip": "When enabled, December 24th and 31st count as 0.5 vacation days instead of 1.0",
     "save": "Save",
     "cancel": "Cancel",
     "saveSuccess": "Profile saved successfully",
@@ -239,6 +241,7 @@
       "PERSONAL": "Personal",
       "PUBLIC_HOLIDAY": "Public Holiday"
     },
+    "halfDay": "half-day",
     "startDate": "From",
     "endDate": "To",
     "days": "Days",

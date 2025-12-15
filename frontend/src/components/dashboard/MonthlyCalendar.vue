@@ -358,6 +358,11 @@ const getDayStatusIconColor = (day: number): string | null => {
   return 'status-icon-danger'
 }
 
+// Check if a specific date is a half-day holiday (Dec 24 or Dec 31)
+const isHalfDayHoliday = (day: number, month: number): boolean => {
+  return (month === 12 && (day === 24 || day === 31))
+}
+
 // Get emoji indicators for a day's time-off entries
 // Shows emojis in precedence order: public-holiday > timeoff (sick/personal/vacation) > recurring
 // Uses same emojis as the time entries view for consistency
@@ -379,7 +384,11 @@ const getDayEmojis = (day: number): string[] => {
     if (hasSick) emojis.push('😵‍💫')
     if (hasChildSick) emojis.push('👩‍👧')
     if (hasPersonal) emojis.push('🏠')
-    if (hasVacation) emojis.push('🏝️')
+
+    // For vacation, show regular emoji (half-day indication is in tooltip)
+    if (hasVacation) {
+      emojis.push('🏝️')
+    }
   }
 
   // Check recurring off-days
@@ -504,7 +513,11 @@ const getAdjacentDayEmojis = (day: number, type: 'prev' | 'next'): string[] => {
     if (hasSick) emojis.push('😵‍💫')
     if (hasChildSick) emojis.push('👩‍👧')
     if (hasPersonal) emojis.push('🏠')
-    if (hasVacation) emojis.push('🏝️')
+
+    // For vacation, show regular emoji (half-day indication is in tooltip)
+    if (hasVacation) {
+      emojis.push('🏝️')
+    }
   }
 
   // Check recurring off-days
@@ -821,7 +834,25 @@ const formatDayDetailsHtml = (day: number | string): string => {
       if (timeOff.timeOffType === 'PUBLIC_HOLIDAY' && timeOff.notes) {
         parts.push(`<div class="detail-row">${emoji} <strong>${timeOff.notes}</strong></div>`)
       } else {
-        parts.push(`<div class="detail-row">${emoji} <strong>${typeLabel}</strong></div>`)
+        // For vacation on Dec 24 or 31, add "half-day" indication
+        let label = typeLabel
+        if (timeOff.timeOffType === 'VACATION') {
+          // Determine the month for this day
+          let monthToCheck: number
+          if (isAdjacentDay) {
+            const monthData = typeof day === 'string' && day.startsWith('prev-')
+              ? previousMonthDays.value.find(d => d.day === actualDay)
+              : nextMonthDays.value.find(d => d.day === actualDay)
+            monthToCheck = monthData ? monthData.month + 1 : 0
+          } else {
+            monthToCheck = currentMonthIndex.value + 1
+          }
+
+          if (isHalfDayHoliday(actualDay, monthToCheck)) {
+            label = `${typeLabel} (${t('timeOff.halfDay')})`
+          }
+        }
+        parts.push(`<div class="detail-row">${emoji} <strong>${label}</strong></div>`)
       }
     })
   }

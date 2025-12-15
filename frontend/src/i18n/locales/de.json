@@ -29,6 +29,8 @@
     "state": "Bundesland",
     "role": "Rolle",
     "active": "Aktiv",
+    "halfDayHolidays": "Halbe Feiertage (24. & 31. Dez.)",
+    "halfDayHolidaysTooltip": "Bei Aktivierung zählen der 24. und 31. Dezember als 0,5 Urlaubstage statt 1,0",
     "save": "Speichern",
     "cancel": "Abbrechen",
     "saveSuccess": "Profil erfolgreich gespeichert",
@@ -239,6 +241,7 @@
       "PERSONAL": "Persönlich",
       "PUBLIC_HOLIDAY": "Feiertag"
     },
+    "halfDay": "halber Tag",
     "startDate": "Von",
     "endDate": "Bis",
     "days": "Tage",

@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Half-Day Holidays (December 24 & 31)**: Users can enable half-day holiday counting for Christmas Eve and New Year's Eve
+  - User setting in profile: "Halbe Feiertage (24. & 31. Dez.)" with tooltip explanation
+  - Admins can configure the setting for users during user management
+  - When enabled, December 24th and 31st count as 0.5 vacation days instead of 1.0
+  - Each day is calculated independently (taking only one day still counts as 0.5)
+  - Automatic calculation in vacation balance deduction
+  - Fractional days displayed with 1 decimal place (e.g., "3.5 days") in all views
+  - Visual indicators: 🌗 (half moon) emoji appears before 🏝️ in calendar for Dec 24/31 vacation days
+  - Backend: Database migration V13, new User entity field, BigDecimal support in WorkingDaysCalculator
+  - Frontend: Checkbox with info tooltip in profile and admin user management views, proper decimal formatting
+  - i18n translations: German ("Halbe Feiertage") and English ("Half-Day Holidays")
+
 - **Recurring Off-Day Conflict Warnings**: System now detects and warns when work entries occur on configured recurring off-days
   - Orange outline highlights conflicting days in the dashboard calendar (persists after acknowledgment)
   - Warning icon (⚠️) appears in Time Entries view for affected rows with pulsing animation
@@ -41,6 +53,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic integration with daily summaries
 
 ### Fixed
+- **Time-Off Days Calculation**: Fixed recurring off-days not being excluded from individual vacation entries
+  - Vacation balance card correctly excluded recurring off-days
+  - But individual TimeOffResponse entries in list were showing incorrect day counts (not excluding recurring off-days)
+  - Root cause: WorkingDaysCalculator was skipping recurring off-day checks for ALL time-off entries when calculating individual entry days
+  - Fix: Only skip recurring off-day checks for sick/personal days; always check for vacation entries
+  - Now both vacation balance card and time-off list show consistent day counts (both excluding recurring off-days)
 - **Profile View**: Fixed firstName and lastName not loading correctly
   - Profile data now fetched fresh from API on page load
   - User data in localStorage updated after successful profile save

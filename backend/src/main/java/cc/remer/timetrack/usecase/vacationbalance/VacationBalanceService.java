@@ -96,22 +96,23 @@ public class VacationBalanceService {
      * - Weekends (non-working days according to user's working hours)
      * - Public holidays
      * - Recurring off-days
+     * Supports half-day holidays (Dec 24 & 31) which count as 0.5 days.
      *
      * @param timeOff the time-off entry
-     * @return the number of working vacation days
+     * @return the number of working vacation days (may include fractional days)
      */
     private BigDecimal calculateDaysForTimeOff(TimeOff timeOff) {
         User user = timeOff.getUser();
         GermanState userState = user.getState();
 
-        int workingDays = workingDaysCalculator.calculateWorkingDays(
+        BigDecimal workingDays = workingDaysCalculator.calculateWorkingDays(
                 user.getId(),
                 userState,
                 timeOff.getStartDate(),
                 timeOff.getEndDate()
         );
 
-        return BigDecimal.valueOf(workingDays);
+        return workingDays;
     }
 
     /**

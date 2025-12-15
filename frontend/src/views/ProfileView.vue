@@ -63,6 +63,25 @@
             />
           </div>
 
+          <div class="field">
+            <div class="flex align-items-center">
+              <Checkbox
+                id="halfDayHolidays"
+                v-model="formData.halfDayHolidaysEnabled"
+                :binary="true"
+                :disabled="isLoading"
+              />
+              <label for="halfDayHolidays" class="ml-2">
+                {{ t('profile.halfDayHolidays') }}
+                <i
+                  v-tooltip="t('profile.halfDayHolidaysTooltip')"
+                  class="pi pi-info-circle ml-1"
+                  style="font-size: 0.875rem; cursor: help;"
+                ></i>
+              </label>
+            </div>
+          </div>
+
           <div class="button-group">
             <Button
               type="submit"
@@ -85,6 +104,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import apiClient from '@/api/client'
 import { useAuth } from '@/composables/useAuth'
 import type { UpdateUserRequest } from '@/api/generated'
@@ -98,7 +118,8 @@ const formData = ref<UpdateUserRequest & { password?: string }>({
   firstName: '',
   lastName: '',
   email: '',
-  state: 'BERLIN'
+  state: 'BERLIN',
+  halfDayHolidaysEnabled: false
 })
 
 const stateOptions = computed(() => [
@@ -116,7 +137,8 @@ onMounted(async () => {
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
       email: userData.email || '',
-      state: userData.state || 'BERLIN'
+      state: userData.state || 'BERLIN',
+      halfDayHolidaysEnabled: userData.halfDayHolidaysEnabled || false
     }
   } catch (error) {
     console.error('Failed to load user profile:', error)
@@ -135,7 +157,8 @@ async function handleSave() {
       firstName: formData.value.firstName,
       lastName: formData.value.lastName,
       email: formData.value.email,
-      state: formData.value.state as any
+      state: formData.value.state as any,
+      halfDayHolidaysEnabled: formData.value.halfDayHolidaysEnabled
     }
 
     if (formData.value.password) {

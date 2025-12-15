@@ -50,6 +50,14 @@ public class User {
     @Column(nullable = false, length = 50)
     private GermanState state;
 
+    /**
+     * Whether half-day holidays (Dec 24 & 31) are enabled for this user.
+     * When enabled, December 24th and 31st count as 0.5 vacation days instead of 1.0.
+     */
+    @Builder.Default
+    @Column(name = "half_day_holidays_enabled", nullable = false)
+    private Boolean halfDayHolidaysEnabled = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

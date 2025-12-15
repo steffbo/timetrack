@@ -103,6 +103,18 @@
           />
         </div>
 
+        <div class="field">
+          <label for="user-state">{{ t('profile.state') }}</label>
+          <Select
+            id="user-state"
+            v-model="formData.state"
+            :options="stateOptions"
+            option-label="label"
+            option-value="value"
+            fluid
+          />
+        </div>
+
         <div class="field-checkbox">
           <Checkbox
             id="user-active"
@@ -110,6 +122,22 @@
             :binary="true"
           />
           <label for="user-active">{{ t('profile.active') }}</label>
+        </div>
+
+        <div class="field-checkbox">
+          <Checkbox
+            id="user-halfDayHolidays"
+            v-model="formData.halfDayHolidaysEnabled"
+            :binary="true"
+          />
+          <label for="user-halfDayHolidays">
+            {{ t('profile.halfDayHolidays') }}
+            <i
+              v-tooltip="t('profile.halfDayHolidaysTooltip')"
+              class="pi pi-info-circle ml-1"
+              style="font-size: 0.875rem; cursor: help;"
+            ></i>
+          </label>
         </div>
 
         <div class="dialog-footer">
@@ -163,8 +191,15 @@ const formData = ref<CreateUserRequest & { password?: string }>({
   lastName: '',
   password: '',
   role: 'USER',
-  active: true
+  active: true,
+  state: 'BERLIN',
+  halfDayHolidaysEnabled: false
 })
+
+const stateOptions = [
+  { value: 'BERLIN', label: t('states.BERLIN') },
+  { value: 'BRANDENBURG', label: t('states.BRANDENBURG') }
+]
 
 onMounted(async () => {
   await loadUsers()
@@ -195,7 +230,9 @@ function openCreateDialog() {
     lastName: '',
     password: '',
     role: 'USER',
-    active: true
+    active: true,
+    state: 'BERLIN',
+    halfDayHolidaysEnabled: false
   }
   dialogVisible.value = true
 }
@@ -209,7 +246,9 @@ function openEditDialog(user: UserResponse) {
     lastName: user.lastName!,
     password: '',
     role: user.role!,
-    active: user.active!
+    active: user.active!,
+    state: user.state!,
+    halfDayHolidaysEnabled: user.halfDayHolidaysEnabled || false
   }
   dialogVisible.value = true
 }
@@ -221,7 +260,11 @@ async function handleSave() {
       const updateData: UpdateUserRequest = {
         firstName: formData.value.firstName,
         lastName: formData.value.lastName,
-        email: formData.value.email
+        email: formData.value.email,
+        role: formData.value.role,
+        active: formData.value.active,
+        state: formData.value.state,
+        halfDayHolidaysEnabled: formData.value.halfDayHolidaysEnabled
       }
 
       if (formData.value.password) {

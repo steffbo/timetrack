@@ -33,15 +33,16 @@ public class TimeOffMapper {
         response.setTimeOffType(TimeOffResponse.TimeOffTypeEnum.fromValue(entity.getTimeOffType().name()));
 
         // Calculate working days (excludes weekends, holidays, recurring off-days)
+        // Supports half-day holidays (Dec 24 & 31) which count as 0.5 days
         GermanState userState = entity.getUser().getState();
-        int workingDays = workingDaysCalculator.calculateWorkingDays(
+        BigDecimal workingDays = workingDaysCalculator.calculateWorkingDays(
                 entity.getUser().getId(),
                 userState,
                 entity.getStartDate(),
                 entity.getEndDate(),
                 entity.getId() // Exclude this entry from the calculation
         );
-        response.setDays(workingDays);
+        response.setDays(workingDays.doubleValue());
 
         response.setHoursPerDay(entity.getHoursPerDay() != null ? entity.getHoursPerDay().doubleValue() : null);
         response.setNotes(entity.getNotes());

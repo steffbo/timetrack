@@ -61,6 +61,7 @@ public class CreateUser {
                 .role(Role.valueOf(request.getRole().getValue()))
                 .active(request.getActive() != null ? request.getActive() : true)
                 .state(state)
+                .halfDayHolidaysEnabled(request.getHalfDayHolidaysEnabled() != null ? request.getHalfDayHolidaysEnabled() : false)
                 .build();
 
         // Save user
