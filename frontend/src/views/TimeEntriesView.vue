@@ -208,10 +208,14 @@ const savedEndTime = ref<Date | null>(null)
 // Last deleted entry for undo
 const lastDeletedEntry = ref<TimeEntryResponse | null>(null)
 
-// Date range filter - default to entire current year (January 1 to December 31)
+// Date range filter - default to 50-day window (today ±25 days)
 const now = new Date()
-const startDateFilter = ref<string>(new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0])
-const endDateFilter = ref<string>(new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0])
+const startDate = new Date(now)
+startDate.setDate(now.getDate() - 25)
+const endDate = new Date(now)
+endDate.setDate(now.getDate() + 25)
+const startDateFilter = ref<string>(startDate.toISOString().split('T')[0])
+const endDateFilter = ref<string>(endDate.toISOString().split('T')[0])
 
 // Only WORK type supported - absences are tracked via TimeOff entity
 const entryTypeOptions = [
