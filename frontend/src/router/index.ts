@@ -64,8 +64,9 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const { isAuthenticated, isAdmin, checkAuth } = useAuth()
 
-  // Check authentication if needed
-  if (!isAuthenticated.value && to.meta.requiresAuth !== false) {
+  // Always validate token with server if we require auth and have a token
+  // This ensures broken/invalid tokens trigger the refresh flow
+  if (to.meta.requiresAuth !== false && isAuthenticated.value) {
     await checkAuth()
   }
 
