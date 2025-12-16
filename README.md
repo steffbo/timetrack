@@ -4,26 +4,46 @@ A modern time tracking API built with Spring Boot 4, Java 25, and PostgreSQL fol
 
 ## Features
 
-- 🔐 JWT-based authentication
+- 🔐 JWT-based authentication with automatic token refresh
 - 👥 User management with role-based access control (Admin/User)
-- ⏰ Clock in/out time tracking with timestamps
-- 📅 Custom working hours per weekday
-- 📊 Statistics and reports (actual vs planned hours)
-- 🏥 Special day types (Sick, PTO, Events)
+- ⏰ Time entry tracking (clock in/out with active session management)
+- 📅 Time-off tracking (vacation, sick, personal, public holidays)
+- 🔄 Recurring off-day patterns (weekly/monthly)
+- 🏖️ Vacation balance management with half-day holidays (Dec 24 & 31)
+- 🇩🇪 German public holidays (Berlin & Brandenburg)
+- ⚠️ Conflict warning system for recurring off-days
+- 📊 Dashboard with interactive calendar, statistics, and caching
+- 📄 PDF/CSV export for monthly reports
+- ⏳ Custom working hours per weekday with time ranges
+- 🌐 Bilingual interface (German & English)
 - 📝 OpenAPI/Swagger documentation
 - 🐳 Docker support with Docker Compose
 
 ## Tech Stack
 
+### Backend
 - **Framework:** Spring Boot 4
 - **Language:** Java 25
 - **Database:** PostgreSQL 17
 - **Authentication:** JWT (JSON Web Tokens)
 - **API Documentation:** OpenAPI 3.0 with Swagger UI
 - **Build Tool:** Maven
-- **Containerization:** Docker & Docker Compose
 - **Database Migrations:** Flyway
-- **Testing:** JUnit 5, Testcontainers
+- **Testing:** JUnit 5, Testcontainers (219 integration tests)
+
+### Frontend
+- **Framework:** Vue 3 with Composition API
+- **Language:** TypeScript
+- **Build Tool:** Vite
+- **UI Library:** PrimeVue 4 (Aura theme)
+- **Routing:** Vue Router
+- **I18n:** vue-i18n (German & English)
+- **HTTP Client:** Axios with OpenAPI-generated client
+
+### Infrastructure
+- **Containerization:** Docker & Docker Compose
+- **Reverse Proxy:** Caddy (production)
+- **CI/CD:** GitHub Actions
 
 ## Prerequisites
 
@@ -120,7 +140,7 @@ cd backend
 A default admin user is created on first startup:
 
 - **Email:** admin@timetrack.local
-- **Password:** admin
+- **Password:** admin1
 
 ⚠️ **Change this password immediately in production!**
 
@@ -150,7 +170,7 @@ All endpoints (except login and refresh) require a JWT token.
    ```json
    {
      "email": "admin@timetrack.local",
-     "password": "admin"
+     "password": "admin1"
    }
    ```
 
@@ -163,26 +183,39 @@ All endpoints (except login and refresh) require a JWT token.
 
 ```
 timetrack/
-├── backend/             # Spring Boot backend application
+├── backend/                         # Spring Boot backend application
 │   ├── src/
 │   │   └── main/java/cc/remer/timetrack/
-│   │       ├── domain/              # Domain entities (User, TimeEntry, WorkingHours)
+│   │       ├── domain/              # Domain entities (User, TimeEntry, WorkingHours, etc.)
 │   │       ├── usecase/             # Business logic organized by use cases
 │   │       │   ├── authentication/  # Login, logout, token refresh
 │   │       │   ├── user/            # User management
 │   │       │   ├── workinghours/    # Working hours configuration
-│   │       │   ├── timeentry/       # Time tracking operations
-│   │       │   └── statistics/      # Reports and statistics
+│   │       │   ├── timeentry/       # Time tracking (clock in/out)
+│   │       │   ├── timeoff/         # Vacation & absence tracking
+│   │       │   ├── recurringoffday/ # Recurring patterns & conflict detection
+│   │       │   ├── vacationbalance/ # Vacation days calculation
+│   │       │   └── report/          # PDF/CSV export generation
 │   │       ├── adapter/
 │   │       │   ├── web/             # REST controllers
 │   │       │   ├── persistence/     # JPA repositories
 │   │       │   └── security/        # Security configuration
 │   │       ├── config/              # Application configuration
+│   │       ├── util/                # Utility classes (ValidationUtils, MapperUtils)
 │   │       └── exception/           # Exception handling
 │   ├── pom.xml
 │   └── Dockerfile
-├── frontend/            # Frontend application (to be implemented)
-├── docker-compose.yml
+├── frontend/                        # Vue 3 frontend application
+│   ├── src/
+│   │   ├── views/                   # 9 page components (Dashboard, Profile, etc.)
+│   │   ├── components/              # Reusable UI components
+│   │   ├── api/                     # OpenAPI-generated TypeScript client
+│   │   ├── i18n/                    # German & English translations
+│   │   ├── router/                  # Vue Router configuration
+│   │   └── composables/             # Shared logic (useAuth, etc.)
+│   └── package.json
+├── openapi.yaml                     # API specification (single source of truth)
+├── docker-compose.yml               # Development environment
 └── README.md
 ```
 

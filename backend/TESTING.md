@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project uses integration tests with Testcontainers to provide a real PostgreSQL database environment for testing repository and persistence layer functionality.
+This project uses integration tests with Testcontainers to provide a real PostgreSQL database environment for testing. With **219 integration tests** covering repositories, use cases, and API endpoints, the test suite ensures comprehensive coverage of all business logic.
 
 ## Test Infrastructure
 
@@ -105,8 +105,10 @@ The main `SecurityConfig` is annotated with `@Profile("!test")` to exclude it fr
 - Only Spring context initialization: ~2-3 seconds
 
 ### Test Execution
-- 21 integration tests run in ~13 seconds total
+- 219 integration tests (including 61 utility tests) run efficiently
 - Individual test methods: <100ms each
+- Total suite execution: ~30-40 seconds
+- With recent refactoring: 219 tests including ValidationUtils (39), MapperUtils (15), UserService (7)
 
 ## Troubleshooting
 
@@ -144,6 +146,37 @@ Retry attempt 4 for Flyway migration...
 Flyway migrations completed successfully in 1966ms
 ```
 
+## Test Utilities (Added Dec 2025)
+
+Centralized utility classes reduce duplication and improve maintainability:
+
+### ValidationUtils
+- **Location**: `src/main/java/cc/remer/timetrack/util/ValidationUtils.java`
+- **Tests**: 39 unit tests in `ValidationUtilsTest.java`
+- **Purpose**: 11 validation methods for common business rules
+  - Date validation (not null, not in past, start before end)
+  - Weekday validation (exactly 7 days, no duplicates, valid ranges)
+  - Recurrence pattern validation (weekly/monthly patterns)
+- **Used by**: CreateTimeOff, CreateRecurringOffDay, UpdateWorkingHours use cases
+
+### MapperUtils
+- **Location**: `src/main/java/cc/remer/timetrack/util/MapperUtils.java`
+- **Tests**: 15 unit tests in `MapperUtilsTest.java`
+- **Purpose**: Timestamp conversion utilities
+  - LocalDateTime ↔ OffsetDateTime conversions
+  - UTC timestamp handling with timezone awareness
+  - Null-safe conversion methods
+- **Used by**: 5 mappers (TimeOff, RecurringOffDay, User, VacationBalance, ConflictWarning)
+
+### UserService
+- **Location**: `src/main/java/cc/remer/timetrack/usecase/UserService.java`
+- **Tests**: 7 unit tests covering lookup and error scenarios
+- **Purpose**: Centralized user fetching with consistent error handling
+  - Standardized user lookup by ID
+  - Security audit logging for ownership violations
+  - German error messages for user not found
+- **Used by**: 7 use cases across timeoff, recurringoffday, workinghours, and user packages
+
 ## Best Practices
 
 1. **Always extend `RepositoryTestBase`** for repository tests
@@ -151,6 +184,7 @@ Flyway migrations completed successfully in 1966ms
 3. **Clean up in `@BeforeEach`** if tests depend on empty tables
 4. **Don't manually start/stop containers** - let Testcontainers manage lifecycle
 5. **Profile segregation** - Keep test and production configurations separate
+6. **Use utility classes** - ValidationUtils, MapperUtils, UserService for shared logic
 
 ## References
 

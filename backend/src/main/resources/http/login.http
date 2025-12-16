@@ -4,7 +4,7 @@ Content-Type: application/json
 
 {
   "email": "admin@timetrack.local",
-  "password": "admin"
+  "password": "admin1"
 }
 
 > {%

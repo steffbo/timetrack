@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Default Admin Password**: Updated from "admin" to "admin1" (meets 6-character minimum requirement)
+  - Database migration V14 updates existing admin user password
+  - New BCrypt hash generated with strength 10
+  - Documentation updated across README.md and CLAUDE.md
+
+### Fixed
+- **Token Refresh for Invalid Access Tokens**: Router guard now always validates tokens with server
+  - Ensures invalid or corrupted access tokens (not just expired) trigger automatic refresh
+  - Previously only validated when no token present, broken tokens never detected
+  - Frontend: router/index.ts
+
 ### Added
 - **Half-Day Holidays (December 24 & 31)**: Users can enable half-day holiday counting for Christmas Eve and New Year's Eve
   - User setting in profile: "Halbe Feiertage (24. & 31. Dez.)" with tooltip explanation
