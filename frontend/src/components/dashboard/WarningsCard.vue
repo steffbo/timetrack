@@ -119,6 +119,18 @@ onMounted(async () => {
   margin-bottom: var(--tt-spacing-lg);
 }
 
+.warnings-card :deep(.p-card) {
+  box-shadow: none;
+}
+
+.warnings-card :deep(.p-card-header) {
+  padding: 0;
+}
+
+.warnings-card :deep(.p-card-content) {
+  padding: 0;
+}
+
 .card-header {
   display: flex;
   align-items: center;

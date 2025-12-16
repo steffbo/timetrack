@@ -69,16 +69,8 @@
               <div class="stat-value">{{ nextVacationText }}</div>
             </div>
             <div class="stat-card stat-current">
-              <div class="stat-label">{{ t('dashboard.overtimeThisMonth') }}</div>
-              <div class="stat-value">{{ formatOvertime(overtimeThisMonth) }}</div>
-            </div>
-            <div class="stat-card stat-last">
-              <div class="stat-label">{{ t('dashboard.overtimeLastMonth') }}</div>
-              <div class="stat-value">{{ formatOvertime(overtimeLastMonth) }}</div>
-            </div>
-            <div class="stat-card stat-average">
-              <div class="stat-label">{{ t('dashboard.overtimeAverage') }}</div>
-              <div class="stat-value">{{ formatOvertime(overtimeAverage) }}</div>
+              <div class="stat-label">{{ t('dashboard.overtimeSelectedMonth') }}</div>
+              <div class="stat-value">{{ formatOvertime(overtimeSelectedMonth) }}</div>
             </div>
           </div>
         </div>
@@ -108,9 +100,15 @@ const workingHours = ref<WorkingHoursResponse | null>(null)
 const loading = ref(false)
 const activeEntry = ref<TimeEntryResponse | null>(null)
 const nextVacation = ref<TimeOffResponse | null>(null)
-const overtimeThisMonth = ref<number>(0)
-const overtimeLastMonth = ref<number>(0)
-const overtimeAverage = ref<number>(0)
+const overtimeSelectedMonth = ref<number>(0)
+
+// Cache storage
+const dailySummaryCache = ref<Map<string, DailySummaryResponse>>(new Map())
+const publicHolidaysCache = ref<Map<number, PublicHolidayResponse[]>>(new Map())
+
+// Cache metadata
+const cacheStartDate = ref<string>('')
+const cacheEndDate = ref<string>('')
 
 // Check if today has working hours configured
 const hasTodayWorkingHours = computed(() => {
@@ -138,8 +136,152 @@ const nextVacationText = computed(() => {
   return t('dashboard.vacationInDays', { days: diffDays })
 })
 
-const loadDailySummaries = async () => {
+// Cache lookup helper: Get daily summaries from cache for a date range
+const getDailySummaryFromCache = (startDate: string, endDate: string): DailySummaryResponse[] | null => {
+  // Check if requested range is fully covered by cache
+  if (!cacheStartDate.value || !cacheEndDate.value) {
+    return null // Cache not initialized
+  }
+
+  if (startDate < cacheStartDate.value || endDate > cacheEndDate.value) {
+    return null // Cache miss - range extends beyond cached data
+  }
+
+  // Filter cached data for requested range
+  const result: DailySummaryResponse[] = []
+  const currentDate = new Date(startDate)
+  const end = new Date(endDate)
+
+  while (currentDate <= end) {
+    const dateStr = currentDate.toISOString().split('T')[0]
+    const cached = dailySummaryCache.value.get(dateStr)
+    if (cached) {
+      result.push(cached)
+    }
+    currentDate.setDate(currentDate.getDate() + 1)
+  }
+
+  return result
+}
+
+// Cache lookup helper: Get public holidays for a specific year
+const getPublicHolidaysForYear = async (year: number): Promise<PublicHolidayResponse[]> => {
+  // Check cache first
+  if (publicHolidaysCache.value.has(year)) {
+    return publicHolidaysCache.value.get(year)!
+  }
+
+  // Fetch and cache if not found
+  const holidays = await PublicHolidaysService.getPublicHolidays(year)
+  publicHolidaysCache.value.set(year, holidays)
+  return holidays
+}
+
+// Load initial data: Batch load 9 months back + 3 months ahead
+const loadInitialData = async () => {
   loading.value = true
+  try {
+    const today = new Date()
+
+    // Calculate date range: 9 months ago to 3 months ahead
+    const startDate = new Date(today)
+    startDate.setMonth(today.getMonth() - 9)
+    startDate.setDate(1) // Start of month
+
+    const endDate = new Date(today)
+    endDate.setMonth(today.getMonth() + 3)
+    endDate.setMonth(endDate.getMonth() + 1) // Next month
+    endDate.setDate(0) // End of month (last day of previous month)
+
+    const startDateStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+    const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`
+
+    // Store cache range metadata
+    cacheStartDate.value = startDateStr
+    cacheEndDate.value = endDateStr
+
+    // Determine which years we need holidays for
+    const yearsNeeded = new Set([startDate.getFullYear(), endDate.getFullYear()])
+
+    // Fetch all data in parallel
+    const [summaries, ...holidayResponses] = await Promise.all([
+      TimeEntriesService.getDailySummary(startDateStr, endDateStr),
+      ...Array.from(yearsNeeded).map(y => getPublicHolidaysForYear(y)),
+      WorkingHoursService.getWorkingHours(currentUser.value?.id || 0)
+    ])
+
+    // Store working hours (last item in Promise.all results)
+    const workingHoursData = holidayResponses[holidayResponses.length - 1] as WorkingHoursResponse
+    workingHours.value = workingHoursData
+
+    // Flatten public holidays from all years
+    const publicHolidays = holidayResponses.slice(0, -1).flat() as PublicHolidayResponse[]
+
+    // Store all summaries in cache by date
+    dailySummaryCache.value.clear()
+    summaries.forEach(summary => {
+      if (summary.date) {
+        dailySummaryCache.value.set(summary.date, summary)
+      }
+    })
+
+    // Merge public holidays into cached summaries
+    publicHolidays.forEach(holiday => {
+      if (holiday.date) {
+        const existing = dailySummaryCache.value.get(holiday.date)
+        if (existing) {
+          // Create a time-off entry for the public holiday
+          const holidayTimeOff: TimeOffResponse = {
+            id: 0,
+            userId: currentUser.value?.id || 0,
+            startDate: holiday.date,
+            endDate: holiday.date,
+            timeOffType: 'PUBLIC_HOLIDAY' as any,
+            notes: holiday.name
+          }
+
+          // Add holiday to the beginning of timeOffEntries
+          dailySummaryCache.value.set(holiday.date, {
+            ...existing,
+            timeOffEntries: [holidayTimeOff, ...(existing.timeOffEntries || [])]
+          })
+        }
+      }
+    })
+
+    // Initialize display for current month from cache
+    const displayYear = currentMonth.value.getFullYear()
+    const displayMonth = currentMonth.value.getMonth()
+    const displayStartDate = new Date(displayYear, displayMonth, 1)
+    const displayEndDate = new Date(displayYear, displayMonth + 1, 0)
+    const displayFirstDayOfWeek = displayStartDate.getDay()
+    const displayEmptyDaysAtStart = displayFirstDayOfWeek === 0 ? 6 : displayFirstDayOfWeek - 1
+    const displayDaysInCurrentMonth = displayEndDate.getDate()
+    const displayUsedCells = displayEmptyDaysAtStart + displayDaysInCurrentMonth
+    const displayRemainderInWeek = displayUsedCells % 7
+    const displayEmptyDaysAtEnd = displayRemainderInWeek === 0 ? 0 : 7 - displayRemainderInWeek
+    const displayFetchStartDate = new Date(displayYear, displayMonth, 1 - displayEmptyDaysAtStart)
+    const displayFetchEndDate = new Date(displayYear, displayMonth, displayDaysInCurrentMonth + displayEmptyDaysAtEnd)
+    const displayStartDateStr = `${displayFetchStartDate.getFullYear()}-${String(displayFetchStartDate.getMonth() + 1).padStart(2, '0')}-${String(displayFetchStartDate.getDate()).padStart(2, '0')}`
+    const displayEndDateStr = `${displayFetchEndDate.getFullYear()}-${String(displayFetchEndDate.getMonth() + 1).padStart(2, '0')}-${String(displayFetchEndDate.getDate()).padStart(2, '0')}`
+
+    const cachedSummaries = getDailySummaryFromCache(displayStartDateStr, displayEndDateStr)
+    if (cachedSummaries) {
+      dailySummaries.value = cachedSummaries
+    }
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: t('dashboard.loadError'),
+      life: 3000
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadDailySummaries = async () => {
   try {
     const year = currentMonth.value.getFullYear()
     const month = currentMonth.value.getMonth()
@@ -167,49 +309,72 @@ const loadDailySummaries = async () => {
     const startDateStr = `${fetchStartDate.getFullYear()}-${String(fetchStartDate.getMonth() + 1).padStart(2, '0')}-${String(fetchStartDate.getDate()).padStart(2, '0')}`
     const endDateStr = `${fetchEndDate.getFullYear()}-${String(fetchEndDate.getMonth() + 1).padStart(2, '0')}-${String(fetchEndDate.getDate()).padStart(2, '0')}`
 
-    // Determine which years we need holidays for (adjacent months might cross year boundaries)
-    const yearsNeeded = new Set([fetchStartDate.getFullYear(), fetchEndDate.getFullYear()])
+    // Try to get data from cache first
+    const cachedSummaries = getDailySummaryFromCache(startDateStr, endDateStr)
 
-    // Fetch daily summaries, public holidays for all needed years, and working hours in parallel
-    const [summaries, ...holidayResponses] = await Promise.all([
-      TimeEntriesService.getDailySummary(startDateStr, endDateStr),
-      ...Array.from(yearsNeeded).map(y => PublicHolidaysService.getPublicHolidays(y)),
-      WorkingHoursService.getWorkingHours(currentUser.value?.id || 0)
-    ])
+    if (cachedSummaries) {
+      // Cache hit - use cached data
+      dailySummaries.value = cachedSummaries
+    } else {
+      // Cache miss - fetch from API (this should be rare if initial data is loaded)
+      loading.value = true
+      try {
+        // Determine which years we need holidays for
+        const yearsNeeded = new Set([fetchStartDate.getFullYear(), fetchEndDate.getFullYear()])
 
-    // Combine holidays from all years and get working hours (last item in Promise.all results)
-    const publicHolidays = holidayResponses.slice(0, -1).flat()
-    const workingHoursData = holidayResponses[holidayResponses.length - 1] as WorkingHoursResponse
+        // Fetch daily summaries and public holidays in parallel
+        // Working hours should already be loaded by loadInitialData
+        const [summaries, ...holidayResponses] = await Promise.all([
+          TimeEntriesService.getDailySummary(startDateStr, endDateStr),
+          ...Array.from(yearsNeeded).map(y => getPublicHolidaysForYear(y))
+        ])
 
-    workingHours.value = workingHoursData
+        // Flatten public holidays from all years
+        const publicHolidays = holidayResponses.flat() as PublicHolidayResponse[]
 
-    // Merge public holidays into daily summaries
-    const summariesWithHolidays = summaries.map(summary => {
-      // Check if this date is a public holiday
-      const holiday = publicHolidays.find(h => h.date === summary.date)
+        // Merge public holidays into daily summaries
+        const summariesWithHolidays = summaries.map(summary => {
+          const holiday = publicHolidays.find(h => h.date === summary.date)
 
-      if (holiday) {
-        // Create a time-off entry for the public holiday
-        const holidayTimeOff: TimeOffResponse = {
-          id: 0, // Dummy ID for display purposes
-          userId: currentUser.value?.id || 0,
-          startDate: holiday.date!,
-          endDate: holiday.date!,
-          timeOffType: 'PUBLIC_HOLIDAY' as any,
-          notes: holiday.name
+          if (holiday) {
+            const holidayTimeOff: TimeOffResponse = {
+              id: 0,
+              userId: currentUser.value?.id || 0,
+              startDate: holiday.date!,
+              endDate: holiday.date!,
+              timeOffType: 'PUBLIC_HOLIDAY' as any,
+              notes: holiday.name
+            }
+
+            return {
+              ...summary,
+              timeOffEntries: [holidayTimeOff, ...(summary.timeOffEntries || [])]
+            }
+          }
+
+          return summary
+        })
+
+        // Update cache with new data
+        summariesWithHolidays.forEach(summary => {
+          if (summary.date) {
+            dailySummaryCache.value.set(summary.date, summary)
+          }
+        })
+
+        // Update cache range metadata if we fetched data outside the current range
+        if (!cacheStartDate.value || startDateStr < cacheStartDate.value) {
+          cacheStartDate.value = startDateStr
+        }
+        if (!cacheEndDate.value || endDateStr > cacheEndDate.value) {
+          cacheEndDate.value = endDateStr
         }
 
-        // Add the holiday to the beginning of timeOffEntries (highest precedence)
-        return {
-          ...summary,
-          timeOffEntries: [holidayTimeOff, ...(summary.timeOffEntries || [])]
-        }
+        dailySummaries.value = summariesWithHolidays
+      } finally {
+        loading.value = false
       }
-
-      return summary
-    })
-
-    dailySummaries.value = summariesWithHolidays
+    }
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -217,14 +382,15 @@ const loadDailySummaries = async () => {
       detail: t('dashboard.loadError'),
       life: 3000
     })
-  } finally {
-    loading.value = false
   }
 }
 
-const handleMonthChange = (newMonth: Date) => {
+const handleMonthChange = async (newMonth: Date) => {
   currentMonth.value = newMonth
-  loadDailySummaries()
+  // Load summaries first so the data is cached
+  await loadDailySummaries()
+  // Then calculate overtime from the cached data
+  await calculateOvertime()
 }
 
 // Load active time entry
@@ -257,37 +423,57 @@ const loadNextVacation = async () => {
   }
 }
 
-// Calculate overtime statistics
+// Calculate overtime statistics for selected month using cache
 const calculateOvertime = async () => {
   try {
+    const selectedMonth = currentMonth.value
     const today = new Date()
 
-    // This month - only count days with actual entries (missing days are neutral)
-    const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
-    const todayStr = today.toISOString().split('T')[0]
-    const thisMonthSummaries = await TimeEntriesService.getDailySummary(thisMonthStart, todayStr)
+    // Selected month - calculate from start of month to either end of month or today (whichever is earlier)
+    const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1)
+    const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0)
+
+    // If selected month is current month, only count up to today
+    // If selected month is in the future, no data
+    // If selected month is in the past, count full month
+    let endDate: Date
+    if (selectedMonth.getFullYear() === today.getFullYear() && selectedMonth.getMonth() === today.getMonth()) {
+      endDate = today
+    } else if (selectedMonth > today) {
+      endDate = monthStart // No data for future months
+    } else {
+      endDate = monthEnd
+    }
+
+    const startDateStr = monthStart.toISOString().split('T')[0]
+    const endDateStr = endDate.toISOString().split('T')[0]
+
+    // Try to get data from cache first
+    let monthSummaries = getDailySummaryFromCache(startDateStr, endDateStr)
+
+    if (!monthSummaries) {
+      // Cache miss - fetch from API
+      monthSummaries = await TimeEntriesService.getDailySummary(startDateStr, endDateStr)
+    }
 
     // Only count days with time entries
-    const daysWithEntries = thisMonthSummaries.filter(day => day.actualHours > 0)
-    overtimeThisMonth.value = daysWithEntries.reduce((sum, day) => sum + (day.actualHours - day.expectedHours), 0)
-
-    // Last month - only count days with actual entries (missing days are neutral)
-    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().split('T')[0]
-    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0]
-    const lastMonthSummaries = await TimeEntriesService.getDailySummary(lastMonthStart, lastMonthEnd)
-    overtimeLastMonth.value = lastMonthSummaries
-      .filter(day => day.actualHours > 0) // Only count days with time entries
-      .reduce((sum, day) => sum + (day.actualHours - day.expectedHours), 0)
-
-    // 12-month average - only count days with actual entries (missing days are neutral)
-    const twelveMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 11, 1).toISOString().split('T')[0]
-    const twelveMonthSummaries = await TimeEntriesService.getDailySummary(twelveMonthsAgo, todayStr)
-    const daysWithEntriesYear = twelveMonthSummaries.filter(day => day.actualHours > 0)
-    const totalOvertime = daysWithEntriesYear.reduce((sum, day) => sum + (day.actualHours - day.expectedHours), 0)
-    overtimeAverage.value = totalOvertime / 12
+    const daysWithEntries = monthSummaries.filter(day => day.actualHours > 0)
+    overtimeSelectedMonth.value = daysWithEntries.reduce((sum, day) => sum + (day.actualHours - day.expectedHours), 0)
   } catch (error) {
     console.error('Error calculating overtime:', error)
   }
+}
+
+// Invalidate cache and reload data after mutations
+const invalidateCacheAndReload = async () => {
+  // Clear daily summary cache
+  dailySummaryCache.value.clear()
+  cacheStartDate.value = ''
+  cacheEndDate.value = ''
+
+  // Reload all data
+  await loadInitialData()
+  await calculateOvertime()
 }
 
 // Format overtime hours
@@ -328,7 +514,7 @@ const clockOutNow = async () => {
       life: 3000
     })
     activeEntry.value = null
-    await loadDailySummaries()
+    await invalidateCacheAndReload()
   } catch (error: any) {
     toast.add({
       severity: 'error',
@@ -405,7 +591,7 @@ const createQuickWorkEntry = async () => {
       life: 3000
     })
 
-    await loadDailySummaries()
+    await invalidateCacheAndReload()
   } catch (error: any) {
     toast.add({
       severity: 'error',
@@ -417,8 +603,11 @@ const createQuickWorkEntry = async () => {
 }
 
 onMounted(async () => {
+  // Load initial data (includes daily summaries, working hours, and public holidays)
+  await loadInitialData()
+
+  // Load other data in parallel
   await Promise.all([
-    loadDailySummaries(),
     loadActiveEntry(),
     loadNextVacation(),
     calculateOvertime()

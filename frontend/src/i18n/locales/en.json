@@ -109,8 +109,7 @@
     "vacationToday": "Today",
     "vacationTomorrow": "Tomorrow",
     "vacationInDays": "in {days} days",
-    "overtimeThisMonth": "Overtime This Month",
-    "overtimeLastMonth": "Overtime Last Month",
+    "overtimeSelectedMonth": "Overtime Selected Month",
     "overtimeAverage": "Average (12 Months)",
     "warnings": {
       "title": "Warnings & Alerts",
