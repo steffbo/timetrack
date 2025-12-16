@@ -5,6 +5,7 @@ import cc.remer.timetrack.api.model.RecurringOffDayResponse;
 import cc.remer.timetrack.api.model.UpdateRecurringOffDayRequest;
 import cc.remer.timetrack.domain.recurringoffday.RecurringOffDay;
 import cc.remer.timetrack.domain.recurringoffday.RecurrencePattern;
+import cc.remer.timetrack.util.MapperUtils;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,8 +32,8 @@ public class RecurringOffDayMapper {
         response.setEndDate(entity.getEndDate());
         response.setIsActive(entity.getIsActive());
         response.setDescription(entity.getDescription());
-        response.setCreatedAt(entity.getCreatedAt() != null ? entity.getCreatedAt().atOffset(java.time.ZoneOffset.UTC) : null);
-        response.setUpdatedAt(entity.getUpdatedAt() != null ? entity.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC) : null);
+        response.setCreatedAt(MapperUtils.toOffsetDateTime(entity.getCreatedAt()));
+        response.setUpdatedAt(MapperUtils.toOffsetDateTime(entity.getUpdatedAt()));
         return response;
     }
 

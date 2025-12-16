@@ -233,7 +233,7 @@ class WorkingHoursIntegrationTest extends RepositoryTestBase {
         // When/Then
         assertThatThrownBy(() -> updateWorkingHours.execute(testUser.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Ungültige Stundenanzahl");
+                .hasMessageContaining("Stunden müssen zwischen 0 und 24 liegen");
     }
 
     @Test
@@ -248,7 +248,7 @@ class WorkingHoursIntegrationTest extends RepositoryTestBase {
         // When/Then
         assertThatThrownBy(() -> updateWorkingHours.execute(testUser.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Ungültige Stundenanzahl");
+                .hasMessageContaining("Stunden müssen zwischen 0 und 24 liegen");
     }
 
     @Test
@@ -278,7 +278,7 @@ class WorkingHoursIntegrationTest extends RepositoryTestBase {
         // When/Then
         assertThatThrownBy(() -> updateWorkingHours.execute(testUser.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Ungültiger Wochentag");
+                .hasMessageContaining("Wochentag muss zwischen 1");
     }
 
     @Test

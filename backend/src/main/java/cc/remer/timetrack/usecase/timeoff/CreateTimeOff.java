@@ -1,14 +1,14 @@
 package cc.remer.timetrack.usecase.timeoff;
 
 import cc.remer.timetrack.adapter.persistence.TimeOffRepository;
-import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.api.model.CreateTimeOffRequest;
 import cc.remer.timetrack.api.model.TimeOffResponse;
 import cc.remer.timetrack.domain.timeoff.TimeOff;
 import cc.remer.timetrack.domain.timeoff.TimeOffType;
 import cc.remer.timetrack.domain.user.User;
-import cc.remer.timetrack.exception.UserNotFoundException;
+import cc.remer.timetrack.usecase.user.UserService;
 import cc.remer.timetrack.usecase.vacationbalance.VacationBalanceService;
+import cc.remer.timetrack.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateTimeOff {
 
     private final TimeOffRepository timeOffRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final TimeOffMapper mapper;
     private final VacationBalanceService vacationBalanceService;
 
@@ -42,8 +42,7 @@ public class CreateTimeOff {
         validateRequest(request);
 
         // Find user
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+        User user = userService.getUserOrThrow(userId);
 
         // Create entity
         TimeOff entity = TimeOff.builder()
@@ -59,14 +58,8 @@ public class CreateTimeOff {
 
         // Recalculate vacation balance if this is a vacation entry
         if (saved.getTimeOffType() == TimeOffType.VACATION) {
-            int year = saved.getStartDate().getYear();
-            vacationBalanceService.recalculateVacationBalance(userId, year);
-
-            // If entry spans multiple years, recalculate for end year too
-            int endYear = saved.getEndDate().getYear();
-            if (endYear != year) {
-                vacationBalanceService.recalculateVacationBalance(userId, endYear);
-            }
+            vacationBalanceService.recalculateVacationBalanceForDateRange(
+                    userId, saved.getStartDate(), saved.getEndDate());
         }
 
         return mapper.toResponse(saved);
@@ -76,17 +69,10 @@ public class CreateTimeOff {
      * Validate the create request.
      */
     private void validateRequest(CreateTimeOffRequest request) {
-        if (request.getStartDate() == null) {
-            throw new IllegalArgumentException("Startdatum ist erforderlich");
-        }
-        if (request.getEndDate() == null) {
-            throw new IllegalArgumentException("Enddatum ist erforderlich");
-        }
-        if (request.getEndDate().isBefore(request.getStartDate())) {
-            throw new IllegalArgumentException("Enddatum muss nach dem Startdatum liegen");
-        }
+        ValidationUtils.validateDateRange(request.getStartDate(), request.getEndDate());
+
         if (request.getHoursPerDay() != null && request.getHoursPerDay() < 0) {
-            throw new IllegalArgumentException("Stunden pro Tag dürfen nicht negativ sein");
+            ValidationUtils.validateNonNegativeHours(request.getHoursPerDay());
         }
     }
 }

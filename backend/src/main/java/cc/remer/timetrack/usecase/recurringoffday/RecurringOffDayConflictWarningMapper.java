@@ -4,6 +4,7 @@ import cc.remer.timetrack.adapter.persistence.RecurringOffDayRepository;
 import cc.remer.timetrack.api.model.RecurringOffDayConflictWarningResponse;
 import cc.remer.timetrack.domain.recurringoffday.RecurringOffDay;
 import cc.remer.timetrack.domain.recurringoffday.RecurringOffDayConflictWarning;
+import cc.remer.timetrack.util.MapperUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -42,15 +43,9 @@ public class RecurringOffDayConflictWarningMapper {
         }
 
         response.setAcknowledged(warning.getAcknowledged());
-        response.setAcknowledgedAt(warning.getAcknowledgedAt() != null
-                ? warning.getAcknowledgedAt().atOffset(java.time.ZoneOffset.UTC)
-                : null);
-        response.setCreatedAt(warning.getCreatedAt() != null
-                ? warning.getCreatedAt().atOffset(java.time.ZoneOffset.UTC)
-                : null);
-        response.setUpdatedAt(warning.getUpdatedAt() != null
-                ? warning.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC)
-                : null);
+        response.setAcknowledgedAt(MapperUtils.toOffsetDateTime(warning.getAcknowledgedAt()));
+        response.setCreatedAt(MapperUtils.toOffsetDateTime(warning.getCreatedAt()));
+        response.setUpdatedAt(MapperUtils.toOffsetDateTime(warning.getUpdatedAt()));
 
         return response;
     }

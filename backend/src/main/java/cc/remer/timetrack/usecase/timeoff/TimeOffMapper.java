@@ -7,6 +7,7 @@ import cc.remer.timetrack.domain.timeoff.TimeOff;
 import cc.remer.timetrack.domain.timeoff.TimeOffType;
 import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.usecase.vacationbalance.WorkingDaysCalculator;
+import cc.remer.timetrack.util.MapperUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -46,8 +47,8 @@ public class TimeOffMapper {
 
         response.setHoursPerDay(entity.getHoursPerDay() != null ? entity.getHoursPerDay().doubleValue() : null);
         response.setNotes(entity.getNotes());
-        response.setCreatedAt(entity.getCreatedAt() != null ? entity.getCreatedAt().atOffset(java.time.ZoneOffset.UTC) : null);
-        response.setUpdatedAt(entity.getUpdatedAt() != null ? entity.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC) : null);
+        response.setCreatedAt(MapperUtils.toOffsetDateTime(entity.getCreatedAt()));
+        response.setUpdatedAt(MapperUtils.toOffsetDateTime(entity.getUpdatedAt()));
         return response;
     }
 

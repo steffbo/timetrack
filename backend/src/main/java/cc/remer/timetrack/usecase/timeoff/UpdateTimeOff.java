@@ -5,13 +5,15 @@ import cc.remer.timetrack.api.model.TimeOffResponse;
 import cc.remer.timetrack.api.model.UpdateTimeOffRequest;
 import cc.remer.timetrack.domain.timeoff.TimeOff;
 import cc.remer.timetrack.domain.timeoff.TimeOffType;
-import cc.remer.timetrack.exception.ForbiddenException;
 import cc.remer.timetrack.exception.TimeOffNotFoundException;
+import cc.remer.timetrack.usecase.AuthorizationService;
 import cc.remer.timetrack.usecase.vacationbalance.VacationBalanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 
 /**
  * Use case to update an existing time-off entry.
@@ -24,6 +26,7 @@ public class UpdateTimeOff {
     private final TimeOffRepository timeOffRepository;
     private final TimeOffMapper mapper;
     private final VacationBalanceService vacationBalanceService;
+    private final AuthorizationService authorizationService;
 
     /**
      * Execute the use case to update a time-off entry.
@@ -42,9 +45,7 @@ public class UpdateTimeOff {
                 .orElseThrow(() -> new TimeOffNotFoundException(id));
 
         // Check user owns this time-off entry
-        if (!entity.getUser().getId().equals(userId)) {
-            throw new ForbiddenException("Sie haben keine Berechtigung, diesen Abwesenheitseintrag zu ändern");
-        }
+        authorizationService.validateOwnership(entity.getUser(), userId, "diesen Abwesenheitseintrag");
 
         // Store old values to determine which years to recalculate
         TimeOffType oldType = entity.getTimeOffType();
@@ -60,20 +61,17 @@ public class UpdateTimeOff {
 
         // Recalculate vacation balance if this involves a vacation entry
         if (oldType == TimeOffType.VACATION || updated.getTimeOffType() == TimeOffType.VACATION) {
-            // Recalculate for all affected years (old and new)
-            int newStartYear = updated.getStartDate().getYear();
-            int newEndYear = updated.getEndDate().getYear();
+            // Recalculate for both old and new date ranges to handle all affected years
+            LocalDate oldStartDate = LocalDate.of(oldStartYear, 1, 1);
+            LocalDate oldEndDate = LocalDate.of(oldEndYear, 12, 31);
+            LocalDate newStartDate = updated.getStartDate();
+            LocalDate newEndDate = updated.getEndDate();
 
-            // Collect all unique years that need recalculation
-            java.util.Set<Integer> yearsToRecalculate = new java.util.HashSet<>();
-            yearsToRecalculate.add(oldStartYear);
-            yearsToRecalculate.add(oldEndYear);
-            yearsToRecalculate.add(newStartYear);
-            yearsToRecalculate.add(newEndYear);
+            // Get the full range from earliest to latest date
+            LocalDate earliestDate = oldStartDate.isBefore(newStartDate) ? oldStartDate : newStartDate;
+            LocalDate latestDate = oldEndDate.isAfter(newEndDate) ? oldEndDate : newEndDate;
 
-            for (Integer year : yearsToRecalculate) {
-                vacationBalanceService.recalculateVacationBalance(userId, year);
-            }
+            vacationBalanceService.recalculateVacationBalanceForDateRange(userId, earliestDate, latestDate);
         }
 
         return mapper.toResponse(updated);

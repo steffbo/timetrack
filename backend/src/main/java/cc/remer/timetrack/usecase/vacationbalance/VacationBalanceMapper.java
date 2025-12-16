@@ -3,6 +3,7 @@ package cc.remer.timetrack.usecase.vacationbalance;
 import cc.remer.timetrack.api.model.UpdateVacationBalanceRequest;
 import cc.remer.timetrack.api.model.VacationBalanceResponse;
 import cc.remer.timetrack.domain.vacationbalance.VacationBalance;
+import cc.remer.timetrack.util.MapperUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -43,8 +44,8 @@ public class VacationBalanceMapper {
         response.setPlannedDays(plannedDays.doubleValue());
         response.setUsedDays(entity.getUsedDays().doubleValue());
         response.setRemainingDays(remainingDays.doubleValue());
-        response.setCreatedAt(entity.getCreatedAt() != null ? entity.getCreatedAt().atOffset(java.time.ZoneOffset.UTC) : null);
-        response.setUpdatedAt(entity.getUpdatedAt() != null ? entity.getUpdatedAt().atOffset(java.time.ZoneOffset.UTC) : null);
+        response.setCreatedAt(MapperUtils.toOffsetDateTime(entity.getCreatedAt()));
+        response.setUpdatedAt(MapperUtils.toOffsetDateTime(entity.getUpdatedAt()));
         return response;
     }
 

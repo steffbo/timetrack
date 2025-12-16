@@ -71,6 +71,34 @@ public class VacationBalanceService {
     }
 
     /**
+     * Recalculate vacation balance for all years that fall within a date range.
+     * Automatically handles multi-year spans by recalculating each affected year.
+     * This is a convenience method to avoid manual year iteration in use cases.
+     *
+     * @param userId the user ID
+     * @param startDate the start date of the range
+     * @param endDate the end date of the range
+     */
+    @Transactional
+    public void recalculateVacationBalanceForDateRange(Long userId, LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            log.warn("Cannot recalculate vacation balance: startDate or endDate is null");
+            return;
+        }
+
+        int startYear = startDate.getYear();
+        int endYear = endDate.getYear();
+
+        log.info("Recalculating vacation balance for user ID: {} from {} to {} (years {}-{})",
+                userId, startDate, endDate, startYear, endYear);
+
+        // Recalculate for all years in the range
+        for (int year = startYear; year <= endYear; year++) {
+            recalculateVacationBalance(userId, year);
+        }
+    }
+
+    /**
      * Calculate total planned vacation days for a user and year.
      * This includes all VACATION time-off entries regardless of dates.
      *

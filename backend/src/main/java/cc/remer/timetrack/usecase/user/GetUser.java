@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 public class GetUser {
 
     private final UserRepository userRepository;
+    private final UserService userService;
     private final UserMapper userMapper;
 
     /**
@@ -41,8 +42,7 @@ public class GetUser {
     public UserResponse execute(Long userId, Authentication authentication) {
         log.debug("Getting user with ID: {}", userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("Benutzer nicht gefunden"));
+        User user = userService.getUserOrThrow(userId);
 
         // Check authorization
         validateAccess(user, authentication);
@@ -62,8 +62,7 @@ public class GetUser {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         log.debug("Getting current user: {}", principal.getEmail());
 
-        User user = userRepository.findById(principal.getId())
-                .orElseThrow(() -> new UserNotFoundException("Benutzer nicht gefunden"));
+        User user = userService.getUserOrThrow(principal.getId());
 
         return userMapper.toResponse(user);
     }

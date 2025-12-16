@@ -2,10 +2,8 @@ package cc.remer.timetrack.usecase.user;
 
 import cc.remer.timetrack.api.model.UserResponse;
 import cc.remer.timetrack.domain.user.User;
+import cc.remer.timetrack.util.MapperUtils;
 import org.springframework.stereotype.Component;
-
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 
 /**
  * Mapper for User entity and API models.
@@ -33,14 +31,8 @@ public class UserMapper {
         response.setActive(user.getActive());
         response.setState(UserResponse.StateEnum.fromValue(user.getState().name()));
         response.setHalfDayHolidaysEnabled(user.getHalfDayHolidaysEnabled());
-
-        if (user.getCreatedAt() != null) {
-            response.setCreatedAt(OffsetDateTime.of(user.getCreatedAt(), ZoneOffset.UTC));
-        }
-
-        if (user.getUpdatedAt() != null) {
-            response.setUpdatedAt(OffsetDateTime.of(user.getUpdatedAt(), ZoneOffset.UTC));
-        }
+        response.setCreatedAt(MapperUtils.toOffsetDateTime(user.getCreatedAt()));
+        response.setUpdatedAt(MapperUtils.toOffsetDateTime(user.getUpdatedAt()));
 
         return response;
     }

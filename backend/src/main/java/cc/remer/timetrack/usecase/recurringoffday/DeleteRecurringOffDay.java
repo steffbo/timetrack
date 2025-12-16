@@ -2,8 +2,8 @@ package cc.remer.timetrack.usecase.recurringoffday;
 
 import cc.remer.timetrack.adapter.persistence.RecurringOffDayRepository;
 import cc.remer.timetrack.domain.recurringoffday.RecurringOffDay;
-import cc.remer.timetrack.exception.ForbiddenException;
 import cc.remer.timetrack.exception.RecurringOffDayNotFoundException;
+import cc.remer.timetrack.usecase.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeleteRecurringOffDay {
 
     private final RecurringOffDayRepository recurringOffDayRepository;
+    private final AuthorizationService authorizationService;
 
     /**
      * Execute the use case to delete a recurring off-day.
@@ -34,9 +35,7 @@ public class DeleteRecurringOffDay {
                 .orElseThrow(() -> new RecurringOffDayNotFoundException(id));
 
         // Check user owns this recurring off-day
-        if (!entity.getUser().getId().equals(userId)) {
-            throw new ForbiddenException("Sie haben keine Berechtigung, diese wiederkehrende Abwesenheit zu löschen");
-        }
+        authorizationService.validateOwnership(entity.getUser(), userId, "diese wiederkehrende Abwesenheit");
 
         // Delete
         recurringOffDayRepository.delete(entity);

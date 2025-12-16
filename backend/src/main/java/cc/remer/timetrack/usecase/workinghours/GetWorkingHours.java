@@ -1,6 +1,5 @@
 package cc.remer.timetrack.usecase.workinghours;
 
-import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.adapter.persistence.WorkingHoursRepository;
 import cc.remer.timetrack.api.model.WorkingHoursResponse;
 import cc.remer.timetrack.domain.user.Role;
@@ -8,6 +7,7 @@ import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.workinghours.WorkingHours;
 import cc.remer.timetrack.exception.ForbiddenException;
 import cc.remer.timetrack.exception.UserNotFoundException;
+import cc.remer.timetrack.usecase.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ import java.util.List;
 public class GetWorkingHours {
 
     private final WorkingHoursRepository workingHoursRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final WorkingHoursMapper mapper;
 
     /**
@@ -37,8 +37,7 @@ public class GetWorkingHours {
     public WorkingHoursResponse execute(Long userId) {
         log.debug("Getting working hours for user ID: {}", userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("Benutzer nicht gefunden"));
+        User user = userService.getUserOrThrow(userId);
 
         List<WorkingHours> workingHoursList = workingHoursRepository.findByUserId(userId);
 
@@ -65,8 +64,7 @@ public class GetWorkingHours {
             throw new ForbiddenException("Keine Berechtigung, Arbeitsstunden anderer Benutzer anzuzeigen");
         }
 
-        User targetUser = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new UserNotFoundException("Benutzer nicht gefunden"));
+        User targetUser = userService.getUserOrThrow(targetUserId);
 
         List<WorkingHours> workingHoursList = workingHoursRepository.findByUserId(targetUserId);
 

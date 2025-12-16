@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeleteUser {
 
     private final UserRepository userRepository;
+    private final UserService userService;
 
     /**
      * Execute the delete user use case.
@@ -30,8 +31,7 @@ public class DeleteUser {
     public void execute(Long userId) {
         log.info("Deleting user with ID: {}", userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("Benutzer nicht gefunden"));
+        User user = userService.getUserOrThrow(userId);
 
         userRepository.delete(user);
         log.info("User deleted successfully: {}", userId);

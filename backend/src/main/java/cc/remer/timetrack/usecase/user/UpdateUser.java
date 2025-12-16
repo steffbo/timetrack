@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateUser {
 
     private final UserRepository userRepository;
+    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
 
@@ -49,8 +50,7 @@ public class UpdateUser {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
 
         // Find user
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("Benutzer nicht gefunden"));
+        User user = userService.getUserOrThrow(userId);
 
         // Check authorization
         validateAccess(user, principal);

@@ -4,8 +4,8 @@ import cc.remer.timetrack.adapter.persistence.RecurringOffDayRepository;
 import cc.remer.timetrack.api.model.RecurringOffDayResponse;
 import cc.remer.timetrack.api.model.UpdateRecurringOffDayRequest;
 import cc.remer.timetrack.domain.recurringoffday.RecurringOffDay;
-import cc.remer.timetrack.exception.ForbiddenException;
 import cc.remer.timetrack.exception.RecurringOffDayNotFoundException;
+import cc.remer.timetrack.usecase.AuthorizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +21,7 @@ public class UpdateRecurringOffDay {
 
     private final RecurringOffDayRepository recurringOffDayRepository;
     private final RecurringOffDayMapper mapper;
+    private final AuthorizationService authorizationService;
 
     /**
      * Execute the use case to update a recurring off-day.
@@ -39,9 +40,7 @@ public class UpdateRecurringOffDay {
                 .orElseThrow(() -> new RecurringOffDayNotFoundException(id));
 
         // Check user owns this recurring off-day
-        if (!entity.getUser().getId().equals(userId)) {
-            throw new ForbiddenException("Sie haben keine Berechtigung, diese wiederkehrende Abwesenheit zu ändern");
-        }
+        authorizationService.validateOwnership(entity.getUser(), userId, "diese wiederkehrende Abwesenheit");
 
         // Map update request
         mapper.mapUpdateRequest(request, entity);

@@ -3,13 +3,15 @@ package cc.remer.timetrack.usecase.timeoff;
 import cc.remer.timetrack.adapter.persistence.TimeOffRepository;
 import cc.remer.timetrack.domain.timeoff.TimeOff;
 import cc.remer.timetrack.domain.timeoff.TimeOffType;
-import cc.remer.timetrack.exception.ForbiddenException;
 import cc.remer.timetrack.exception.TimeOffNotFoundException;
+import cc.remer.timetrack.usecase.AuthorizationService;
 import cc.remer.timetrack.usecase.vacationbalance.VacationBalanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 
 /**
  * Use case to delete a time-off entry.
@@ -21,6 +23,7 @@ public class DeleteTimeOff {
 
     private final TimeOffRepository timeOffRepository;
     private final VacationBalanceService vacationBalanceService;
+    private final AuthorizationService authorizationService;
 
     /**
      * Execute the use case to delete a time-off entry.
@@ -37,9 +40,7 @@ public class DeleteTimeOff {
                 .orElseThrow(() -> new TimeOffNotFoundException(id));
 
         // Check user owns this time-off entry
-        if (!entity.getUser().getId().equals(userId)) {
-            throw new ForbiddenException("Sie haben keine Berechtigung, diesen Abwesenheitseintrag zu löschen");
-        }
+        authorizationService.validateOwnership(entity.getUser(), userId, "diesen Abwesenheitseintrag");
 
         // Store values before deletion
         TimeOffType type = entity.getTimeOffType();
@@ -52,10 +53,9 @@ public class DeleteTimeOff {
 
         // Recalculate vacation balance if this was a vacation entry
         if (type == TimeOffType.VACATION) {
-            vacationBalanceService.recalculateVacationBalance(userId, startYear);
-            if (endYear != startYear) {
-                vacationBalanceService.recalculateVacationBalance(userId, endYear);
-            }
+            LocalDate startDate = entity.getStartDate();
+            LocalDate endDate = entity.getEndDate();
+            vacationBalanceService.recalculateVacationBalanceForDateRange(userId, startDate, endDate);
         }
     }
 }

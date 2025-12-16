@@ -1,13 +1,13 @@
 package cc.remer.timetrack.usecase.workinghours;
 
-import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.adapter.persistence.WorkingHoursRepository;
 import cc.remer.timetrack.api.model.UpdateWorkingDayConfig;
 import cc.remer.timetrack.api.model.UpdateWorkingHoursRequest;
 import cc.remer.timetrack.api.model.WorkingHoursResponse;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.workinghours.WorkingHours;
-import cc.remer.timetrack.exception.UserNotFoundException;
+import cc.remer.timetrack.usecase.user.UserService;
+import cc.remer.timetrack.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class UpdateWorkingHours {
 
     private final WorkingHoursRepository workingHoursRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final WorkingHoursMapper mapper;
 
     /**
@@ -46,8 +46,7 @@ public class UpdateWorkingHours {
         // Validate request
         validateRequest(request);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("Benutzer nicht gefunden"));
+        User user = userService.getUserOrThrow(userId);
 
         // Get existing working hours
         List<WorkingHours> existingWorkingHours = workingHoursRepository.findByUserId(userId);
@@ -132,9 +131,8 @@ public class UpdateWorkingHours {
         // Validate each day
         Set<Integer> weekdaysSeen = new HashSet<>();
         for (UpdateWorkingDayConfig dayConfig : request.getWorkingDays()) {
-            if (dayConfig.getWeekday() == null || dayConfig.getWeekday() < 1 || dayConfig.getWeekday() > 7) {
-                throw new IllegalArgumentException("Ungültiger Wochentag: " + dayConfig.getWeekday());
-            }
+            // Validate weekday
+            ValidationUtils.validateWeekday(dayConfig.getWeekday());
 
             if (weekdaysSeen.contains(dayConfig.getWeekday())) {
                 throw new IllegalArgumentException("Doppelter Wochentag: " + dayConfig.getWeekday());
@@ -155,17 +153,14 @@ public class UpdateWorkingHours {
                     LocalTime startTime = LocalTime.parse(dayConfig.getStartTime());
                     LocalTime endTime = LocalTime.parse(dayConfig.getEndTime());
 
-                    if (!endTime.isAfter(startTime)) {
-                        throw new IllegalArgumentException("Endzeit muss nach Startzeit liegen für Wochentag " + dayConfig.getWeekday());
-                    }
+                    ValidationUtils.validateTimeRange(startTime, endTime);
                 } catch (Exception e) {
                     throw new IllegalArgumentException("Ungültiges Zeitformat für Wochentag " + dayConfig.getWeekday() + ": " + e.getMessage());
                 }
             }
 
-            if (dayConfig.getHours() == null || dayConfig.getHours() < 0 || dayConfig.getHours() > 24) {
-                throw new IllegalArgumentException("Ungültige Stundenanzahl für Wochentag " + dayConfig.getWeekday() + ": " + dayConfig.getHours());
-            }
+            // Validate hours
+            ValidationUtils.validateHours(dayConfig.getHours());
 
             if (dayConfig.getIsWorkingDay() == null) {
                 throw new IllegalArgumentException("isWorkingDay darf nicht null sein für Wochentag " + dayConfig.getWeekday());
