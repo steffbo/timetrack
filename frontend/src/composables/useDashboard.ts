@@ -31,6 +31,15 @@ export function useDashboard() {
   const selectedTimeOffEntries = shallowRef<TimeOffResponse[]>([]) // Array - use shallowRef
   const showTimeOffDialog = ref(false)
   const showEditDialog = ref(false)
+  const showManualEntryDialog = ref(false)
+  
+  // Manual entry form state
+  const manualEntryDate = ref<Date>(new Date())
+  const manualEntryStartTime = ref<Date>(new Date())
+  const manualEntryEndTime = ref<Date>(new Date())
+  const manualEntryBreakMinutes = ref(0)
+  const manualEntryNotes = ref('')
+  const hasWorkingHoursForSelectedDay = ref(true)
 
   // Caches
   const dailySummaryCache = useCache<DailySummaryResponse>()
@@ -457,6 +466,106 @@ export function useDashboard() {
     }
   }
 
+  // Handle manual entry from calendar
+  const handleManualEntryFromCalendar = async (payload: { date: string }) => {
+    const date = new Date(payload.date)
+    
+    // Initialize date field
+    manualEntryDate.value = new Date(date)
+    
+    manualEntryBreakMinutes.value = 0
+    manualEntryNotes.value = ''
+    hasWorkingHoursForSelectedDay.value = true
+    
+    // Automatically apply default working hours
+    await applyDefaultWorkingHours(date)
+    
+    showManualEntryDialog.value = true
+  }
+
+  // Apply default working hours for manual entry
+  const applyDefaultWorkingHours = async (selectedDate: Date) => {
+    try {
+      if (!workingHours.value) {
+        workingHours.value = await WorkingHoursService.getWorkingHours()
+      }
+
+      // Get day of week (1=Monday, 7=Sunday)
+      const dayOfWeek = selectedDate.getDay() === 0 ? 7 : selectedDate.getDay()
+
+      // Find working hours for selected day
+      const dayWorkingHours = workingHours.value.workingDays.find(
+        wd => wd.weekday === dayOfWeek
+      )
+
+      if (!dayWorkingHours || !dayWorkingHours.isWorkingDay || !dayWorkingHours.startTime || !dayWorkingHours.endTime) {
+        hasWorkingHoursForSelectedDay.value = false
+        handleWarning(t('dashboard.noWorkingHoursForDay'))
+        return
+      }
+
+      hasWorkingHoursForSelectedDay.value = true
+
+      // Set time fields from working hours configuration
+      const startTimeStr = dayWorkingHours.startTime
+      const endTimeStr = dayWorkingHours.endTime
+      const [startHour, startMin] = startTimeStr.split(':').map(Number)
+      const [endHour, endMin] = endTimeStr.split(':').map(Number)
+
+      if (startHour === undefined || startMin === undefined || endHour === undefined || endMin === undefined ||
+          isNaN(startHour) || isNaN(startMin) || isNaN(endHour) || isNaN(endMin)) {
+        hasWorkingHoursForSelectedDay.value = false
+        handleWarning(t('dashboard.noWorkingHoursForDay'))
+        return
+      }
+
+      const startTime = new Date()
+      startTime.setHours(startHour, startMin, 0, 0)
+      manualEntryStartTime.value = startTime
+
+      const endTime = new Date()
+      endTime.setHours(endHour, endMin, 0, 0)
+      manualEntryEndTime.value = endTime
+    } catch (error: any) {
+      hasWorkingHoursForSelectedDay.value = false
+      handleError(error, t('dashboard.defaultHoursError'))
+    }
+  }
+
+  // Handle date change in manual entry - always apply default working hours
+  const onManualEntryDateChange = async (date: Date) => {
+    if (date) {
+      await applyDefaultWorkingHours(date)
+    }
+  }
+
+  // Create manual entry
+  const createManualEntry = async () => {
+    try {
+      const date = manualEntryDate.value
+
+      const clockIn = new Date(date)
+      clockIn.setHours(manualEntryStartTime.value.getHours(), manualEntryStartTime.value.getMinutes(), 0, 0)
+
+      const clockOut = new Date(date)
+      clockOut.setHours(manualEntryEndTime.value.getHours(), manualEntryEndTime.value.getMinutes(), 0, 0)
+
+      await TimeEntriesService.createTimeEntry({
+        clockIn: clockIn.toISOString(),
+        clockOut: clockOut.toISOString(),
+        breakMinutes: manualEntryBreakMinutes.value || 0,
+        entryType: 'WORK' as any,
+        notes: manualEntryNotes.value
+      })
+
+      handleSuccess(t('dashboard.manualEntryCreated'))
+      showManualEntryDialog.value = false
+      await invalidateCacheAndReload()
+    } catch (error: any) {
+      handleError(error, t('dashboard.manualEntryError'))
+    }
+  }
+
   // Handle time off from calendar
   const handleTimeOffFromCalendar = (payload: { date: string }) => {
     selectedDate.value = payload.date
@@ -490,6 +599,12 @@ export function useDashboard() {
     selectedTimeOffEntries,
     showTimeOffDialog,
     showEditDialog,
+    showManualEntryDialog,
+    manualEntryDate,
+    manualEntryStartTime,
+    manualEntryEndTime,
+    manualEntryBreakMinutes,
+    manualEntryNotes,
 
     // Computed
     hasTodayWorkingHours,
@@ -509,8 +624,12 @@ export function useDashboard() {
     cancelEntry,
     createQuickWorkEntry,
     handleQuickEntryFromCalendar,
+    handleManualEntryFromCalendar,
     handleTimeOffFromCalendar,
     handleEditAllFromCalendar,
-    handleFormSaved
+    handleFormSaved,
+    applyDefaultWorkingHours,
+    onManualEntryDateChange,
+    createManualEntry
   }
 }

@@ -1134,7 +1134,8 @@ onMounted(() => {
       v-model:visible="clockOutDialogVisible"
       :header="t('timeEntries.clockOut')"
       :modal="true"
-      :style="{ width: '400px' }"
+      :style="{ width: '90vw', maxWidth: '400px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="field">
         <label for="clockOutNotes">{{ t('timeEntries.notes') }}</label>
@@ -1157,56 +1158,56 @@ onMounted(() => {
       v-model:visible="manualEntryDialogVisible"
       :header="t('timeEntries.manualEntry')"
       :modal="true"
-      :style="{ width: '500px' }"
+      :style="{ width: '90vw', maxWidth: '500px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="manual-entry-form">
         <!-- Type field removed - only WORK supported. For absences, use TimeOff view. -->
-        <div class="field">
-          <label for="manualEntryDate">{{ t('timeEntries.day') }}</label>
-          <DatePicker
-            id="manualEntryDate"
-            v-model="manualEntryDate"
-            show-icon
-            @date-select="onDateChange"
-            class="w-full"
-          />
-        </div>
-
-        <div class="field checkbox-field">
-          <Checkbox
-            v-model="useDefaultHours"
-            input-id="useDefaultHours"
-            :binary="true"
-            @change="onUseDefaultHoursChange"
-          />
-          <label for="useDefaultHours" class="checkbox-label">
-            {{ t('timeEntries.useDefaultHours') }}
-          </label>
-        </div>
-
-        <div class="field-row">
-          <div class="field field-half">
-            <label for="manualStartTime">{{ t('timeEntries.startTime') }}</label>
+        <div class="datetime-fields">
+          <div class="field">
+            <label for="manualEntryDate">{{ t('timeEntries.day') }}</label>
             <DatePicker
-              id="manualStartTime"
-              v-model="manualEntryStartTime"
-              time-only
-              :disabled="useDefaultHours"
-              :manual-input="true"
-              class="w-full"
+              id="manualEntryDate"
+              v-model="manualEntryDate"
+              show-icon
+              @date-select="onDateChange"
             />
           </div>
 
-          <div class="field field-half">
-            <label for="manualEndTime">{{ t('timeEntries.endTime') }}</label>
-            <DatePicker
-              id="manualEndTime"
-              v-model="manualEntryEndTime"
-              time-only
-              :disabled="useDefaultHours"
-              :manual-input="true"
-              class="w-full"
+          <div class="field checkbox-field">
+            <Checkbox
+              v-model="useDefaultHours"
+              input-id="useDefaultHours"
+              :binary="true"
+              @change="onUseDefaultHoursChange"
             />
+            <label for="useDefaultHours" class="checkbox-label">
+              {{ t('timeEntries.useDefaultHours') }}
+            </label>
+          </div>
+
+          <div class="time-fields">
+            <div class="field">
+              <label for="manualStartTime">{{ t('timeEntries.startTime') }}</label>
+              <DatePicker
+                id="manualStartTime"
+                v-model="manualEntryStartTime"
+                time-only
+                :disabled="useDefaultHours"
+                :manual-input="true"
+              />
+            </div>
+
+            <div class="field">
+              <label for="manualEndTime">{{ t('timeEntries.endTime') }}</label>
+              <DatePicker
+                id="manualEndTime"
+                v-model="manualEntryEndTime"
+                time-only
+                :disabled="useDefaultHours"
+                :manual-input="true"
+              />
+            </div>
           </div>
         </div>
 
@@ -1247,7 +1248,8 @@ onMounted(() => {
       v-model:visible="editDialogVisible"
       :header="t('timeEntries.edit')"
       :modal="true"
-      :style="{ width: '500px' }"
+      :style="{ width: '90vw', maxWidth: '500px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="manual-entry-form">
         <!-- Type field removed - only WORK supported. -->
@@ -1348,5 +1350,26 @@ onMounted(() => {
   50% {
     opacity: 0.5;
   }
+}
+
+/* Manual entry form - date and time fields alignment using CSS Grid */
+.manual-entry-form .datetime-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  max-width: 300px;
+}
+
+.manual-entry-form .datetime-fields > .field:first-child,
+.manual-entry-form .datetime-fields > .checkbox-field {
+  grid-column: 1 / -1;
+}
+
+.manual-entry-form .datetime-fields .time-fields {
+  display: contents;
+}
+
+.manual-entry-form .datetime-fields :deep(.p-datepicker) {
+  width: 100%;
 }
 </style>

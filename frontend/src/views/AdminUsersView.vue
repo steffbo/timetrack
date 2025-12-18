@@ -46,7 +46,8 @@
       v-model:visible="dialogVisible"
       :header="isEdit ? t('users.editUser') : t('users.createUser')"
       modal
-      style="width: 500px"
+      :style="{ width: '90vw', maxWidth: '500px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <form @submit.prevent="handleSave">
         <div class="field">

@@ -3,7 +3,8 @@
     v-model:visible="isVisible"
     :header="t('dashboard.selectedDay.addTimeOffTitle')"
     :modal="true"
-    :style="{ width: '600px' }"
+    :style="{ width: '90vw', maxWidth: '600px' }"
+    :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     @update:visible="handleVisibilityChange"
   >
     <div class="p-fluid">
@@ -231,6 +232,12 @@ const handleSave = async () => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .type-buttons {
+    grid-template-columns: 1fr;
+  }
 }
 
 .type-btn {

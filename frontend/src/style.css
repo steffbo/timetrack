@@ -21,9 +21,52 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: var(--p-font-family);
+  overflow-x: hidden;
 }
 
 #app {
   width: 100%;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Mobile Dialog Improvements */
+@media (max-width: 640px) {
+  :deep(.p-dialog) {
+    margin: 0.5rem !important;
+    max-width: calc(100vw - 1rem) !important;
+    width: calc(100vw - 1rem) !important;
+    overflow-x: hidden !important;
+  }
+
+  :deep(.p-dialog-content) {
+    padding: 0.75rem 0.75rem !important;
+    max-height: calc(100vh - 8rem);
+    overflow-y: auto;
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  :deep(.p-dialog-header) {
+    padding: 0.75rem 1rem !important;
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  :deep(.p-dialog-footer) {
+    padding: 0.75rem 1rem !important;
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Make manual entry form more compact on mobile */
+@media (max-width: 640px) {
+  /* Reduce modal width slightly for better proportions */
+  .manual-entry-form {
+    max-width: 100%;
+  }
 }

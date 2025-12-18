@@ -10,6 +10,7 @@
           :half-day-holidays-enabled="currentUser?.halfDayHolidaysEnabled || false"
           @month-change="handleMonthChange"
           @quick-entry="handleQuickEntryFromCalendar"
+          @manual-entry="handleManualEntryFromCalendar"
           @add-time-off="handleTimeOffFromCalendar"
           @edit-all="handleEditAllFromCalendar"
         />
@@ -88,6 +89,80 @@
       :time-off-entries="selectedTimeOffEntries"
       @saved="handleFormSaved"
     />
+
+    <!-- Manual Entry Dialog -->
+    <Dialog
+      v-model:visible="showManualEntryDialog"
+      :header="t('timeEntries.manualEntry')"
+      :modal="true"
+      :style="{ width: '90vw', maxWidth: '500px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '80vw', '480px': '90vw' }"
+    >
+      <div class="manual-entry-form">
+        <div class="datetime-fields">
+          <div class="field">
+            <label for="manualEntryDate">{{ t('timeEntries.day') }}</label>
+            <DatePicker
+              id="manualEntryDate"
+              v-model="manualEntryDate"
+              show-icon
+              @date-select="onManualEntryDateChange"
+            />
+          </div>
+
+          <div class="time-fields">
+            <div class="field">
+              <label for="manualStartTime">{{ t('timeEntries.startTime') }}</label>
+              <DatePicker
+                id="manualStartTime"
+                v-model="manualEntryStartTime"
+                time-only
+                :manual-input="true"
+              />
+            </div>
+
+            <div class="field">
+              <label for="manualEndTime">{{ t('timeEntries.endTime') }}</label>
+              <DatePicker
+                id="manualEndTime"
+                v-model="manualEntryEndTime"
+                time-only
+                :manual-input="true"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="manualBreakMinutes">{{ t('timeEntries.breakMinutes') }}</label>
+          <InputNumber
+            id="manualBreakMinutes"
+            v-model="manualEntryBreakMinutes"
+            :min="0"
+            :max="480"
+            suffix=" min"
+            class="manual-entry-break"
+          />
+        </div>
+        <div class="field">
+          <label for="manualNotes">{{ t('timeEntries.notes') }}</label>
+          <Textarea
+            id="manualNotes"
+            v-model="manualEntryNotes"
+            rows="2"
+            class="w-full"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <Button :label="t('cancel')" severity="secondary" @click="showManualEntryDialog = false" />
+        <Button
+          :label="t('save')"
+          severity="primary"
+          @click="createManualEntry"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -99,6 +174,11 @@ import { useDashboard } from '@/composables/useDashboard'
 import MonthlyCalendar from '@/components/dashboard/MonthlyCalendar.vue'
 import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
 import DayEntriesEditor from '@/components/dashboard/DayEntriesEditor.vue'
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
+import DatePicker from '@/components/common/DatePicker.vue'
+import InputNumber from 'primevue/inputnumber'
+import Textarea from 'primevue/textarea'
 
 const { t } = useI18n()
 const { currentUser } = useAuth()
@@ -116,6 +196,12 @@ const {
   selectedTimeOffEntries,
   showTimeOffDialog,
   showEditDialog,
+  showManualEntryDialog,
+  manualEntryDate,
+  manualEntryStartTime,
+  manualEntryEndTime,
+  manualEntryBreakMinutes,
+  manualEntryNotes,
   hasTodayWorkingHours,
   nextVacationText,
   loadInitialData,
@@ -130,9 +216,12 @@ const {
   cancelEntry,
   createQuickWorkEntry,
   handleQuickEntryFromCalendar,
+  handleManualEntryFromCalendar,
   handleTimeOffFromCalendar,
   handleEditAllFromCalendar,
-  handleFormSaved
+  handleFormSaved,
+  onManualEntryDateChange,
+  createManualEntry
 } = useDashboard()
 
 
@@ -154,6 +243,7 @@ onMounted(async () => {
   padding: var(--tt-view-padding);
   max-width: 100%;
   overflow-x: hidden;
+  min-height: 0;
 }
 
 /* Main Layout: Calendar Left, Sidebar Right */
@@ -268,7 +358,7 @@ onMounted(async () => {
 
 @media (max-width: 480px) {
   .dashboard {
-    padding: var(--tt-view-padding-xs);
+    padding: 0.5rem;
   }
 
   .dashboard-layout {
@@ -288,5 +378,29 @@ onMounted(async () => {
   .stat-card {
     padding: var(--tt-spacing-sm);
   }
+
+  .actions-stats-card {
+    padding: var(--tt-spacing-sm);
+  }
+}
+
+/* Manual entry form - date and time fields alignment using CSS Grid */
+.manual-entry-form .datetime-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  max-width: 300px;
+}
+
+.manual-entry-form .datetime-fields > .field:first-child {
+  grid-column: 1 / -1;
+}
+
+.manual-entry-form .datetime-fields .time-fields {
+  display: contents;
+}
+
+.manual-entry-form .datetime-fields :deep(.p-datepicker) {
+  width: 100%;
 }
 </style>

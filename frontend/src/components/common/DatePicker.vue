@@ -1,5 +1,5 @@
 <template>
-  <Calendar
+  <PrimeDatePicker
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
     :date-format="dateFormat"
@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import Calendar from 'primevue/calendar'
+import PrimeDatePicker from 'primevue/datepicker'
 import type { DatePickerProps, DatePickerEmits } from '@/types/datePicker'
 
 withDefaults(defineProps<DatePickerProps>(), {

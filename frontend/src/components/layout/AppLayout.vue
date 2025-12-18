@@ -40,4 +40,12 @@ import AppNavbar from './AppNavbar.vue'
     padding: 1rem;
   }
 }
+
+/* Mobile - minimal padding */
+@media (max-width: 480px) {
+  .app-content {
+    width: 100vw;
+    padding: 0.5rem;
+  }
+}
 </style>

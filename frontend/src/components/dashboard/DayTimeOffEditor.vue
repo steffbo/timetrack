@@ -3,7 +3,8 @@
     v-model:visible="isVisible"
     :header="t('dashboard.selectedDay.editTimeOffTitle')"
     :modal="true"
-    :style="{ width: '700px' }"
+    :style="{ width: '90vw', maxWidth: '700px' }"
+    :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     @update:visible="handleVisibilityChange"
   >
     <div v-if="timeOffEntries.length === 0" class="no-entries">
@@ -64,7 +65,8 @@
     v-model:visible="deleteDialogVisible"
     :header="t('confirm')"
     :modal="true"
-    :style="{ width: '450px' }"
+    :style="{ width: '90vw', maxWidth: '450px' }"
+    :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
   >
     <div class="flex align-items-center">
       <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
@@ -92,7 +94,8 @@
     v-model:visible="editDialogVisible"
     :header="t('dashboard.selectedDay.editTimeOffEntryTitle')"
     :modal="true"
-    :style="{ width: '500px' }"
+    :style="{ width: '90vw', maxWidth: '500px' }"
+    :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
   >
     <div v-if="editingEntry" class="p-fluid">
       <div class="field">

@@ -147,7 +147,8 @@
       v-model:visible="dialogVisible"
       :header="editMode ? t('recurringOffDays.edit') : t('recurringOffDays.create')"
       :modal="true"
-      :style="{ width: '600px' }"
+      :style="{ width: '90vw', maxWidth: '600px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="p-fluid">
         <div class="field">
@@ -268,7 +269,8 @@
       v-model:visible="deleteDialogVisible"
       :header="t('confirm')"
       :modal="true"
-      :style="{ width: '450px' }"
+      :style="{ width: '90vw', maxWidth: '450px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="flex align-items-center">
         <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />

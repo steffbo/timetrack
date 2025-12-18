@@ -171,16 +171,24 @@
           outlined
           fluid
         />
-        <!-- Quick Entry if no entries and is working day -->
-        <Button
-          v-else-if="canCreateQuickEntry(stickyDay)"
-          :label="t('dashboard.selectedDay.quickEntry')"
-          icon="pi pi-bolt"
-          size="small"
-          @click="handleQuickEntryClick(stickyDay)"
-          outlined
-          fluid
-        />
+        <!-- Quick Entry buttons if no entries and is working day -->
+        <div v-else-if="canCreateQuickEntry(stickyDay)" class="quick-entry-buttons">
+          <Button
+            :label="t('dashboard.selectedDay.quickEntry')"
+            icon="pi pi-bolt"
+            size="small"
+            @click="handleQuickEntryClick(stickyDay)"
+            class="quick-entry-left"
+          />
+          <Button
+            icon="pi pi-pencil"
+            size="small"
+            @click="handleManualEntryClick(stickyDay)"
+            class="quick-entry-right"
+            outlined
+            :title="t('dashboard.selectedDay.manualEntry')"
+          />
+        </div>
         <!-- Add Time Off button only if no entries exist -->
         <Button
           v-if="!hasTimeEntries(stickyDay) && !hasTimeOff(stickyDay)"
@@ -244,6 +252,7 @@ interface Emits {
   (e: 'monthChange', date: Date): void
   (e: 'daySelected', payload: { date: string, summary: DailySummaryResponse | undefined }): void
   (e: 'quickEntry', payload: { date: string, startTime: string, endTime: string }): void
+  (e: 'manualEntry', payload: { date: string }): void
   (e: 'addTimeOff', payload: { date: string }): void
   (e: 'editAll', payload: { date: string, entries: TimeEntryResponse[], timeOffEntries: TimeOffResponse[] }): void
 }
@@ -1124,6 +1133,33 @@ const handleQuickEntryClick = (day: number | string) => {
   stickyPanelVisible.value = false
 }
 
+// Handle manual entry button click
+const handleManualEntryClick = (day: number | string) => {
+  let dateStr: string
+
+  if (typeof day === 'string' && (day.startsWith('prev-') || day.startsWith('next-'))) {
+    // Adjacent month day
+    const [type, dayNum] = day.split('-')
+    const actualDay = parseInt(dayNum)
+    const monthData = type === 'prev'
+      ? previousMonthDays.value.find(d => d.day === actualDay)
+      : nextMonthDays.value.find(d => d.day === actualDay)
+
+    if (monthData) {
+      dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+    } else {
+      return
+    }
+  } else {
+    // Current month day
+    const actualDay = typeof day === 'number' ? day : parseInt(day)
+    dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+  }
+
+  emit('manualEntry', { date: dateStr })
+  stickyPanelVisible.value = false
+}
+
 // Handle time off button click
 const handleTimeOffClick = (day: number | string) => {
   let dateStr: string
@@ -1190,6 +1226,7 @@ const handleEditAllClick = (day: number | string) => {
 <style scoped>
 .monthly-calendar {
   height: 100%;
+  overflow: visible;
 }
 
 .calendar-header {
@@ -1407,6 +1444,30 @@ const handleEditAllClick = (day: number | string) => {
   color: white;
 }
 
+.quick-entry-buttons {
+  display: flex;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.quick-entry-left {
+  flex: 1;
+  background: var(--p-primary-color);
+  border-color: var(--p-primary-color);
+  color: white;
+}
+
+.quick-entry-left:hover {
+  background: var(--p-primary-color);
+  opacity: 0.9;
+}
+
+.quick-entry-right {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  padding: 0.5rem;
+}
+
 .detail-section {
   margin-top: 0.75rem;
   margin-bottom: 0.25rem;
@@ -1424,6 +1485,10 @@ const handleEditAllClick = (day: number | string) => {
     font-size: 1.25rem;
   }
 
+  .calendar-header {
+    padding: 0.75rem;
+  }
+
   .calendar-day {
     min-height: 50px;
     padding: 0.25rem;
@@ -1439,6 +1504,60 @@ const handleEditAllClick = (day: number | string) => {
 
   .day-emoji {
     font-size: 0.65rem;
+  }
+
+  .calendar-grid {
+    gap: 0.15rem;
+  }
+
+  .calendar-weekday {
+    padding: 0.375rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-header {
+    padding: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .calendar-title {
+    font-size: 1.1rem;
+  }
+
+  .calendar-title-section {
+    order: 2;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .nav-buttons-left,
+  .nav-buttons-right {
+    min-width: auto;
+  }
+
+  .calendar-day {
+    min-height: 45px;
+    padding: 0.2rem;
+  }
+
+  .day-number {
+    font-size: 0.8rem;
+  }
+
+  .calendar-grid {
+    gap: 0.1rem;
+  }
+
+  .calendar-weekday {
+    padding: 0.25rem;
+    font-size: 0.7rem;
+  }
+
+  .day-details {
+    min-width: 90vw;
+    max-width: 90vw;
   }
 }
 </style>

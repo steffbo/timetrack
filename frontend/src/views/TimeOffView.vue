@@ -550,7 +550,8 @@ onMounted(() => {
       v-model:visible="dialogVisible"
       :header="editMode ? t('timeOff.edit') : t('timeOff.create')"
       :modal="true"
-      :style="{ width: '600px' }"
+      :style="{ width: '90vw', maxWidth: '600px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="p-fluid">
         <div class="field">
@@ -623,7 +624,8 @@ onMounted(() => {
       v-model:visible="deleteDialogVisible"
       :header="t('confirm')"
       :modal="true"
-      :style="{ width: '450px' }"
+      :style="{ width: '90vw', maxWidth: '450px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="flex align-items-center">
         <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
@@ -650,7 +652,8 @@ onMounted(() => {
       v-model:visible="editBalanceDialogVisible"
       :header="t('vacationBalance.edit')"
       :modal="true"
-      :style="{ width: '500px' }"
+      :style="{ width: '90vw', maxWidth: '500px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="p-fluid">
         <div class="field">

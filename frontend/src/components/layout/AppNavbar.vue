@@ -20,7 +20,7 @@
           v-model:visible="warningsPanelVisible"
           :target="warningsButton"
           :dismissable="true"
-          :style="{ width: '500px' }"
+          :style="{ width: '90vw', maxWidth: '500px' }"
         >
           <WarningsCard :inline="true" />
         </Popover>

@@ -182,7 +182,8 @@ onMounted(() => {
       v-model:visible="editDialogVisible"
       :header="t('vacationBalance.edit')"
       :modal="true"
-      :style="{ width: '500px' }"
+      :style="{ width: '90vw', maxWidth: '500px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="p-fluid">
         <div class="field">
