@@ -31,12 +31,7 @@ import { isValidDateString } from '@/types/enums'
 
 const { t } = useI18n()
 
-interface Props {
-  startDate?: string
-  endDate?: string
-}
-
-const props = defineProps<Props>({
+const props = defineProps({
   startDate: {
     type: String,
     default: undefined,

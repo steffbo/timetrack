@@ -142,8 +142,7 @@
 
   <!-- Hover popover for day details -->
   <Popover
-    v-model:visible="hoverPanelVisible"
-    :target="hoverPanelTarget"
+    ref="hoverPopoverRef"
     :dismissable="false"
   >
     <div v-if="hoveredDay !== null" class="day-details">
@@ -153,8 +152,7 @@
 
   <!-- Sticky popover for day details -->
   <Popover
-    v-model:visible="stickyPanelVisible"
-    :target="stickyPanelTarget"
+    ref="stickyPopoverRef"
     :dismissable="true"
     @hide="handleOverlayHide"
   >
@@ -199,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
@@ -223,6 +221,8 @@ const hoverPanelVisible = ref(false)
 const stickyPanelVisible = ref(false)
 const hoverPanelTarget = ref<HTMLElement | null>(null)
 const stickyPanelTarget = ref<HTMLElement | null>(null)
+const hoverPopoverRef = ref<any>(null)
+const stickyPopoverRef = ref<any>(null)
 const dayRefs = ref<Map<number, HTMLElement>>(new Map())
 let hoverTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -242,6 +242,7 @@ import type { TimeEntryResponse, TimeOffResponse } from '@/api/generated'
 
 interface Emits {
   (e: 'monthChange', date: Date): void
+  (e: 'daySelected', payload: { date: string, summary: DailySummaryResponse | undefined }): void
   (e: 'quickEntry', payload: { date: string, startTime: string, endTime: string }): void
   (e: 'addTimeOff', payload: { date: string }): void
   (e: 'editAll', payload: { date: string, entries: TimeEntryResponse[], timeOffEntries: TimeOffResponse[] }): void
@@ -620,6 +621,9 @@ const handleAdjacentDayClick = (day: number, type: 'prev' | 'next', event: Mouse
   }
 
   // Hide hover panel
+  if (hoverPopoverRef.value) {
+    hoverPopoverRef.value.hide()
+  }
   hoverPanelVisible.value = false
 
   // Get the actual date for this adjacent day
@@ -638,9 +642,10 @@ const handleAdjacentDayClick = (day: number, type: 'prev' | 'next', event: Mouse
   const targetElement = dayRefs.value.get(key as any)
   if (targetElement) {
     stickyDay.value = null // Clear previous sticky
-    setTimeout(() => {
+    setTimeout(async () => {
       stickyDay.value = key as any
       stickyPanelTarget.value = targetElement
+      await nextTick()
       stickyPanelVisible.value = true
     }, 50)
   }
@@ -661,11 +666,12 @@ const handleAdjacentDayHover = (day: number, type: 'prev' | 'next', event: Mouse
   }
 
   // Show hover overlay with reduced delay (100ms)
-  hoverTimeout = setTimeout(() => {
+  hoverTimeout = setTimeout(async () => {
     hoveredDay.value = key as any
     const targetElement = dayRefs.value.get(key as any)
     if (targetElement) {
       hoverPanelTarget.value = targetElement
+      await nextTick()
       hoverPanelVisible.value = true
     }
   }, 100)
@@ -714,8 +720,8 @@ const handleDayHover = (day: number, event: MouseEvent) => {
   hoverTimeout = setTimeout(() => {
     hoveredDay.value = day
     const targetElement = dayRefs.value.get(day)
-    if (targetElement) {
-      hoverPanelTarget.value = targetElement
+    if (targetElement && hoverPopoverRef.value) {
+      hoverPopoverRef.value.show(event, targetElement)
       hoverPanelVisible.value = true
     }
   }, 100)
@@ -730,12 +736,16 @@ const handleDayLeave = () => {
   }
 
   // Hide the hover panel
+  if (hoverPopoverRef.value) {
+    hoverPopoverRef.value.hide()
+  }
   hoverPanelVisible.value = false
   hoveredDay.value = null
+  hoverPanelTarget.value = null
 }
 
 // Handle day click for sticky overlay
-const handleDayClick = (day: number, event: MouseEvent) => {
+const handleDayClick = async (day: number, event: MouseEvent) => {
   // Clear any hover timeout
   if (hoverTimeout) {
     clearTimeout(hoverTimeout)
@@ -743,6 +753,9 @@ const handleDayClick = (day: number, event: MouseEvent) => {
   }
 
   // Hide hover panel
+  if (hoverPopoverRef.value) {
+    hoverPopoverRef.value.hide()
+  }
   hoverPanelVisible.value = false
 
   // Emit day selected event for dashboard interaction
@@ -752,23 +765,39 @@ const handleDayClick = (day: number, event: MouseEvent) => {
 
   // If clicking the same day that is already sticky, toggle off
   if (day === stickyDay.value) {
+    if (stickyPopoverRef.value) {
+      stickyPopoverRef.value.hide()
+    }
     stickyPanelVisible.value = false
     stickyDay.value = null
+    stickyPanelTarget.value = null
   } else {
     // Hide the previous sticky panel if it exists
-    if (stickyDay.value !== null) {
+    if (stickyDay.value !== null && stickyPopoverRef.value) {
+      stickyPopoverRef.value.hide()
       stickyPanelVisible.value = false
     }
 
     // Update the sticky day state and show the panel
     const targetElement = dayRefs.value.get(day)
+    
     if (targetElement) {
-      // Use a small delay to ensure the hide completes before updating state and showing the new one
+      // First hide any existing panel
+      if (stickyPopoverRef.value) {
+        stickyPopoverRef.value.hide()
+      }
+      
+      // Wait for hide to complete, then show
+      await nextTick()
       setTimeout(() => {
         stickyDay.value = day
-        stickyPanelTarget.value = targetElement
-        stickyPanelVisible.value = true
-      }, 50)
+        
+        // Use imperative API to show popover with target
+        if (stickyPopoverRef.value) {
+          stickyPopoverRef.value.show(event, targetElement)
+          stickyPanelVisible.value = true
+        }
+      }, 100)
     }
   }
 }
@@ -778,6 +807,7 @@ const handleOverlayHide = () => {
   // If user manually dismissed the overlay (click outside, ESC, etc), unsticky it
   stickyPanelVisible.value = false
   stickyDay.value = null
+  stickyPanelTarget.value = null
 }
 
 // Helper to get working day config for a specific weekday (1=Monday, 7=Sunday)
