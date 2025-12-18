@@ -328,9 +328,6 @@
   "timeEntries": {
     "conflictWarning": "Work on recurring off-day",
     "title": "Time Entries",
-    "type": {
-      "WORK": "Work"
-    },
     "showTimeOff": "Show Time Off",
     "hideTimeOff": "Hide Time Off",
     "timeOffLoadError": "Error loading time off entries",
@@ -421,6 +418,7 @@
   "actions": "Actions",
   "save": "Save",
   "cancel": "Cancel",
+  "close": "Close",
   "edit": "Edit",
   "delete": "Delete",
   "confirm": "Confirm",

@@ -174,7 +174,7 @@
       "addTimeOff": "Abwesenheit eintragen",
       "addTimeOffTitle": "Abwesenheit hinzufügen",
       "editEntries": "Einträge bearbeiten",
-      "editEn": "Zeiteinträge verwalten",
+      "editEntriesTitle": "Zeiteinträge verwalten",
       "editTimeOff": "Abwesenheit bearbeiten",
       "editTimeOffTitle": "Abwesenheiten verwalten",
       "clearSelection": "Auswahl aufheben",
@@ -328,9 +328,6 @@
   "timeEntries": {
     "conflictWarning": "Arbeit an wiederkehrendem freien Tag",
     "title": "Zeiteinträge",
-    "type": {
-      "WORK": "Arbeit"
-    },
     "showTimeOff": "Abwesenheiten anzeigen",
     "hideTimeOff": "Abwesenheiten ausblenden",
     "timeOffLoadError": "Fehler beim Laden der Abwesenheiten",
@@ -421,6 +418,7 @@
   "actions": "Aktionen",
   "save": "Speichern",
   "cancel": "Abbrechen",
+  "close": "Schließen",
   "edit": "Bearbeiten",
   "delete": "Löschen",
   "confirm": "Bestätigen",

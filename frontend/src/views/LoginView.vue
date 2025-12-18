@@ -1,6 +1,6 @@
 <template>
   <div class="login-container">
-    <Card style="width: 400px">
+    <Card style="width: 400px" :class="{ 'shake': isShaking }">
       <template #title>
         {{ t('login.title') }}
       </template>
@@ -15,6 +15,7 @@
               required
               autocomplete="username"
               :disabled="isLoading"
+              :invalid="!!errorMessage"
               fluid
             />
           </div>
@@ -27,8 +28,9 @@
               :feedback="false"
               toggle-mask
               required
-              autocomplete="current-password"
+              :input-props="{ autocomplete: 'current-password' }"
               :disabled="isLoading"
+              :invalid="!!errorMessage"
               fluid
             />
           </div>
@@ -70,15 +72,22 @@ const credentials = ref({
 })
 
 const errorMessage = ref('')
+const isShaking = ref(false)
 
 async function handleLogin() {
   errorMessage.value = ''
+  isShaking.value = false
+  
   const success = await login(credentials.value)
 
   if (success) {
     router.push('/dashboard')
   } else {
     errorMessage.value = t('login.error')
+    isShaking.value = true
+    setTimeout(() => {
+      isShaking.value = false
+    }, 500)
   }
 }
 </script>
@@ -104,5 +113,19 @@ async function handleLogin() {
 
 form button {
   margin-top: 1rem;
+}
+
+.shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 </style>
