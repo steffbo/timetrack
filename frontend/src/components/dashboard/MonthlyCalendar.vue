@@ -149,8 +149,42 @@
 
   <!-- Sticky overlay panel for day details -->
   <OverlayPanel ref="stickyPanel" :dismissable="true" @hide="handleOverlayHide">
-    <div v-if="stickyDay !== null" class="day-details">
+    <div v-if="stickyDay !== null" class="day-details day-details-sticky">
       <div class="day-details-content" v-html="formatDayDetailsHtml(stickyDay)"></div>
+
+      <!-- Action buttons for sticky panel -->
+      <div class="day-details-actions">
+        <!-- Single Edit button if there are entries or time off -->
+        <Button
+          v-if="hasTimeEntries(stickyDay) || hasTimeOff(stickyDay)"
+          :label="t('edit')"
+          icon="pi pi-pencil"
+          size="small"
+          @click="handleEditAllClick(stickyDay)"
+          outlined
+          fluid
+        />
+        <!-- Quick Entry if no entries and is working day -->
+        <Button
+          v-else-if="canCreateQuickEntry(stickyDay)"
+          :label="t('dashboard.selectedDay.quickEntry')"
+          icon="pi pi-bolt"
+          size="small"
+          @click="handleQuickEntryClick(stickyDay)"
+          outlined
+          fluid
+        />
+        <!-- Add Time Off button only if no entries exist -->
+        <Button
+          v-if="!hasTimeEntries(stickyDay) && !hasTimeOff(stickyDay)"
+          :label="t('dashboard.selectedDay.addTimeOff')"
+          icon="pi pi-calendar-plus"
+          size="small"
+          @click="handleTimeOffClick(stickyDay)"
+          outlined
+          fluid
+        />
+      </div>
     </div>
   </OverlayPanel>
 </template>
@@ -166,6 +200,7 @@ import type { DailySummaryResponse, WorkingHoursResponse } from '@/api/generated
 import { OpenAPI } from '@/api/generated'
 import axios from 'axios'
 import { resolvePrimaryDayType } from '@/utils/dayTypePrecedence'
+import { formatDuration, calculateTimeDiffMinutes, getWeekdayNumber as getWeekdayFromDate } from '@/utils/dateTimeUtils'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -192,6 +227,9 @@ const props = defineProps<Props>()
 
 interface Emits {
   (e: 'monthChange', date: Date): void
+  (e: 'quickEntry', payload: { date: string, startTime: string, endTime: string }): void
+  (e: 'addTimeOff', payload: { date: string }): void
+  (e: 'editAll', payload: { date: string, entries: any[], timeOffEntries: any[] }): void
 }
 
 const emit = defineEmits<Emits>()
@@ -569,6 +607,17 @@ const handleAdjacentDayClick = (day: number, type: 'prev' | 'next', event: Mouse
   // Hide hover panel
   hoverPanel.value?.hide()
 
+  // Get the actual date for this adjacent day
+  const monthData = type === 'prev'
+    ? previousMonthDays.value.find(d => d.day === day)
+    : nextMonthDays.value.find(d => d.day === day)
+
+  if (monthData) {
+    const dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const summary = getAdjacentSummaryForDay(day, type)
+    emit('daySelected', { date: dateStr, summary })
+  }
+
   // Show sticky panel for adjacent day
   const key = `${type}-${day}`
   const targetElement = dayRefs.value.get(key as any)
@@ -677,6 +726,14 @@ const handleDayClick = (day: number, event: MouseEvent) => {
     hoverTimeout = null
   }
 
+  // Hide hover panel
+  hoverPanel.value?.hide()
+
+  // Emit day selected event for dashboard interaction
+  const dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  const summary = getSummaryForDay(day)
+  emit('daySelected', { date: dateStr, summary })
+
   // If clicking the same day that is already sticky, toggle off
   if (day === stickyDay.value) {
     stickyPanel.value?.hide()
@@ -713,28 +770,10 @@ const getWorkingDayConfig = (weekday: number) => {
   return props.workingHours.workingDays.find(wd => wd.weekday === weekday)
 }
 
-// Helper to get weekday number (1-7, where 1=Monday, 7=Sunday) from date
+// Helper to get weekday number (1-7, where 1=Monday, 7=Sunday) from day of month
 const getWeekdayNumber = (day: number): number => {
   const date = new Date(currentYear.value, currentMonthIndex.value, day)
-  const dayOfWeek = date.getDay() // 0=Sunday, 1=Monday, ..., 6=Saturday
-  return dayOfWeek === 0 ? 7 : dayOfWeek // Convert to 1=Monday, 7=Sunday
-}
-
-// Helper to calculate time difference in minutes
-const calculateTimeDiffMinutes = (time1: string, time2: string): number => {
-  const [h1, m1] = time1.split(':').map(Number)
-  const [h2, m2] = time2.split(':').map(Number)
-  const minutes1 = h1 * 60 + m1
-  const minutes2 = h2 * 60 + m2
-  return Math.abs(minutes1 - minutes2)
-}
-
-// Helper to format duration in hours and minutes
-const formatDuration = (hours: number): string => {
-  const h = Math.floor(hours)
-  const m = Math.round((hours - h) * 60)
-  if (m === 0) return `${h}h`
-  return `${h}h ${m}m`
+  return getWeekdayFromDate(date)
 }
 
 // Helper to get book emoji based on time discrepancy
@@ -895,10 +934,9 @@ const formatDayDetailsHtml = (day: number | string): string => {
     })
   }
 
-  // Hours info - only show if it's NOT an absence day (no PTO and no recurring off-days)
-  const isAbsenceDay = hasPTOEntries || (summary.recurringOffDays && summary.recurringOffDays.length > 0)
-  if (!isAbsenceDay) {
-    // Get working day config for this day
+  // Show work hours info only if there are actual work entries
+  if (summary.entries && summary.entries.length > 0) {
+    // Get working day config for comparison
     let weekday: number
     if (isAdjacentDay) {
       // For adjacent days, calculate the weekday from the actual date
@@ -918,38 +956,195 @@ const formatDayDetailsHtml = (day: number | string): string => {
     }
     const workingDayConfig = getWorkingDayConfig(weekday)
 
-    // Show planned times if available
+    // Show planned times first for comparison
     if (workingDayConfig?.isWorkingDay && workingDayConfig.startTime && workingDayConfig.endTime) {
       const plannedHours = workingDayConfig.hours || 0
       parts.push(`<div class="detail-row">⏲️ ${workingDayConfig.startTime} - ${workingDayConfig.endTime} (${formatDuration(plannedHours)})</div>`)
     }
 
-    // Show actual times if there are entries
-    if (summary.entries && summary.entries.length > 0) {
-      // Calculate actual start and end times from all entries
-      const clockIns = summary.entries.filter(e => e.clockIn).map(e => e.clockIn!)
-      const clockOuts = summary.entries.filter(e => e.clockOut).map(e => e.clockOut!)
+    // Calculate actual start and end times from all entries
+    const clockIns = summary.entries.filter(e => e.clockIn).map(e => e.clockIn!)
+    const clockOuts = summary.entries.filter(e => e.clockOut).map(e => e.clockOut!)
 
-      if (clockIns.length > 0 && clockOuts.length > 0) {
-        const earliestClockIn = new Date(Math.min(...clockIns.map(d => new Date(d).getTime())))
-        const latestClockOut = new Date(Math.max(...clockOuts.map(d => new Date(d).getTime())))
+    if (clockIns.length > 0 && clockOuts.length > 0) {
+      const earliestClockIn = new Date(Math.min(...clockIns.map(d => new Date(d).getTime())))
+      const latestClockOut = new Date(Math.max(...clockOuts.map(d => new Date(d).getTime())))
 
-        const actualStart = earliestClockIn.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-        const actualEnd = latestClockOut.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+      const actualStart = earliestClockIn.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+      const actualEnd = latestClockOut.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
 
-        // Determine book emoji based on discrepancy with planned times
-        let bookEmoji = '📘' // Default blue book
-        if (workingDayConfig?.startTime && workingDayConfig?.endTime) {
-          bookEmoji = getBookEmoji(actualStart, actualEnd, workingDayConfig.startTime, workingDayConfig.endTime)
-        }
-
-        parts.push(`<div class="detail-row">${bookEmoji} ${actualStart} - ${actualEnd} (${formatDuration(summary.actualHours)})</div>`)
+      // Determine book emoji based on discrepancy with planned times
+      let bookEmoji = '📘' // Default blue book
+      if (workingDayConfig?.startTime && workingDayConfig?.endTime) {
+        bookEmoji = getBookEmoji(actualStart, actualEnd, workingDayConfig.startTime, workingDayConfig.endTime)
       }
+
+      parts.push(`<div class="detail-row">${bookEmoji} ${actualStart} - ${actualEnd} (${formatDuration(summary.actualHours)})</div>`)
     }
   }
 
   return parts.join('')
 }
+
+// Helper to get summary for a day (works with both current and adjacent months)
+const getSummaryForAnyDay = (day: number | string): DailySummaryResponse | undefined => {
+  if (typeof day === 'string' && (day.startsWith('prev-') || day.startsWith('next-'))) {
+    const [type, dayNum] = day.split('-')
+    const actualDay = parseInt(dayNum)
+    return getAdjacentSummaryForDay(actualDay, type as 'prev' | 'next')
+  } else {
+    const actualDay = typeof day === 'number' ? day : parseInt(day)
+    return getSummaryForDay(actualDay)
+  }
+}
+
+// Check if day has existing time entries
+const hasTimeEntries = (day: number | string): boolean => {
+  const summary = getSummaryForAnyDay(day)
+  return summary?.entries && summary.entries.length > 0 || false
+}
+
+// Check if day has existing time off
+const hasTimeOff = (day: number | string): boolean => {
+  const summary = getSummaryForAnyDay(day)
+  return summary?.timeOffEntries && summary.timeOffEntries.length > 0 || false
+}
+
+// Check if quick entry can be created for a day (has working hours)
+const canCreateQuickEntry = (day: number | string): boolean => {
+  let weekday: number
+  let isAdjacentDay = false
+
+  if (typeof day === 'string' && (day.startsWith('prev-') || day.startsWith('next-'))) {
+    // Adjacent month day
+    isAdjacentDay = true
+    const [type, dayNum] = day.split('-')
+    const actualDay = parseInt(dayNum)
+
+    const monthData = type === 'prev'
+      ? previousMonthDays.value.find(d => d.day === actualDay)
+      : nextMonthDays.value.find(d => d.day === actualDay)
+
+    if (monthData) {
+      const date = new Date(monthData.year, monthData.month, actualDay)
+      const dayOfWeek = date.getDay()
+      weekday = dayOfWeek === 0 ? 7 : dayOfWeek
+    } else {
+      return false
+    }
+  } else {
+    // Current month day
+    const actualDay = typeof day === 'number' ? day : parseInt(day)
+    weekday = getWeekdayNumber(actualDay)
+  }
+
+  const workingDayConfig = getWorkingDayConfig(weekday)
+  return workingDayConfig?.isWorkingDay || false
+}
+
+// Handle quick entry button click
+const handleQuickEntryClick = (day: number | string) => {
+  let dateStr: string
+  let weekday: number
+
+  if (typeof day === 'string' && (day.startsWith('prev-') || day.startsWith('next-'))) {
+    // Adjacent month day
+    const [type, dayNum] = day.split('-')
+    const actualDay = parseInt(dayNum)
+    const monthData = type === 'prev'
+      ? previousMonthDays.value.find(d => d.day === actualDay)
+      : nextMonthDays.value.find(d => d.day === actualDay)
+
+    if (monthData) {
+      dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+      const date = new Date(monthData.year, monthData.month, actualDay)
+      const dayOfWeek = date.getDay()
+      weekday = dayOfWeek === 0 ? 7 : dayOfWeek
+    } else {
+      return
+    }
+  } else {
+    // Current month day
+    const actualDay = typeof day === 'number' ? day : parseInt(day)
+    dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+    weekday = getWeekdayNumber(actualDay)
+  }
+
+  // Get working hours for this weekday
+  const workingDayConfig = getWorkingDayConfig(weekday)
+  if (!workingDayConfig || !workingDayConfig.startTime || !workingDayConfig.endTime) {
+    return
+  }
+
+  emit('quickEntry', {
+    date: dateStr,
+    startTime: workingDayConfig.startTime,
+    endTime: workingDayConfig.endTime
+  })
+  stickyPanel.value?.hide()
+}
+
+// Handle time off button click
+const handleTimeOffClick = (day: number | string) => {
+  let dateStr: string
+
+  if (typeof day === 'string' && (day.startsWith('prev-') || day.startsWith('next-'))) {
+    // Adjacent month day
+    const [type, dayNum] = day.split('-')
+    const actualDay = parseInt(dayNum)
+    const monthData = type === 'prev'
+      ? previousMonthDays.value.find(d => d.day === actualDay)
+      : nextMonthDays.value.find(d => d.day === actualDay)
+
+    if (monthData) {
+      dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+    } else {
+      return
+    }
+  } else {
+    // Current month day
+    const actualDay = typeof day === 'number' ? day : parseInt(day)
+    dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+  }
+
+  emit('addTimeOff', { date: dateStr })
+  stickyPanel.value?.hide()
+}
+
+// Handle edit all button click (both entries and time off)
+const handleEditAllClick = (day: number | string) => {
+  const summary = getSummaryForAnyDay(day)
+  if (!summary) return
+
+  let dateStr: string
+
+  if (typeof day === 'string' && (day.startsWith('prev-') || day.startsWith('next-'))) {
+    // Adjacent month day
+    const [type, dayNum] = day.split('-')
+    const actualDay = parseInt(dayNum)
+    const monthData = type === 'prev'
+      ? previousMonthDays.value.find(d => d.day === actualDay)
+      : nextMonthDays.value.find(d => d.day === actualDay)
+
+    if (monthData) {
+      dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+    } else {
+      return
+    }
+  } else {
+    // Current month day
+    const actualDay = typeof day === 'number' ? day : parseInt(day)
+    dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+  }
+
+  emit('editAll', {
+    date: dateStr,
+    entries: summary.entries || [],
+    timeOffEntries: summary.timeOffEntries || []
+  })
+  stickyPanel.value?.hide()
+}
+
 </script>
 
 <style scoped>
@@ -1116,19 +1311,60 @@ const formatDayDetailsHtml = (day: number | string): string => {
   color: var(--p-red-600);
 }
 
-/* Day details overlay styles */
+/* Day details overlay styles - style the OverlayPanel itself */
+:deep(.p-overlaypanel) {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.p-overlaypanel .p-overlaypanel-content) {
+  padding: 1rem;
+}
+
 .day-details {
-  min-width: 250px;
+  min-width: 280px;
   max-width: 400px;
 }
 
 .day-details-content {
-  font-size: 0.875rem;
+  font-size: 0.95rem;
 }
 
 .detail-row {
-  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
   line-height: 1.5;
+}
+
+.detail-row:first-child {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--p-surface-border);
+  color: var(--p-primary-color);
+}
+
+.day-details-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-surface-border);
+}
+
+.day-details-actions .p-button {
+  background: white;
+  border-color: var(--p-primary-color);
+  color: var(--p-primary-color);
+}
+
+.day-details-actions .p-button:hover {
+  background: var(--p-primary-color);
+  border-color: var(--p-primary-color);
+  color: white;
 }
 
 .detail-section {

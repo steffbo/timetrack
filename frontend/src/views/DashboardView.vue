@@ -9,17 +9,16 @@
           :working-hours="workingHours"
           :half-day-holidays-enabled="currentUser?.halfDayHolidaysEnabled || false"
           @month-change="handleMonthChange"
+          @quick-entry="handleQuickEntryFromCalendar"
+          @add-time-off="handleTimeOffFromCalendar"
+          @edit-all="handleEditAllFromCalendar"
         />
       </div>
 
       <!-- Right Side: Actions & Stats -->
       <div class="sidebar-section">
-        <!-- Warnings Card -->
-        <WarningsCard />
-
-        <!-- Quick Actions -->
-        <div class="quick-actions-section">
-          <h3>{{ t('dashboard.quickActions') }}</h3>
+        <!-- Quick Actions & Overview Card -->
+        <div class="actions-stats-card">
           <div class="action-cards">
             <!-- Clock In/Out Card -->
             <div
@@ -58,11 +57,8 @@
               </small>
             </div>
           </div>
-        </div>
 
-        <!-- Statistics -->
-        <div class="stats-section">
-          <h3>{{ t('dashboard.overview') }}</h3>
+          <!-- Statistics -->
           <div class="stats-grid">
             <div class="stat-card stat-vacation">
               <div class="stat-label">{{ t('dashboard.nextVacation') }}</div>
@@ -76,6 +72,22 @@
         </div>
       </div>
     </div>
+
+    <!-- Time Off Form Dialog -->
+    <TimeOffQuickForm
+      v-model:visible="showTimeOffDialog"
+      :selected-date="selectedDate || ''"
+      @saved="handleFormSaved"
+    />
+
+    <!-- Edit Dialog (combines entries and time-off) -->
+    <DayEntriesEditor
+      v-model:visible="showEditDialog"
+      :selected-date="selectedDate || ''"
+      :entries="selectedEntries"
+      :time-off-entries="selectedTimeOffEntries"
+      @saved="handleFormSaved"
+    />
   </div>
 </template>
 
@@ -83,10 +95,10 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
-import Button from 'primevue/button'
 import { useAuth } from '@/composables/useAuth'
 import MonthlyCalendar from '@/components/dashboard/MonthlyCalendar.vue'
-import WarningsCard from '@/components/dashboard/WarningsCard.vue'
+import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
+import DayEntriesEditor from '@/components/dashboard/DayEntriesEditor.vue'
 import { TimeEntriesService, PublicHolidaysService, WorkingHoursService, TimeOffService } from '@/api/generated'
 import type { DailySummaryResponse, PublicHolidayResponse, TimeOffResponse, WorkingHoursResponse, TimeEntryResponse } from '@/api/generated'
 
@@ -101,6 +113,15 @@ const loading = ref(false)
 const activeEntry = ref<TimeEntryResponse | null>(null)
 const nextVacation = ref<TimeOffResponse | null>(null)
 const overtimeSelectedMonth = ref<number>(0)
+
+// Selected date for dialogs (set when clicking action buttons in tooltip)
+const selectedDate = ref<string | null>(null)
+const selectedEntries = ref<any[]>([])
+const selectedTimeOffEntries = ref<any[]>([])
+
+// Dialog states
+const showTimeOffDialog = ref(false)
+const showEditDialog = ref(false)
 
 // Cache storage
 const dailySummaryCache = ref<Map<string, DailySummaryResponse>>(new Map())
@@ -602,6 +623,64 @@ const createQuickWorkEntry = async () => {
   }
 }
 
+// Handle quick entry from calendar tooltip - directly create the entry
+const handleQuickEntryFromCalendar = async (payload: { date: string, startTime: string, endTime: string }) => {
+  try {
+    const date = new Date(payload.date)
+    const [startHour, startMin] = payload.startTime.split(':').map(Number)
+    const [endHour, endMin] = payload.endTime.split(':').map(Number)
+
+    const clockIn = new Date(date)
+    clockIn.setHours(startHour, startMin, 0, 0)
+
+    const clockOut = new Date(date)
+    clockOut.setHours(endHour, endMin, 0, 0)
+
+    await TimeEntriesService.createTimeEntry({
+      clockIn: clockIn.toISOString(),
+      clockOut: clockOut.toISOString(),
+      breakMinutes: 0,
+      entryType: 'WORK',
+      notes: ''
+    })
+
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('dashboard.quickEntryCreated'),
+      life: 3000
+    })
+
+    await invalidateCacheAndReload()
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: error.body?.message || t('dashboard.quickEntryError'),
+      life: 3000
+    })
+  }
+}
+
+// Handle time off from calendar tooltip
+const handleTimeOffFromCalendar = (payload: { date: string }) => {
+  selectedDate.value = payload.date
+  showTimeOffDialog.value = true
+}
+
+// Handle edit all from calendar tooltip
+const handleEditAllFromCalendar = (payload: { date: string, entries: any[], timeOffEntries: any[] }) => {
+  selectedDate.value = payload.date
+  selectedEntries.value = payload.entries
+  selectedTimeOffEntries.value = payload.timeOffEntries
+  showEditDialog.value = true
+}
+
+// Handle successful save from forms
+const handleFormSaved = async () => {
+  await invalidateCacheAndReload()
+}
+
 onMounted(async () => {
   // Load initial data (includes daily summaries, working hours, and public holidays)
   await loadInitialData()
@@ -652,6 +731,16 @@ onMounted(async () => {
   color: #1f2937;
 }
 
+/* Actions & Stats Combined Card */
+.actions-stats-card {
+  background: var(--p-card-background);
+  border-radius: var(--tt-radius-md);
+  padding: var(--tt-card-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--tt-spacing-md);
+}
+
 /* Quick Actions Section */
 .quick-actions-section {
   background: #f8f9fa;
@@ -660,12 +749,26 @@ onMounted(async () => {
 }
 
 .action-cards {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--tt-spacing-sm);
 }
 
+.active-entry-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--tt-spacing-sm);
+  grid-column: 1 / -1;
+}
+
 /* Styles for action cards are now in shared CSS */
+
+/* Statistics Section */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--tt-spacing-sm);
+}
 
 /* Responsive layout */
 @media (max-width: 1200px) {
@@ -680,12 +783,12 @@ onMounted(async () => {
     gap: var(--tt-spacing-lg);
   }
 
-  .sidebar-section {
-    order: -1; /* Show sidebar before calendar on mobile */
-  }
-
   .calendar-section {
     min-height: auto;
+  }
+
+  .sidebar-section {
+    order: 2; /* Show sidebar after calendar on mobile */
   }
 }
 

@@ -1,6 +1,6 @@
 <template>
-  <div v-if="hasWarnings || loading" class="warnings-card">
-    <Card>
+  <div v-if="hasWarnings || loading" class="warnings-card" :class="{ inline }">
+    <Card v-if="!inline">
       <template #header>
         <div class="card-header">
           <i class="pi pi-exclamation-triangle warning-icon"></i>
@@ -46,10 +46,58 @@
         </div>
       </template>
     </Card>
+
+    <!-- Inline version (for navbar) -->
+    <div v-else class="inline-content">
+      <div v-if="loading" class="loading-state">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>{{ t('common.loading') }}</span>
+      </div>
+
+      <div v-else-if="unacknowledgedWarnings.length > 0" class="warnings-list">
+        <div v-for="warning in unacknowledgedWarnings" :key="warning.id" class="warning-item">
+          <div class="warning-icon-wrapper">
+            <i class="pi pi-calendar warning-type-icon"></i>
+          </div>
+          <div class="warning-details">
+            <strong class="warning-title">{{ t('dashboard.warnings.conflictTitle') }}</strong>
+            <p class="warning-message">
+              {{ t('dashboard.warnings.conflictMessage', {
+                date: formatDate(warning.conflictDate),
+                description: warning.recurringOffDayDescription || t('dashboard.calendar.recurringOffDay')
+              }) }}
+            </p>
+            <div class="warning-actions">
+              <Button
+                :label="t('dashboard.warnings.acknowledge')"
+                size="small"
+                severity="secondary"
+                outlined
+                @click="handleAcknowledge(warning.id)"
+                :loading="acknowledgingIds.has(warning.id)"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="no-warnings">
+        <i class="pi pi-check-circle success-icon"></i>
+        <span>{{ t('dashboard.warnings.noWarnings') }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+interface Props {
+  inline?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  inline: false
+})
+
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'

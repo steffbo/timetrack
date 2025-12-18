@@ -2,6 +2,23 @@
   <Menubar :model="menuItems">
     <template #end>
       <div class="navbar-end">
+        <!-- Warnings Icon -->
+        <Button
+          v-if="warningsCount > 0"
+          :badge="warningsCount.toString()"
+          badgeSeverity="warn"
+          icon="pi pi-exclamation-triangle"
+          severity="warning"
+          text
+          rounded
+          @click="toggleWarnings"
+          :aria-label="t('dashboard.warnings.title')"
+          class="warnings-button"
+        />
+        <OverlayPanel ref="warningsPanel" :dismissable="true" :style="{ width: '500px' }">
+          <WarningsCard :inline="true" />
+        </OverlayPanel>
+
         <span class="user-name">{{ displayName }}</span>
         <Button
           class="user-avatar-button"
@@ -21,19 +38,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Menubar from 'primevue/menubar'
 import Button from 'primevue/button'
 import Menu from 'primevue/menu'
+import OverlayPanel from 'primevue/overlaypanel'
+import WarningsCard from '@/components/dashboard/WarningsCard.vue'
 import { useAuth } from '@/composables/useAuth'
+import { RecurringOffDayWarningsService } from '@/api/generated'
 import type { MenuItem } from 'primevue/menuitem'
 
 const router = useRouter()
 const { t } = useI18n()
 const { currentUser, isAdmin, logout } = useAuth()
 const userMenu = ref()
+const warningsPanel = ref()
+const warningsCount = ref(0)
 
 const displayName = computed(() => {
   if (!currentUser.value) return ''
@@ -135,10 +157,30 @@ function toggleUserMenu(event: Event) {
   userMenu.value.toggle(event)
 }
 
+function toggleWarnings(event: Event) {
+  warningsPanel.value.toggle(event)
+}
+
+async function loadWarningsCount() {
+  try {
+    const warnings = await RecurringOffDayWarningsService.getConflictWarnings()
+    const unacknowledged = warnings.filter(w => !w.acknowledged)
+    warningsCount.value = unacknowledged.length
+  } catch (error) {
+    console.error('Failed to load warnings count:', error)
+  }
+}
+
 async function handleLogout() {
   await logout()
   router.push('/login')
 }
+
+onMounted(() => {
+  loadWarningsCount()
+  // Reload warnings count every minute
+  setInterval(loadWarningsCount, 60000)
+})
 </script>
 
 <style scoped>
