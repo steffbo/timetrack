@@ -104,6 +104,7 @@ import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import apiClient from '@/api/client'
 import { useAuth } from '@/composables/useAuth'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 import type { UpdateUserRequest } from '@/api/generated'
 
 const { t } = useI18n()

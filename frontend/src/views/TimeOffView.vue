@@ -16,6 +16,7 @@ import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import { TimeOffService, VacationBalanceService } from '@/api/generated'
 import type { TimeOffResponse, CreateTimeOffRequest, UpdateTimeOffRequest, VacationBalanceResponse, UpdateVacationBalanceRequest } from '@/api/generated'
 import { useAuth } from '@/composables/useAuth'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 
 const { t } = useI18n()
 const toast = useToast()

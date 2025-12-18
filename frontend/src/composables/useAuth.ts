@@ -23,7 +23,9 @@ if (accessTokenValue.value) {
 }
 
 export function useAuth() {
-  const { handleError } = useErrorHandler()
+  // Pass null for toast and i18n to avoid calling composables outside component setup
+  // This allows useAuth to be called from router guards and interceptors
+  const { handleError } = useErrorHandler({ toast: null, t: null })
   const isAuthenticated = computed(() => accessTokenValue.value !== null)
   const isAdmin = computed(() => currentUser.value?.role === 'ADMIN')
 

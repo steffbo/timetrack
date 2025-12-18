@@ -5,6 +5,7 @@
         <!-- Warnings Icon -->
         <Button
           v-if="warningsCount > 0"
+          ref="warningsButton"
           :badge="warningsCount.toString()"
           badgeSeverity="warn"
           icon="pi pi-exclamation-triangle"
@@ -15,9 +16,14 @@
           :aria-label="t('dashboard.warnings.title')"
           class="warnings-button"
         />
-        <OverlayPanel ref="warningsPanel" :dismissable="true" :style="{ width: '500px' }">
+        <Popover
+          v-model:visible="warningsPanelVisible"
+          :target="warningsButton"
+          :dismissable="true"
+          :style="{ width: '500px' }"
+        >
           <WarningsCard :inline="true" />
-        </OverlayPanel>
+        </Popover>
 
         <span class="user-name">{{ displayName }}</span>
         <Button
@@ -44,7 +50,7 @@ import { useI18n } from 'vue-i18n'
 import Menubar from 'primevue/menubar'
 import Button from 'primevue/button'
 import Menu from 'primevue/menu'
-import OverlayPanel from 'primevue/overlaypanel'
+import Popover from 'primevue/popover'
 import WarningsCard from '@/components/dashboard/WarningsCard.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useErrorHandler } from '@/composables/useErrorHandler'
@@ -56,7 +62,8 @@ const { t } = useI18n()
 const { currentUser, isAdmin, logout } = useAuth()
 const { handleError } = useErrorHandler()
 const userMenu = ref()
-const warningsPanel = ref()
+const warningsButton = ref()
+const warningsPanelVisible = ref(false)
 const warningsCount = ref(0)
 
 const displayName = computed(() => {
@@ -159,8 +166,8 @@ function toggleUserMenu(event: Event) {
   userMenu.value.toggle(event)
 }
 
-function toggleWarnings(event: Event) {
-  warningsPanel.value.toggle(event)
+function toggleWarnings() {
+  warningsPanelVisible.value = !warningsPanelVisible.value
 }
 
 async function loadWarningsCount() {

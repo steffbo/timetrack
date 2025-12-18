@@ -140,15 +140,24 @@
     </template>
   </Card>
 
-  <!-- Hover overlay panel for day details -->
-  <OverlayPanel ref="hoverPanel" :dismissable="false">
+  <!-- Hover popover for day details -->
+  <Popover
+    v-model:visible="hoverPanelVisible"
+    :target="hoverPanelTarget"
+    :dismissable="false"
+  >
     <div v-if="hoveredDay !== null" class="day-details">
       <div class="day-details-content" v-html="formatDayDetailsHtml(hoveredDay)"></div>
     </div>
-  </OverlayPanel>
+  </Popover>
 
-  <!-- Sticky overlay panel for day details -->
-  <OverlayPanel ref="stickyPanel" :dismissable="true" @hide="handleOverlayHide">
+  <!-- Sticky popover for day details -->
+  <Popover
+    v-model:visible="stickyPanelVisible"
+    :target="stickyPanelTarget"
+    :dismissable="true"
+    @hide="handleOverlayHide"
+  >
     <div v-if="stickyDay !== null" class="day-details day-details-sticky">
       <div class="day-details-content" v-html="formatDayDetailsHtml(stickyDay)"></div>
 
@@ -186,7 +195,7 @@
         />
       </div>
     </div>
-  </OverlayPanel>
+  </Popover>
 </template>
 
 <script setup lang="ts">
@@ -195,12 +204,13 @@ import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
-import OverlayPanel from 'primevue/overlaypanel'
+import Popover from 'primevue/popover'
 import type { DailySummaryResponse, WorkingHoursResponse } from '@/api/generated'
 import { OpenAPI } from '@/api/generated'
 import axios from 'axios'
 import { resolvePrimaryDayType } from '@/utils/dayTypePrecedence'
 import { formatDuration, calculateTimeDiffMinutes, getWeekdayNumber as getWeekdayFromDate } from '@/utils/dateTimeUtils'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -209,8 +219,10 @@ const { handleError } = useErrorHandler()
 // State for hover and sticky overlays
 const hoveredDay = ref<number | null>(null) // Currently hovered day
 const stickyDay = ref<number | null>(null) // Day that is sticky (clicked)
-const hoverPanel = ref<InstanceType<typeof OverlayPanel> | null>(null)
-const stickyPanel = ref<InstanceType<typeof OverlayPanel> | null>(null)
+const hoverPanelVisible = ref(false)
+const stickyPanelVisible = ref(false)
+const hoverPanelTarget = ref<HTMLElement | null>(null)
+const stickyPanelTarget = ref<HTMLElement | null>(null)
 const dayRefs = ref<Map<number, HTMLElement>>(new Map())
 let hoverTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -608,7 +620,7 @@ const handleAdjacentDayClick = (day: number, type: 'prev' | 'next', event: Mouse
   }
 
   // Hide hover panel
-  hoverPanel.value?.hide()
+  hoverPanelVisible.value = false
 
   // Get the actual date for this adjacent day
   const monthData = type === 'prev'
@@ -624,13 +636,12 @@ const handleAdjacentDayClick = (day: number, type: 'prev' | 'next', event: Mouse
   // Show sticky panel for adjacent day
   const key = `${type}-${day}`
   const targetElement = dayRefs.value.get(key as any)
-  if (targetElement && stickyPanel.value) {
+  if (targetElement) {
     stickyDay.value = null // Clear previous sticky
     setTimeout(() => {
       stickyDay.value = key as any
-      if (stickyPanel.value && targetElement) {
-        stickyPanel.value.show(event, targetElement)
-      }
+      stickyPanelTarget.value = targetElement
+      stickyPanelVisible.value = true
     }, 50)
   }
 }
@@ -653,8 +664,9 @@ const handleAdjacentDayHover = (day: number, type: 'prev' | 'next', event: Mouse
   hoverTimeout = setTimeout(() => {
     hoveredDay.value = key as any
     const targetElement = dayRefs.value.get(key as any)
-    if (targetElement && hoverPanel.value) {
-      hoverPanel.value.show(event, targetElement)
+    if (targetElement) {
+      hoverPanelTarget.value = targetElement
+      hoverPanelVisible.value = true
     }
   }, 100)
 }
@@ -702,8 +714,9 @@ const handleDayHover = (day: number, event: MouseEvent) => {
   hoverTimeout = setTimeout(() => {
     hoveredDay.value = day
     const targetElement = dayRefs.value.get(day)
-    if (targetElement && hoverPanel.value) {
-      hoverPanel.value.show(event, targetElement)
+    if (targetElement) {
+      hoverPanelTarget.value = targetElement
+      hoverPanelVisible.value = true
     }
   }, 100)
 }
@@ -717,7 +730,7 @@ const handleDayLeave = () => {
   }
 
   // Hide the hover panel
-  hoverPanel.value?.hide()
+  hoverPanelVisible.value = false
   hoveredDay.value = null
 }
 
@@ -730,7 +743,7 @@ const handleDayClick = (day: number, event: MouseEvent) => {
   }
 
   // Hide hover panel
-  hoverPanel.value?.hide()
+  hoverPanelVisible.value = false
 
   // Emit day selected event for dashboard interaction
   const dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
@@ -739,23 +752,22 @@ const handleDayClick = (day: number, event: MouseEvent) => {
 
   // If clicking the same day that is already sticky, toggle off
   if (day === stickyDay.value) {
-    stickyPanel.value?.hide()
+    stickyPanelVisible.value = false
     stickyDay.value = null
   } else {
     // Hide the previous sticky panel if it exists
     if (stickyDay.value !== null) {
-      stickyPanel.value?.hide()
+      stickyPanelVisible.value = false
     }
 
     // Update the sticky day state and show the panel
     const targetElement = dayRefs.value.get(day)
-    if (targetElement && stickyPanel.value) {
+    if (targetElement) {
       // Use a small delay to ensure the hide completes before updating state and showing the new one
       setTimeout(() => {
         stickyDay.value = day
-        if (stickyPanel.value && targetElement) {
-          stickyPanel.value.show(event, targetElement)
-        }
+        stickyPanelTarget.value = targetElement
+        stickyPanelVisible.value = true
       }, 50)
     }
   }
@@ -764,6 +776,7 @@ const handleDayClick = (day: number, event: MouseEvent) => {
 // Handle overlay hide event
 const handleOverlayHide = () => {
   // If user manually dismissed the overlay (click outside, ESC, etc), unsticky it
+  stickyPanelVisible.value = false
   stickyDay.value = null
 }
 
@@ -1078,7 +1091,7 @@ const handleQuickEntryClick = (day: number | string) => {
     startTime: workingDayConfig.startTime,
     endTime: workingDayConfig.endTime
   })
-  stickyPanel.value?.hide()
+  stickyPanelVisible.value = false
 }
 
 // Handle time off button click
@@ -1105,7 +1118,7 @@ const handleTimeOffClick = (day: number | string) => {
   }
 
   emit('addTimeOff', { date: dateStr })
-  stickyPanel.value?.hide()
+  stickyPanelVisible.value = false
 }
 
 // Handle edit all button click (both entries and time off)
@@ -1139,7 +1152,7 @@ const handleEditAllClick = (day: number | string) => {
     entries: summary.entries || [],
     timeOffEntries: summary.timeOffEntries || []
   })
-  stickyPanel.value?.hide()
+  stickyPanelVisible.value = false
 }
 
 </script>
