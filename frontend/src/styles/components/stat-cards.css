@@ -5,7 +5,7 @@
 
 /* Statistics Section */
 .stats-section {
-  background: #f8f9fa;
+  background: var(--tt-bg-light);
   border-radius: var(--tt-radius-md);
   padding: var(--tt-card-padding);
 }
@@ -14,7 +14,7 @@
   margin: 0 0 var(--tt-spacing-md) 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--tt-text-primary);
 }
 
 .stats-grid {
@@ -24,7 +24,7 @@
 }
 
 .stat-card {
-  background: white;
+  background: var(--tt-bg-white);
   border-radius: var(--tt-radius-sm);
   padding: var(--tt-spacing-md);
   box-shadow: var(--tt-shadow-sm);
@@ -39,7 +39,7 @@
 
 .stat-label {
   font-size: 0.8rem;
-  color: #6c757d;
+  color: var(--tt-text-secondary);
   margin-bottom: 0.4rem;
   font-weight: 500;
 }
@@ -47,7 +47,7 @@
 .stat-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--tt-text-primary);
   line-height: 1;
 }
 

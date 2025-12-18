@@ -47,12 +47,14 @@ import Menu from 'primevue/menu'
 import OverlayPanel from 'primevue/overlaypanel'
 import WarningsCard from '@/components/dashboard/WarningsCard.vue'
 import { useAuth } from '@/composables/useAuth'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 import { RecurringOffDayWarningsService } from '@/api/generated'
 import type { MenuItem } from 'primevue/menuitem'
 
 const router = useRouter()
 const { t } = useI18n()
 const { currentUser, isAdmin, logout } = useAuth()
+const { handleError } = useErrorHandler()
 const userMenu = ref()
 const warningsPanel = ref()
 const warningsCount = ref(0)
@@ -167,7 +169,7 @@ async function loadWarningsCount() {
     const unacknowledged = warnings.filter(w => !w.acknowledged)
     warningsCount.value = unacknowledged.length
   } catch (error) {
-    console.error('Failed to load warnings count:', error)
+    handleError(error, 'Failed to load warnings count', { logError: true, severity: 'warn' })
   }
 }
 

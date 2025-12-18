@@ -19,23 +19,9 @@
 
 <script setup lang="ts">
 import Calendar from 'primevue/calendar'
+import type { DateTimePickerProps, DatePickerEmits } from '@/types/datePicker'
 
-interface Props {
-  modelValue?: Date | string | null
-  showTime?: boolean
-  hourFormat?: '12' | '24'
-  dateFormat?: string
-  showIcon?: boolean
-  manualInput?: boolean
-  disabled?: boolean
-  placeholder?: string
-  minDate?: Date
-  maxDate?: Date
-  timeOnly?: boolean
-  showButtonBar?: boolean
-}
-
-withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<DateTimePickerProps>(), {
   showTime: true,
   hourFormat: '24',
   dateFormat: 'yy-mm-dd',
@@ -46,10 +32,5 @@ withDefaults(defineProps<Props>(), {
   showButtonBar: false
 })
 
-interface Emits {
-  (e: 'update:modelValue', value: Date | string | null): void
-  (e: 'dateSelect', value: Date): void
-}
-
-defineEmits<Emits>()
+defineEmits<DatePickerEmits>()
 </script>

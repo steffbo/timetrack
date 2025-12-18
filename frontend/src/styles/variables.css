@@ -61,4 +61,20 @@
   --tt-row-bg-personal: rgba(59, 130, 246, 0.1);
   --tt-row-bg-recurring-off: rgba(139, 92, 246, 0.1);
   --tt-row-bg-weekend: rgba(107, 114, 128, 0.1);
+
+  /* Text Colors */
+  --tt-text-primary: #1f2937;
+  --tt-text-secondary: #6c757d;
+  --tt-text-muted: #888;
+
+  /* Background Colors */
+  --tt-bg-white: #ffffff;
+  --tt-bg-light: #f8f9fa;
+  --tt-bg-dark: #1a1a1a;
+
+  /* Breakpoints */
+  --tt-breakpoint-sm: 480px;
+  --tt-breakpoint-md: 768px;
+  --tt-breakpoint-lg: 1024px;
+  --tt-breakpoint-xl: 1200px;
 }

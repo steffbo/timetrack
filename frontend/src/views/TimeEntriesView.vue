@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import DataTable from 'primevue/datatable'
@@ -21,13 +22,15 @@ import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntr
 
 const { t } = useI18n()
 const toast = useToast()
+const { handleError } = useErrorHandler()
 
-const timeEntries = ref<TimeEntryResponse[]>([])
-const timeOffEntries = ref<TimeOffResponse[]>([])
-const recurringOffDays = ref<RecurringOffDayResponse[]>([])
-const publicHolidays = ref<PublicHolidayResponse[]>([])
+// Use shallowRef for large arrays to improve performance
+const timeEntries = shallowRef<TimeEntryResponse[]>([])
+const timeOffEntries = shallowRef<TimeOffResponse[]>([])
+const recurringOffDays = shallowRef<RecurringOffDayResponse[]>([])
+const publicHolidays = shallowRef<PublicHolidayResponse[]>([])
 const workingHours = ref<WorkingHoursResponse | null>(null)
-const conflictWarnings = ref<RecurringOffDayConflictWarningResponse[]>([])
+const conflictWarnings = shallowRef<RecurringOffDayConflictWarningResponse[]>([])
 const showTimeOff = ref(false)
 const loading = ref(false)
 
@@ -227,7 +230,7 @@ const loadConflictWarnings = async () => {
     // Load all warnings (both acknowledged and unacknowledged) for calendar highlighting
     conflictWarnings.value = await RecurringOffDayWarningsService.getConflictWarnings(false)
   } catch (error) {
-    console.error('Error loading conflict warnings:', error)
+    handleError(error, 'Failed to load conflict warnings', { logError: true })
     conflictWarnings.value = []
   }
 }
@@ -270,13 +273,7 @@ const loadTimeOff = async () => {
     const response = await TimeOffService.getTimeOffEntries(startDateFilter.value, endDateFilter.value)
     timeOffEntries.value = response
   } catch (error) {
-    console.error('Error loading time-off entries:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: t('timeEntries.timeOffLoadError'),
-      life: 3000
-    })
+    handleError(error, t('timeEntries.timeOffLoadError'))
   }
 }
 
@@ -285,7 +282,7 @@ const loadRecurringOffDays = async () => {
     const response = await RecurringOffDaysService.getRecurringOffDays()
     recurringOffDays.value = response
   } catch (error) {
-    console.error('Error loading recurring off-days:', error)
+    handleError(error, 'Failed to load recurring off-days', { logError: true })
   }
 }
 
@@ -295,7 +292,7 @@ const loadPublicHolidays = async () => {
     const response = await PublicHolidaysService.getPublicHolidays(year)
     publicHolidays.value = response
   } catch (error) {
-    console.error('Error loading public holidays:', error)
+    handleError(error, 'Failed to load public holidays', { logError: true })
   }
 }
 
@@ -304,7 +301,7 @@ const loadWorkingHours = async () => {
     const response = await WorkingHoursService.getWorkingHours()
     workingHours.value = response
   } catch (error) {
-    console.error('Error loading working hours:', error)
+    handleError(error, 'Failed to load working hours', { logError: true })
   }
 }
 

@@ -109,6 +109,7 @@ import type { UpdateUserRequest } from '@/api/generated'
 const { t } = useI18n()
 const toast = useToast()
 const { currentUser, refreshCurrentUser } = useAuth()
+const { handleError } = useErrorHandler()
 
 const isLoading = ref(false)
 const formData = ref<UpdateUserRequest & { password?: string }>({
@@ -138,12 +139,7 @@ onMounted(async () => {
       halfDayHolidaysEnabled: userData.halfDayHolidaysEnabled || false
     }
   } catch (error) {
-    console.error('Failed to load user profile:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('profile.loadError'),
-      life: 3000
-    })
+    handleError(error, t('profile.loadError'))
   }
 })
 

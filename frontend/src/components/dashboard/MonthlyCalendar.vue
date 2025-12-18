@@ -204,6 +204,7 @@ import { formatDuration, calculateTimeDiffMinutes, getWeekdayNumber as getWeekda
 
 const { t } = useI18n()
 const toast = useToast()
+const { handleError } = useErrorHandler()
 
 // State for hover and sticky overlays
 const hoveredDay = ref<number | null>(null) // Currently hovered day
@@ -225,11 +226,13 @@ interface Props {
 
 const props = defineProps<Props>()
 
+import type { TimeEntryResponse, TimeOffResponse } from '@/api/generated'
+
 interface Emits {
   (e: 'monthChange', date: Date): void
   (e: 'quickEntry', payload: { date: string, startTime: string, endTime: string }): void
   (e: 'addTimeOff', payload: { date: string }): void
-  (e: 'editAll', payload: { date: string, entries: any[], timeOffEntries: any[] }): void
+  (e: 'editAll', payload: { date: string, entries: TimeEntryResponse[], timeOffEntries: TimeOffResponse[] }): void
 }
 
 const emit = defineEmits<Emits>()
@@ -829,13 +832,7 @@ const exportMonthlyPdf = async () => {
       life: 3000
     })
   } catch (error) {
-    console.error('PDF export error:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: t('dashboard.calendar.exportError'),
-      life: 3000
-    })
+    handleError(error, t('dashboard.calendar.exportError'))
   } finally {
     exportLoading.value = false
   }

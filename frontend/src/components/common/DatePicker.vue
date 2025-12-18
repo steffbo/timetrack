@@ -17,21 +17,9 @@
 
 <script setup lang="ts">
 import Calendar from 'primevue/calendar'
+import type { DatePickerProps, DatePickerEmits } from '@/types/datePicker'
 
-interface Props {
-  modelValue?: Date | string | null
-  dateFormat?: string
-  showIcon?: boolean
-  manualInput?: boolean
-  disabled?: boolean
-  placeholder?: string
-  minDate?: Date
-  maxDate?: Date
-  selectionMode?: 'single' | 'multiple' | 'range'
-  showButtonBar?: boolean
-}
-
-withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<DatePickerProps>(), {
   dateFormat: 'yy-mm-dd',
   showIcon: false,
   manualInput: false,
@@ -40,10 +28,5 @@ withDefaults(defineProps<Props>(), {
   showButtonBar: false
 })
 
-interface Emits {
-  (e: 'update:modelValue', value: Date | string | null): void
-  (e: 'dateSelect', value: Date): void
-}
-
-defineEmits<Emits>()
+defineEmits<DatePickerEmits>()
 </script>

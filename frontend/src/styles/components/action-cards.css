@@ -12,7 +12,7 @@
 
 /* Base Action Card - Large (Dashboard) */
 .action-card {
-  background: white;
+  background: var(--tt-bg-white);
   border-radius: var(--tt-radius-sm);
   padding: var(--tt-spacing-md);
   box-shadow: var(--tt-shadow-sm);
@@ -41,13 +41,13 @@
 .action-label {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--tt-text-primary);
 }
 
 .action-hint {
   display: block;
   margin-top: 0.35rem;
-  color: #6c757d;
+  color: var(--tt-text-secondary);
   font-size: 0.7rem;
 }
 
@@ -63,7 +63,7 @@
 
 /* Small Action Cards (Time Entries View) */
 .action-card-small {
-  background: white;
+  background: var(--tt-bg-white);
   border-radius: var(--tt-radius-sm);
   padding: var(--tt-spacing-md);
   box-shadow: var(--tt-shadow-md);
@@ -87,7 +87,7 @@
 .action-label-small {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--tt-text-primary);
 }
 
 /* Action Card Color Variants */

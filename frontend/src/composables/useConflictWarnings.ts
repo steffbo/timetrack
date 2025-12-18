@@ -1,11 +1,14 @@
 import { ref, computed } from 'vue'
 import { RecurringOffDayWarningsService } from '@/api/generated'
 import type { RecurringOffDayConflictWarningResponse } from '@/api/generated'
+import { useErrorHandler } from './useErrorHandler'
 
 const warnings = ref<RecurringOffDayConflictWarningResponse[]>([])
 const loading = ref(false)
 
 export function useConflictWarnings() {
+  const { handleError } = useErrorHandler()
+
   const unacknowledgedWarnings = computed(() =>
     warnings.value.filter(w => !w.acknowledged)
   )
@@ -19,7 +22,7 @@ export function useConflictWarnings() {
     try {
       warnings.value = await RecurringOffDayWarningsService.getConflictWarnings(unacknowledgedOnly)
     } catch (error) {
-      console.error('Error loading conflict warnings:', error)
+      handleError(error, 'Failed to load conflict warnings', { logError: true })
       warnings.value = []
     } finally {
       loading.value = false
@@ -38,7 +41,7 @@ export function useConflictWarnings() {
 
       return updatedWarning
     } catch (error) {
-      console.error('Error acknowledging warning:', error)
+      handleError(error, 'Failed to acknowledge warning', { logError: true })
       throw error
     }
   }

@@ -20,6 +20,7 @@ import { useAuth } from '@/composables/useAuth'
 const { t } = useI18n()
 const toast = useToast()
 const { currentUser } = useAuth()
+const { handleError } = useErrorHandler()
 
 const timeOffs = ref<TimeOffResponse[]>([])
 const loading = ref(false)
@@ -81,7 +82,7 @@ const loadBalance = async () => {
     if (error?.status === 404) {
       balance.value = null
     } else {
-      console.error('Failed to load vacation balance:', error)
+      handleError(error, 'Failed to load vacation balance', { logError: true })
     }
   } finally {
     balanceLoading.value = false
@@ -105,7 +106,7 @@ const calculateSickDays = (entries: TimeOffResponse[]) => {
     const total = sickEntries.reduce((sum, entry) => sum + entry.days, 0)
     sickDaysCount.value = total
   } catch (error) {
-    console.error('Failed to calculate sick days:', error)
+    handleError(error, 'Failed to calculate sick days', { logError: true })
     sickDaysCount.value = 0
   }
 }
@@ -127,7 +128,7 @@ const calculateChildSickDays = (entries: TimeOffResponse[]) => {
     const total = childSickEntries.reduce((sum, entry) => sum + entry.days, 0)
     childSickDaysCount.value = total
   } catch (error) {
-    console.error('Failed to calculate child sick days:', error)
+    handleError(error, 'Failed to calculate child sick days', { logError: true })
     childSickDaysCount.value = 0
   }
 }
@@ -202,13 +203,7 @@ const loadTimeOffs = async () => {
     calculateSickDays(response)
     calculateChildSickDays(response)
   } catch (error: any) {
-    console.error('Failed to load time offs:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: error?.body?.message || t('timeOff.loadError'),
-      life: 5000
-    })
+    handleError(error, t('timeOff.loadError'))
   } finally {
     loading.value = false
   }
@@ -285,13 +280,8 @@ const saveTimeOff = async () => {
     await loadTimeOffs()
     await loadBalance() // Refresh vacation balance after create/update
   } catch (error: any) {
-    console.error('Failed to save time off:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: error?.body?.message || (editMode.value ? t('timeOff.updateError') : t('timeOff.createError')),
-      life: 5000
-    })
+    const errorMessage = error?.body?.message || (editMode.value ? t('timeOff.updateError') : t('timeOff.createError'))
+    handleError(error, errorMessage)
   }
 }
 

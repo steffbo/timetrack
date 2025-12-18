@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth'
 import { setAccessToken } from '@/api/client'
 import type { UserResponse, LoginRequest } from '@/api/generated'
+import { useErrorHandler } from './useErrorHandler'
 
 // Storage keys
 const ACCESS_TOKEN_KEY = 'timetrack_access_token'
@@ -22,6 +23,7 @@ if (accessTokenValue.value) {
 }
 
 export function useAuth() {
+  const { handleError } = useErrorHandler()
   const isAuthenticated = computed(() => accessTokenValue.value !== null)
   const isAdmin = computed(() => currentUser.value?.role === 'ADMIN')
 
@@ -50,7 +52,7 @@ export function useAuth() {
 
       return true
     } catch (error) {
-      console.error('Login failed:', error)
+      handleError(error, 'Login failed', { logError: true })
       return false
     } finally {
       isLoading.value = false
@@ -61,7 +63,7 @@ export function useAuth() {
     try {
       await authApi.logout()
     } catch (error) {
-      console.error('Logout failed:', error)
+      handleError(error, 'Logout failed', { logError: true, severity: 'warn' })
     } finally {
       accessTokenValue.value = null
       refreshTokenValue.value = null

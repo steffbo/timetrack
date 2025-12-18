@@ -104,9 +104,11 @@ import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import { useConflictWarnings } from '@/composables/useConflictWarnings'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 
 const { t } = useI18n()
 const toast = useToast()
+const { handleError } = useErrorHandler()
 
 const {
   warnings,
@@ -142,23 +144,15 @@ const handleAcknowledge = async (warningId: number) => {
       life: 3000
     })
   } catch (error: any) {
-    console.error('Error acknowledging warning:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: error.message || t('dashboard.warnings.acknowledgeError'),
-      life: 3000
-    })
+      // Error is already handled by useConflictWarnings, but show user-friendly message
+      handleError(error, t('dashboard.warnings.acknowledgeError'))
   } finally {
     acknowledgingIds.value.delete(warningId)
   }
 }
 
 onMounted(async () => {
-  console.log('[WarningsCard] Component mounted, loading warnings...')
   await loadWarnings()
-  console.log('[WarningsCard] Warnings loaded:', warnings.value)
-  console.log('[WarningsCard] Unacknowledged count:', unacknowledgedWarnings.value.length)
 })
 </script>
 

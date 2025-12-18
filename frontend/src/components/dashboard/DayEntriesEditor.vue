@@ -229,6 +229,11 @@ const props = withDefaults(defineProps<Props>(), {
   timeOffEntries: () => []
 })
 
+// Validate selectedDate format if provided
+if (props.selectedDate && !/^\d{4}-\d{2}-\d{2}$/.test(props.selectedDate)) {
+  console.warn(`Invalid date format for selectedDate: ${props.selectedDate}. Expected YYYY-MM-DD format.`)
+}
+
 interface Emits {
   (e: 'update:visible', value: boolean): void
   (e: 'saved'): void
@@ -483,16 +488,7 @@ const confirmDeleteTimeOff = async () => {
   gap: 0.25rem;
 }
 
-.field {
-  margin-bottom: 1rem;
-}
-
-.field label {
-  display: block;
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-  color: var(--p-text-color);
-}
+/* Field styles are now in shared forms.css */
 
 /* Time-off specific styles */
 .entry-header {

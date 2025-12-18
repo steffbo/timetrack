@@ -27,15 +27,33 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import DatePicker from '@/components/common/DatePicker.vue'
+import { isValidDateString } from '@/types/enums'
 
 const { t } = useI18n()
 
 interface Props {
-  startDate: string | undefined
-  endDate: string | undefined
+  startDate?: string
+  endDate?: string
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>({
+  startDate: {
+    type: String,
+    default: undefined,
+    validator: (value: string | undefined) => {
+      if (value === undefined) return true
+      return isValidDateString(value)
+    }
+  },
+  endDate: {
+    type: String,
+    default: undefined,
+    validator: (value: string | undefined) => {
+      if (value === undefined) return true
+      return isValidDateString(value)
+    }
+  }
+})
 
 interface Emits {
   (e: 'update:startDate', value: string | undefined): void

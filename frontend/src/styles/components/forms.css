@@ -3,15 +3,46 @@
  * Shared form and dialog styling
  */
 
+/* Base Field Styles */
+.field {
+  margin-bottom: 1.5rem;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.field label {
+  display: block;
+  margin-bottom: var(--tt-spacing-xs);
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--p-text-color);
+}
+
 /* Form Container */
 .manual-entry-form .field {
   margin-bottom: 1.5rem;
 }
 
-.field {
+.manual-entry-form .field label {
+  font-weight: 500;
+  min-width: 150px;
+}
+
+/* Field Row Layout */
+.manual-entry-form .field-row {
+  display: flex;
+  gap: var(--tt-spacing-md);
   margin-bottom: 1.5rem;
 }
 
+.manual-entry-form .field-half {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* Checkbox Field */
 .field-checkbox {
   display: flex;
   align-items: center;
@@ -32,40 +63,16 @@
   font-size: 0.875rem;
 }
 
-.manual-entry-form .field-row {
-  display: flex;
-  gap: var(--tt-spacing-md);
-  margin-bottom: 1.5rem;
-}
-
-.manual-entry-form .field-half {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-.manual-entry-form .field label,
-.field label,
-label {
-  display: block;
-  margin-bottom: var(--tt-spacing-xs);
-  font-weight: 500;
-  font-size: 0.875rem;
-  color: var(--text-color);
-}
-
-.manual-entry-form .field label {
-  font-weight: 500;
-  min-width: 150px;
-}
-
-.field label {
-  font-weight: 600;
-}
-
+/* PrimeVue Input Components */
 .manual-entry-form .field :deep(.p-inputtext),
 .manual-entry-form .field :deep(.p-dropdown),
 .manual-entry-form .field :deep(.p-inputnumber),
 .manual-entry-form .field :deep(.p-calendar),
-.manual-entry-form .field :deep(.p-inputtextarea) {
+.manual-entry-form .field :deep(.p-inputtextarea),
+.field :deep(.p-inputtext),
+.field :deep(.p-dropdown),
+.field :deep(.p-inputnumber),
+.field :deep(.p-calendar),
+.field :deep(.p-inputtextarea) {
   width: 100%;
 }
