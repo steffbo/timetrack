@@ -34,9 +34,22 @@ export const formatDate = (dateStr: string | Date): string => {
 
 /**
  * Format a date string to ISO date format (YYYY-MM-DD)
+ * Uses local date components to avoid timezone issues
  */
 export const formatDateISO = (date: Date): string => {
-  return date.toISOString().split('T')[0]
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Parse an ISO date string (YYYY-MM-DD) to a local Date object
+ * Avoids timezone issues by parsing as local date, not UTC
+ */
+export const parseLocalDate = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day)
 }
 
 /**

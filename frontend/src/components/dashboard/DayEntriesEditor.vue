@@ -115,6 +115,14 @@
   <!-- Toast for undo delete - Time Off -->
   <UndoDeleteToast :group="timeOffUndo.undoGroup" :on-undo="undoTimeOffDelete" />
 
+  <!-- Edit Time Off Dialog -->
+  <TimeOffQuickForm
+    v-model:visible="editTimeOffDialogVisible"
+    :time-off="editingTimeOffEntry"
+    :header="t('dashboard.selectedDay.editTimeOffEntryTitle')"
+    @saved="handleTimeOffSaved"
+  />
+
   <!-- Edit Entry Dialog -->
   <Dialog
     v-model:visible="editDialogVisible"
@@ -193,6 +201,7 @@ import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import Tag from 'primevue/tag'
 import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
+import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
 import { TimeEntriesService, TimeOffService } from '@/api/generated'
 import type { TimeEntryResponse, TimeOffResponse, CreateTimeEntryRequest, CreateTimeOffRequest } from '@/api/generated'
 import { formatTime, formatDate, calculateDuration } from '@/utils/dateTimeUtils'
@@ -232,6 +241,9 @@ const isVisible = ref(props.visible)
 const editDialogVisible = ref(false)
 const editingEntry = ref<TimeEntryResponse | null>(null)
 const saving = ref(false)
+
+const editTimeOffDialogVisible = ref(false)
+const editingTimeOffEntry = ref<TimeOffResponse | null>(null)
 
 const editForm = ref({
   clockIn: new Date(),
@@ -351,13 +363,14 @@ const getTimeOffTypeSeverity = (type: string): string => {
 }
 
 const handleEditTimeOff = (entry: TimeOffResponse) => {
-  // For now, just show a toast - full edit dialog can be added later
-  toast.add({
-    severity: 'info',
-    summary: t('info'),
-    detail: 'Time off editing coming soon',
-    life: 3000
-  })
+  editingTimeOffEntry.value = entry
+  editTimeOffDialogVisible.value = true
+}
+
+const handleTimeOffSaved = () => {
+  editTimeOffDialogVisible.value = false
+  editingTimeOffEntry.value = null
+  emit('saved')
 }
 
 const handleDeleteTimeOff = async (entry: TimeOffResponse) => {

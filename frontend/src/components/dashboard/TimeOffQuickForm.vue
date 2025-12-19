@@ -89,7 +89,7 @@ import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import { TimeOffService } from '@/api/generated'
 import type { TimeOffResponse } from '@/api/generated'
-import { formatDateISO } from '@/utils/dateTimeUtils'
+import { formatDateISO, parseLocalDate } from '@/utils/dateTimeUtils'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -138,8 +138,9 @@ const formData = ref({
 const initializeForm = () => {
   if (props.timeOff) {
     // Edit mode: load existing data
-    const startDate = new Date(props.timeOff.startDate)
-    const endDate = new Date(props.timeOff.endDate)
+    // Use parseLocalDate to avoid timezone issues (parsing "2025-12-19" as UTC can become previous day in local time)
+    const startDate = parseLocalDate(props.timeOff.startDate)
+    const endDate = parseLocalDate(props.timeOff.endDate)
     dateRange.value = [startDate, endDate]
     
     formData.value = {
@@ -149,7 +150,8 @@ const initializeForm = () => {
     }
   } else if (props.selectedDate) {
     // Create mode with selected date
-    const date = new Date(props.selectedDate)
+    // Parse as local date to avoid timezone issues
+    const date = parseLocalDate(props.selectedDate)
     dateRange.value = [date, date]
     
     formData.value = {
