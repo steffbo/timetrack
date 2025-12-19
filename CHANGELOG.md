@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dashboard: Quick Clock-Out Button**: New button to clock out without clocking in first
   - Uses start time from current weekday's working hours configuration
   - End time set to current time
-  - Creates completed time entry with zero break minutes
+  - Creates completed time entry using break minutes from working hours configuration
   - Validation: Shows error toast if no working hours configured for today
   - Validation: Shows error toast if start time is after current time (prevents negative work time)
   - Only visible when no active clock-in session exists

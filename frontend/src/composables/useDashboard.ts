@@ -474,7 +474,7 @@ export function useDashboard() {
       await TimeEntriesService.createTimeEntry({
         clockIn: clockIn.toISOString(),
         clockOut: now.toISOString(),
-        breakMinutes: 0, // No break for quick clock-out
+        breakMinutes: todayWorkingHours.breakMinutes ?? 0,
         entryType: 'WORK' as any,
         notes: ''
       })
