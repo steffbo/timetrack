@@ -54,6 +54,7 @@
                 :disabled="!data.isWorkingDay"
                 suffix=" min"
                 showButtons
+                @change="handleBreakChange(data)"
               />
             </template>
           </Column>
@@ -61,7 +62,8 @@
           <Column field="hours" :header="t('workingHours.hours')" style="width: 100px">
             <template #body="{ data }">
               <InputNumber
-                v-model="data.hours"
+                :model-value="getNetHours(data)"
+                @update:model-value="(value) => setNetHours(data, value)"
                 :min="0"
                 :max="24"
                 :disabled="!data.isWorkingDay || hasTimeValues(data)"
@@ -317,11 +319,28 @@ const workingDays = ref<WorkingDayConfig[]>([])
 // Map weekday number (1-7) to day name
 const weekdayMap = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 
-// Calculate weekly sum of working hours
+// Calculate net hours (gross hours minus break)
+function getNetHours(data: WorkingDayConfig): number {
+  const grossHours = data.hours || 0
+  const breakHours = (data.breakMinutes || 0) / 60.0
+  return Math.max(0, grossHours - breakHours)
+}
+
+// Set net hours (add break back to get gross hours for backend)
+function setNetHours(data: WorkingDayConfig, netHours: number | null) {
+  if (netHours === null) {
+    data.hours = 0
+    return
+  }
+  const breakHours = (data.breakMinutes || 0) / 60.0
+  data.hours = netHours + breakHours
+}
+
+// Calculate weekly sum of working hours (using net hours)
 const weeklySum = computed(() => {
   return workingDays.value
     .filter(day => day.isWorkingDay)
-    .reduce((sum, day) => sum + (day.hours || 0), 0)
+    .reduce((sum, day) => sum + getNetHours(day), 0)
 })
 
 function getWeekdayName(weekday: number): string {
@@ -334,14 +353,24 @@ function hasTimeValues(data: WorkingDayConfig): boolean {
 
 function handleTimeChange(data: WorkingDayConfig) {
   // Calculate hours from start and end time if both are set
+  // Subtract break minutes to get net working hours
   if (data.startTime && data.endTime) {
     const start = parseTime(data.startTime)
     const end = parseTime(data.endTime)
 
     if (start && end && end > start) {
       const diffMinutes = (end - start) / (1000 * 60)
-      data.hours = Math.round((diffMinutes / 60) * 100) / 100
+      const breakMinutes = data.breakMinutes || 0
+      const netMinutes = diffMinutes - breakMinutes
+      data.hours = Math.max(0, Math.round((netMinutes / 60) * 100) / 100)
     }
+  }
+}
+
+function handleBreakChange(data: WorkingDayConfig) {
+  // Recalculate hours when break minutes change
+  if (data.startTime && data.endTime) {
+    handleTimeChange(data)
   }
 }
 
@@ -371,9 +400,23 @@ async function loadWorkingHours() {
 async function handleSaveWorkingHours() {
   isSavingWorkingHours.value = true
   try {
+    // Prepare data for saving: if times are not set, ensure hours includes break (gross hours)
+    // If times are set, backend will recalculate net hours anyway
+    const dataToSave = workingDays.value.map(day => {
+      const dayCopy = { ...day }
+      // If no times are set and user edited hours directly, we need to ensure backend gets gross hours
+      // But since we're displaying net hours and the backend expects gross when no times are set,
+      // we need to add break back to the hours value
+      if (!day.startTime && !day.endTime && day.hours !== undefined) {
+        // The hours value in our model is already gross (because setNetHours adds break back)
+        // So we can use it as-is
+      }
+      return dayCopy
+    })
+
     await apiClient.put(
       `/api/working-hours`,
-      { workingDays: workingDays.value }
+      { workingDays: dataToSave }
     )
 
     toast.add({
@@ -381,6 +424,9 @@ async function handleSaveWorkingHours() {
       summary: t('workingHours.saveSuccess'),
       life: 3000
     })
+    
+    // Reload to get updated values from backend
+    await loadWorkingHours()
   } catch (error) {
     toast.add({
       severity: 'error',

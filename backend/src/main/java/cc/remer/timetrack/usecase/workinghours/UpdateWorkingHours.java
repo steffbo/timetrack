@@ -68,7 +68,7 @@ public class UpdateWorkingHours {
             // Calculate hours from times if both are provided, otherwise use the hours field
             BigDecimal hours;
             if (startTime != null && endTime != null) {
-                hours = calculateHoursFromTimes(startTime, endTime);
+                hours = calculateHoursFromTimes(startTime, endTime, breakMinutes);
             } else {
                 hours = BigDecimal.valueOf(dayConfig.getHours());
             }
@@ -106,15 +106,19 @@ public class UpdateWorkingHours {
     }
 
     /**
-     * Calculate hours from start and end times.
+     * Calculate hours from start and end times, subtracting break minutes.
      *
      * @param startTime the start time
      * @param endTime the end time
-     * @return the hours as BigDecimal (rounded to 2 decimal places)
+     * @param breakMinutes the break duration in minutes
+     * @return the net hours as BigDecimal (rounded to 2 decimal places)
      */
-    private BigDecimal calculateHoursFromTimes(LocalTime startTime, LocalTime endTime) {
+    private BigDecimal calculateHoursFromTimes(LocalTime startTime, LocalTime endTime, Integer breakMinutes) {
         long minutes = ChronoUnit.MINUTES.between(startTime, endTime);
-        BigDecimal hours = BigDecimal.valueOf(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+        long netMinutes = minutes - (breakMinutes != null ? breakMinutes : 0);
+        // Ensure non-negative
+        netMinutes = Math.max(0, netMinutes);
+        BigDecimal hours = BigDecimal.valueOf(netMinutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
         return hours;
     }
 

@@ -62,6 +62,7 @@ logging:
     cc.remer.timetrack: DEBUG
     org.springframework.security: DEBUG
     org.flywaydb: DEBUG
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR
 
 management:
   endpoints:

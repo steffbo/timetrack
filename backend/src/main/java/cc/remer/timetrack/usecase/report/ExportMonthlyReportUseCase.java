@@ -228,14 +228,19 @@ public class ExportMonthlyReportUseCase {
             Map<Short, WorkingHours> workingHoursMap,
             Map<LocalDate, TimeOff> timeOffByDate
     ) {
-        // Get expected hours for this day of week
+        // Get expected hours for this day of week (subtract break minutes)
         DayOfWeek dayOfWeek = date.getDayOfWeek();
         short weekdayValue = (short) dayOfWeek.getValue();
         WorkingHours workingHours = workingHoursMap.get(weekdayValue);
 
-        Double expectedHours = (workingHours != null && workingHours.getIsWorkingDay())
-                ? workingHours.getHours().doubleValue()
-                : 0.0;
+        Double expectedHours = 0.0;
+        if (workingHours != null && workingHours.getIsWorkingDay() && workingHours.getHours() != null) {
+            double hours = workingHours.getHours().doubleValue();
+            // Subtract break minutes (convert to hours)
+            Integer breakMinutes = workingHours.getBreakMinutes() != null ? workingHours.getBreakMinutes() : 0;
+            double breakHours = breakMinutes / 60.0;
+            expectedHours = Math.max(0.0, hours - breakHours);
+        }
 
         // Get time-off for this date
         TimeOff timeOff = timeOffByDate.get(date);

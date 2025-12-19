@@ -85,22 +85,34 @@ export function useAuth() {
       throw new Error('No refresh token available')
     }
 
-    const response = await authApi.refreshToken({ refreshToken: refreshTokenValue.value })
-    accessTokenValue.value = response.accessToken!
-    refreshTokenValue.value = response.refreshToken!
-    if (response.user) {
-      currentUser.value = response.user
-    }
+    try {
+      const response = await authApi.refreshToken({ refreshToken: refreshTokenValue.value })
+      accessTokenValue.value = response.accessToken!
+      refreshTokenValue.value = response.refreshToken!
+      if (response.user) {
+        currentUser.value = response.user
+      }
 
-    // Persist to localStorage
-    localStorage.setItem(ACCESS_TOKEN_KEY, response.accessToken!)
-    localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken!)
-    if (response.user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(response.user))
-    }
+      // Persist to localStorage
+      localStorage.setItem(ACCESS_TOKEN_KEY, response.accessToken!)
+      localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken!)
+      if (response.user) {
+        localStorage.setItem(USER_KEY, JSON.stringify(response.user))
+      }
 
-    // Update the API client with the new token
-    setAccessToken(response.accessToken!)
+      // Update the API client with the new token
+      setAccessToken(response.accessToken!)
+    } catch (error) {
+      // If refresh fails, clear tokens immediately
+      accessTokenValue.value = null
+      refreshTokenValue.value = null
+      currentUser.value = null
+      localStorage.removeItem(ACCESS_TOKEN_KEY)
+      localStorage.removeItem(REFRESH_TOKEN_KEY)
+      localStorage.removeItem(USER_KEY)
+      setAccessToken(null)
+      throw error
+    }
   }
 
   async function checkAuth() {

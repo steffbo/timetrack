@@ -784,7 +784,9 @@ const getExpectedHoursForEntry = (entry: TimeEntryResponse): number | null => {
     return 0 // Non-working day
   }
 
-  return dayWorkingHours.hours
+  // Subtract break minutes from expected hours
+  const breakHours = (dayWorkingHours.breakMinutes || 0) / 60.0
+  return Math.max(0, (dayWorkingHours.hours || 0) - breakHours)
 }
 
 const getHoursDifference = (entry: TimeEntryResponse): string => {

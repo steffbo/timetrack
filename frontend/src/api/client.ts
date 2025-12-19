@@ -10,6 +10,8 @@ const apiClient: AxiosInstance = axios.create({
 
 // Store for access token (will be set by useAuth composable)
 let accessToken: string | null = null
+let isRefreshing = false
+let refreshPromise: Promise<void> | null = null
 
 export function setAccessToken(token: string | null) {
   accessToken = token
@@ -37,26 +39,48 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config
 
     // If 401 and not already retried, try to refresh token
-    // EXCLUDE login and refresh endpoints from auto-handling to avoid loops/redirects
-    const isAuthRequest = originalRequest.url?.includes('/api/auth/login') || originalRequest.url?.includes('/api/auth/refresh')
+    // EXCLUDE auth endpoints (login, refresh, logout) from auto-handling to avoid loops
+    const isAuthRequest = originalRequest.url?.includes('/api/auth/login') || 
+                         originalRequest.url?.includes('/api/auth/refresh') ||
+                         originalRequest.url?.includes('/api/auth/logout')
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest && !isRefreshing) {
       originalRequest._retry = true
 
-      try {
-        // Import dynamically to avoid circular dependency
-        const { useAuth } = await import('@/composables/useAuth')
-        const { refreshAccessToken } = useAuth()
-        await refreshAccessToken()
+      // If refresh is already in progress, wait for it
+      if (refreshPromise) {
+        try {
+          await refreshPromise
+          // Retry original request with new token
+          return apiClient(originalRequest)
+        } catch {
+          // Refresh failed, clear tokens and redirect
+          clearTokensAndRedirect()
+          return Promise.reject(error)
+        }
+      }
 
+      // Start refresh process
+      isRefreshing = true
+      refreshPromise = (async () => {
+        try {
+          // Import dynamically to avoid circular dependency
+          const { useAuth } = await import('@/composables/useAuth')
+          const { refreshAccessToken } = useAuth()
+          await refreshAccessToken()
+        } finally {
+          isRefreshing = false
+          refreshPromise = null
+        }
+      })()
+
+      try {
+        await refreshPromise
         // Retry original request with new token
         return apiClient(originalRequest)
       } catch (refreshError) {
-        // Refresh failed, redirect to login
-        const { useAuth } = await import('@/composables/useAuth')
-        const { logout } = useAuth()
-        logout()
-        window.location.href = '/login'
+        // Refresh failed, clear tokens and redirect
+        clearTokensAndRedirect()
         return Promise.reject(refreshError)
       }
     }
@@ -64,5 +88,19 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+function clearTokensAndRedirect() {
+  // Clear tokens immediately to prevent further refresh attempts
+  accessToken = null
+  setAccessToken(null)
+  
+  // Clear localStorage
+  localStorage.removeItem('timetrack_access_token')
+  localStorage.removeItem('timetrack_refresh_token')
+  localStorage.removeItem('timetrack_user')
+  
+  // Redirect to login without making logout API call (which would trigger another 401)
+  window.location.href = '/login'
+}
 
 export default apiClient

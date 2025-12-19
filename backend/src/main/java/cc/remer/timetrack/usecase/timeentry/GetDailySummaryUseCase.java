@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,9 +63,9 @@ public class GetDailySummaryUseCase {
                     "Keine Arbeitszeitkonfiguration gefunden für Benutzer: " + user.getId());
         }
 
-        // Map weekday to hours for quick lookup
-        Map<Short, BigDecimal> hoursPerWeekday = workingHoursList.stream()
-                .collect(Collectors.toMap(WorkingHours::getWeekday, WorkingHours::getHours));
+        // Map weekday to WorkingHours for quick lookup (need break minutes)
+        Map<Short, WorkingHours> workingHoursPerWeekday = workingHoursList.stream()
+                .collect(Collectors.toMap(WorkingHours::getWeekday, wh -> wh));
 
         // Get time entries for the date range
         List<TimeEntry> entries = timeEntryRepository.findByUserIdAndEntryDateBetween(
@@ -104,7 +103,7 @@ public class GetDailySummaryUseCase {
             List<RecurringOffDay> dayRecurringOffDays = findRecurringOffDaysForDate(
                     allRecurringOffDays, currentDate);
 
-            double expectedHours = getExpectedHoursForDate(currentDate, hoursPerWeekday);
+            double expectedHours = getExpectedHoursForDate(currentDate, workingHoursPerWeekday);
             double actualHours = calculateActualHours(dayEntries);
             DailySummaryStatus status = determineStatus(actualHours, expectedHours);
 
@@ -129,13 +128,27 @@ public class GetDailySummaryUseCase {
 
     /**
      * Get expected hours for a specific date based on working hours configuration.
+     * Expected hours = configured hours - break minutes (converted to hours).
      */
-    private double getExpectedHoursForDate(LocalDate date, Map<Short, BigDecimal> hoursPerWeekday) {
+    private double getExpectedHoursForDate(LocalDate date, Map<Short, WorkingHours> workingHoursPerWeekday) {
         // DayOfWeek: MONDAY=1, TUESDAY=2, ..., SUNDAY=7
         short weekday = (short) date.getDayOfWeek().getValue();
 
-        BigDecimal hours = hoursPerWeekday.get(weekday);
-        return hours != null ? hours.doubleValue() : 0.0;
+        WorkingHours workingHours = workingHoursPerWeekday.get(weekday);
+        if (workingHours == null || !workingHours.getIsWorkingDay()) {
+            return 0.0;
+        }
+
+        BigDecimal hours = workingHours.getHours();
+        if (hours == null) {
+            return 0.0;
+        }
+
+        // Subtract break minutes (convert to hours)
+        Integer breakMinutes = workingHours.getBreakMinutes() != null ? workingHours.getBreakMinutes() : 0;
+        double breakHours = breakMinutes / 60.0;
+        
+        return Math.max(0.0, hours.doubleValue() - breakHours);
     }
 
     /**
