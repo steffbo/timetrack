@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Dashboard: Calendar Refresh Timezone Issues**: Fixed multiple timezone-related bugs in calendar data refresh
+  - **Multi-day time-off deletion**: Deleting a vacation spanning multiple days now correctly refreshes all affected calendar days
+    - Previously only refreshed the currently selected day due to missing date range propagation
+    - Now emits date range from `DayEntriesEditor` delete handler to `handleFormSaved` in `useDashboard`
+    - Fixed `handleFormSaved` date range loop to avoid UTC conversion (used local Date constructor + manual formatting)
+    - Undo operation also correctly refreshes all days in the range
+  - **Quick clock-out and other actions**: Fixed off-by-one error where creating entries on Dec 20 would fetch data for Dec 19
+    - Root cause: `date.toISOString().split('T')[0]` converts local time to UTC, shifting dates backward in UTC+ timezones
+    - Example: "2025-12-20 00:00 CET" → "2025-12-19 23:00 UTC" → wrong date "2025-12-19"
+    - Fixed 11 instances across `useDashboard.ts` to use existing `formatDateString()` helper instead
+    - Affected functions: `loadActiveEntry`, `loadNextVacation`, `clockInNow`, `clockOutNow`, `quickClockOutNow`, `cancelEntry`, `createQuickWorkEntry`, `handleQuickEntryFromCalendar`, `createManualEntry`, `handleFormSaved`
+  - All dashboard actions now immediately and correctly reflect changes in the calendar regardless of timezone
+
 ### Added
 - **Dashboard: Quick Clock-Out Button**: New button to clock out without clocking in first
   - Uses start time from current weekday's working hours configuration

@@ -264,7 +264,7 @@ export function useDashboard() {
   // Load active time entry
   const loadActiveEntry = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = formatDateString(new Date())
       const entries = await TimeEntriesService.getTimeEntries(today, today)
       activeEntry.value = entries.find(e => e.isActive) || null
     } catch (error) {
@@ -276,10 +276,10 @@ export function useDashboard() {
   const loadNextVacation = async () => {
     try {
       const todayDateObj = new Date()
-      const today = todayDateObj.toISOString().split('T')[0]
+      const today = formatDateString(todayDateObj)
       const oneYearLater = new Date()
       oneYearLater.setFullYear(oneYearLater.getFullYear() + 1)
-      const endDate = oneYearLater.toISOString().split('T')[0]
+      const endDate = formatDateString(oneYearLater)
 
       const vacations = await TimeOffService.getTimeOffEntries(today, endDate)
       const todayDate = todayDateObj
@@ -411,9 +411,9 @@ export function useDashboard() {
       await TimeEntriesService.clockIn({ notes: '' })
       handleSuccess(t('dashboard.clockInSuccess'))
       await loadActiveEntry()
-      
+
       // Refresh today's summary since we just clocked in
-      const today = new Date().toISOString().split('T')[0]
+      const today = formatDateString(new Date())
       await refreshDays([today])
     } catch (error: any) {
       handleError(error, t('dashboard.clockInError'))
@@ -429,7 +429,7 @@ export function useDashboard() {
 
       // Refresh today's summary since we just clocked out
       // refreshDays will check for conflict warnings and load them if needed
-      const today = new Date().toISOString().split('T')[0]
+      const today = formatDateString(new Date())
       await refreshDays([today])
 
       await calculateOvertime()
@@ -482,7 +482,7 @@ export function useDashboard() {
       handleSuccess(t('dashboard.clockOutSuccess'))
 
       // Refresh today's summary
-      const today = now.toISOString().split('T')[0]
+      const today = formatDateString(now)
       await refreshDays([today])
 
       await calculateOvertime()
@@ -495,11 +495,11 @@ export function useDashboard() {
   const cancelEntry = async () => {
     try {
       if (activeEntry.value?.id) {
-        const entryDate = activeEntry.value.entryDate || new Date().toISOString().split('T')[0]
+        const entryDate = activeEntry.value.entryDate || formatDateString(new Date())
         await TimeEntriesService.deleteTimeEntry(activeEntry.value.id)
         handleSuccess(t('dashboard.entryCancelled'))
         activeEntry.value = null
-        
+
         // Refresh the day where entry was deleted
         await refreshDays([entryDate])
         await calculateOvertime()
@@ -546,12 +546,12 @@ export function useDashboard() {
       })
 
       handleSuccess(t('dashboard.quickEntryCreated'))
-      
+
       // Refresh only the affected day(s) - entry date
       // refreshDays will check for conflict warnings and load them if needed
-      const entryDate = today.toISOString().split('T')[0]
+      const entryDate = formatDateString(today)
       await refreshDays([entryDate])
-      
+
       await calculateOvertime()
     } catch (error: any) {
       handleError(error, t('dashboard.quickEntryError'))
@@ -591,12 +591,12 @@ export function useDashboard() {
       })
 
       handleSuccess(t('dashboard.quickEntryCreated'))
-      
+
       // Refresh only the affected day(s) - entry date
       // refreshDays will check for conflict warnings and load them if needed
-      const entryDate = date.toISOString().split('T')[0]
+      const entryDate = formatDateString(date)
       await refreshDays([entryDate])
-      
+
       await calculateOvertime()
     } catch (error: any) {
       handleError(error, t('dashboard.quickEntryError'))
@@ -697,12 +697,12 @@ export function useDashboard() {
 
       handleSuccess(t('dashboard.manualEntryCreated'))
       showManualEntryDialog.value = false
-      
+
       // Refresh only the affected day(s) - entry date
       // refreshDays will check for conflict warnings and load them if needed
-      const entryDate = date.toISOString().split('T')[0]
+      const entryDate = formatDateString(date)
       await refreshDays([entryDate])
-      
+
       await calculateOvertime()
     } catch (error: any) {
       handleError(error, t('dashboard.manualEntryError'))
@@ -729,22 +729,30 @@ export function useDashboard() {
     if (dateRange) {
       // Time off entry - refresh all days in the range
       const datesToRefresh: string[] = []
-      const start = new Date(dateRange.startDate)
-      const end = new Date(dateRange.endDate)
+
+      // Parse dates as YYYY-MM-DD strings to avoid timezone issues
+      const [startYear, startMonth, startDay] = dateRange.startDate.split('-').map(Number)
+      const [endYear, endMonth, endDay] = dateRange.endDate.split('-').map(Number)
+
+      const start = new Date(startYear, startMonth - 1, startDay)
+      const end = new Date(endYear, endMonth - 1, endDay)
       const current = new Date(start)
-      
+
       while (current <= end) {
-        datesToRefresh.push(current.toISOString().split('T')[0])
+        const year = current.getFullYear()
+        const month = String(current.getMonth() + 1).padStart(2, '0')
+        const day = String(current.getDate()).padStart(2, '0')
+        datesToRefresh.push(`${year}-${month}-${day}`)
         current.setDate(current.getDate() + 1)
       }
-      
+
       await refreshDays(datesToRefresh)
     } else if (selectedDate.value) {
       // Single day entry - refresh just that day
       await refreshDays([selectedDate.value])
     } else {
       // Fallback - refresh today
-      const today = new Date().toISOString().split('T')[0]
+      const today = formatDateString(new Date())
       await refreshDays([today])
     }
     

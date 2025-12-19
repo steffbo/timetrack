@@ -232,7 +232,7 @@ if (props.selectedDate && !/^\d{4}-\d{2}-\d{2}$/.test(props.selectedDate)) {
 
 interface Emits {
   (e: 'update:visible', value: boolean): void
-  (e: 'saved'): void
+  (e: 'saved', dateRange?: { startDate: string; endDate: string }): void
 }
 
 const emit = defineEmits<Emits>()
@@ -367,20 +367,21 @@ const handleEditTimeOff = (entry: TimeOffResponse) => {
   editTimeOffDialogVisible.value = true
 }
 
-const handleTimeOffSaved = () => {
+const handleTimeOffSaved = (dateRange?: { startDate: string; endDate: string }) => {
   editTimeOffDialogVisible.value = false
   editingTimeOffEntry.value = null
-  emit('saved')
+  emit('saved', dateRange)
 }
 
 const handleDeleteTimeOff = async (entry: TimeOffResponse) => {
+  const dateRange = { startDate: entry.startDate, endDate: entry.endDate }
   await timeOffUndo.deleteWithUndo(
     entry,
     async (id) => {
       await TimeOffService.deleteTimeOff(id as number)
     },
     async () => {
-      emit('saved')
+      emit('saved', dateRange)
     },
     (item) => {
       const startDate = new Date(item.startDate)
@@ -404,8 +405,8 @@ const undoTimeOffDelete = async () => {
       }
       await TimeOffService.createTimeOff(createRequest)
     },
-    async () => {
-      emit('saved')
+    async (item) => {
+      emit('saved', { startDate: item.startDate, endDate: item.endDate })
     }
   )
 }
