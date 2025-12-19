@@ -2,10 +2,13 @@ package cc.remer.timetrack.adapter.web;
 
 import cc.remer.timetrack.adapter.security.UserPrincipal;
 import cc.remer.timetrack.api.WorkingHoursApi;
+import cc.remer.timetrack.api.model.UpdateWorkingDayConfig;
 import cc.remer.timetrack.api.model.UpdateWorkingHoursRequest;
+import cc.remer.timetrack.api.model.WorkingDayConfig;
 import cc.remer.timetrack.api.model.WorkingHoursResponse;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.usecase.workinghours.GetWorkingHours;
+import cc.remer.timetrack.usecase.workinghours.UpdateWorkingDay;
 import cc.remer.timetrack.usecase.workinghours.UpdateWorkingHours;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,7 @@ public class WorkingHoursController implements WorkingHoursApi {
 
     private final GetWorkingHours getWorkingHours;
     private final UpdateWorkingHours updateWorkingHours;
+    private final UpdateWorkingDay updateWorkingDay;
 
     @Override
     public ResponseEntity<WorkingHoursResponse> getWorkingHours() {
@@ -58,6 +62,16 @@ public class WorkingHoursController implements WorkingHoursApi {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
 
         WorkingHoursResponse response = updateWorkingHours.execute(principal.getId(), updateWorkingHoursRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<WorkingDayConfig> updateWorkingDay(Integer weekday, UpdateWorkingDayConfig updateWorkingDayConfig) {
+        log.info("PUT /working-hours/day/{} - Updating working day for current user", weekday);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+
+        WorkingDayConfig response = updateWorkingDay.execute(principal.getId(), weekday, updateWorkingDayConfig);
         return ResponseEntity.ok(response);
     }
 }

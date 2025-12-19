@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Translations: "Quick Clock-Out" (EN), "Ausstempeln" (DE)
 
 ### Changed
+- **Schedule View: Major Refactor**: Fixed double-subtract bug and implemented auto-save
+  - **BREAKING FIX**: Backend already returns net hours (hours - break), frontend was subtracting break again
+  - Now displays hours exactly as returned by backend (backend is source of truth)
+  - Removed "Save" button - changes auto-save immediately on field change
+  - New backend endpoint `PUT /api/working-hours/day/{weekday}` for updating single day
+  - Optimized: Only sends/receives data for the changed day (not all 7 days)
+  - Simplified frontend logic: Removed `getNetHours()` and `setNetHours()` calculations
+  - Weekly sum calculation now correctly uses backend-provided net hours
+  - User sees correct hours immediately without client-side calculations
+
 - **Schedule View: Working Hours Save Optimization**: Eliminated redundant GET request after PUT
   - PUT endpoint already returns updated working hours in response
   - Reduced API calls from 2 to 1 when saving working hours configuration

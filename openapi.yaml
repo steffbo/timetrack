@@ -344,6 +344,42 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /api/working-hours/day/{weekday}:
+    put:
+      tags:
+        - Working Hours
+      summary: Update single working day configuration
+      description: Update working hours for a single weekday for the authenticated user
+      operationId: updateWorkingDay
+      parameters:
+        - name: weekday
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 7
+          description: Day of week (1=Monday, 7=Sunday)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkingDayConfig'
+      responses:
+        '200':
+          description: Working day updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingDayConfig'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
   /api/working-hours/{userId}:
     get:
       tags:

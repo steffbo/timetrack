@@ -28,7 +28,7 @@
 
           <Column field="isWorkingDay" :header="t('workingHours.isWorkingDay')" class="col-active">
             <template #body="{ data }">
-              <Checkbox v-model="data.isWorkingDay" :binary="true" />
+              <Checkbox v-model="data.isWorkingDay" :binary="true" @change="handleFieldChange(data)" />
             </template>
           </Column>
 
@@ -38,7 +38,7 @@
                 v-model="data.startTime"
                 type="time"
                 :disabled="!data.isWorkingDay"
-                @change="handleTimeChange(data)"
+                @change="handleFieldChange(data)"
                 fluid
                 class="time-input"
               />
@@ -51,7 +51,7 @@
                 v-model="data.endTime"
                 type="time"
                 :disabled="!data.isWorkingDay"
-                @change="handleTimeChange(data)"
+                @change="handleFieldChange(data)"
                 fluid
                 class="time-input"
               />
@@ -67,7 +67,7 @@
                 :disabled="!data.isWorkingDay"
                 suffix=" min"
                 showButtons
-                @change="handleBreakChange(data)"
+                @update:model-value="handleFieldChange(data)"
                 class="compact-input-number"
               />
             </template>
@@ -76,25 +76,17 @@
           <Column field="hours" :header="t('workingHours.hours')" class="col-hours">
             <template #body="{ data }">
               <InputNumber
-                :model-value="getNetHours(data)"
-                @update:model-value="(value) => setNetHours(data, value)"
+                v-model="data.hours"
                 :min="0"
                 :max="24"
                 :disabled="!data.isWorkingDay || hasTimeValues(data)"
                 showButtons
+                @update:model-value="handleFieldChange(data)"
                 class="compact-input-number"
               />
             </template>
           </Column>
         </DataTable>
-
-        <div class="button-group-right">
-          <Button
-            :label="t('workingHours.save')"
-            :loading="isSavingWorkingHours"
-            @click="handleSaveWorkingHours"
-          />
-        </div>
       </template>
     </Card>
 
@@ -309,8 +301,7 @@ import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import DatePicker from '@/components/common/DatePicker.vue'
-import apiClient from '@/api/client'
-import { RecurringOffDaysService } from '@/api/generated'
+import { RecurringOffDaysService, WorkingHoursService } from '@/api/generated'
 import type { WorkingDayConfig, RecurringOffDayResponse, CreateRecurringOffDayRequest, UpdateRecurringOffDayRequest } from '@/api/generated'
 import { useUndoDelete } from '@/composables/useUndoDelete'
 import Toast from 'primevue/toast'
@@ -323,34 +314,17 @@ const recurringOffDayUndo = useUndoDelete<RecurringOffDayResponse>('delete-undo-
 
 // ===== Working Hours State =====
 const isLoadingWorkingHours = ref(false)
-const isSavingWorkingHours = ref(false)
 const workingDays = ref<WorkingDayConfig[]>([])
 
 // Map weekday number (1-7) to day name
 const weekdayMap = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 
-// Calculate net hours (gross hours minus break)
-function getNetHours(data: WorkingDayConfig): number {
-  const grossHours = data.hours || 0
-  const breakHours = (data.breakMinutes || 0) / 60.0
-  return Math.max(0, grossHours - breakHours)
-}
-
-// Set net hours (add break back to get gross hours for backend)
-function setNetHours(data: WorkingDayConfig, netHours: number | null) {
-  if (netHours === null) {
-    data.hours = 0
-    return
-  }
-  const breakHours = (data.breakMinutes || 0) / 60.0
-  data.hours = netHours + breakHours
-}
-
-// Calculate weekly sum of working hours (using net hours)
+// Calculate weekly sum of working hours
+// Backend already returns net hours (hours minus break)
 const weeklySum = computed(() => {
   return workingDays.value
     .filter(day => day.isWorkingDay)
-    .reduce((sum, day) => sum + getNetHours(day), 0)
+    .reduce((sum, day) => sum + (day.hours || 0), 0)
 })
 
 function getWeekdayName(weekday: number): string {
@@ -361,41 +335,12 @@ function hasTimeValues(data: WorkingDayConfig): boolean {
   return !!(data.startTime && data.endTime)
 }
 
-function handleTimeChange(data: WorkingDayConfig) {
-  // Calculate hours from start and end time if both are set
-  // Subtract break minutes to get net working hours
-  if (data.startTime && data.endTime) {
-    const start = parseTime(data.startTime)
-    const end = parseTime(data.endTime)
-
-    if (start && end && end > start) {
-      const diffMinutes = (end - start) / (1000 * 60)
-      const breakMinutes = data.breakMinutes || 0
-      const netMinutes = diffMinutes - breakMinutes
-      data.hours = Math.max(0, Math.round((netMinutes / 60) * 100) / 100)
-    }
-  }
-}
-
-function handleBreakChange(data: WorkingDayConfig) {
-  // Recalculate hours when break minutes change
-  if (data.startTime && data.endTime) {
-    handleTimeChange(data)
-  }
-}
-
-function parseTime(timeStr: string): number | null {
-  if (!timeStr) return null
-  const [hours, minutes] = timeStr.split(':').map(Number)
-  if (isNaN(hours) || isNaN(minutes) || hours === undefined || minutes === undefined) return null
-  return new Date(1970, 0, 1, hours, minutes).getTime()
-}
-
 async function loadWorkingHours() {
   isLoadingWorkingHours.value = true
   try {
-    const response = await apiClient.get(`/api/working-hours`)
-    workingDays.value = response.data.workingDays
+    const response = await WorkingHoursService.getWorkingHours()
+    // Backend returns net hours (hours minus break) - use as-is
+    workingDays.value = response.workingDays
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -407,44 +352,30 @@ async function loadWorkingHours() {
   }
 }
 
-async function handleSaveWorkingHours() {
-  isSavingWorkingHours.value = true
+// Auto-save on field change
+async function handleFieldChange(data: WorkingDayConfig) {
   try {
-    // Prepare data for saving: if times are not set, ensure hours includes break (gross hours)
-    // If times are set, backend will recalculate net hours anyway
-    const dataToSave = workingDays.value.map(day => {
-      const dayCopy = { ...day }
-      // If no times are set and user edited hours directly, we need to ensure backend gets gross hours
-      // But since we're displaying net hours and the backend expects gross when no times are set,
-      // we need to add break back to the hours value
-      if (!day.startTime && !day.endTime && day.hours !== undefined) {
-        // The hours value in our model is already gross (because setNetHours adds break back)
-        // So we can use it as-is
-      }
-      return dayCopy
+    // Save single day to backend
+    const updated = await WorkingHoursService.updateWorkingDay(data.weekday, {
+      weekday: data.weekday,
+      hours: data.hours,
+      isWorkingDay: data.isWorkingDay,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      breakMinutes: data.breakMinutes
     })
 
-    const response = await apiClient.put(
-      `/api/working-hours`,
-      { workingDays: dataToSave }
-    )
-
-    // Use the updated working hours returned by the PUT request
-    workingDays.value = response.data.workingDays
-
-    toast.add({
-      severity: 'success',
-      summary: t('workingHours.saveSuccess'),
-      life: 3000
-    })
+    // Backend returns net hours - update local state with backend response
+    const index = workingDays.value.findIndex(d => d.weekday === data.weekday)
+    if (index !== -1) {
+      workingDays.value[index] = updated
+    }
   } catch (error) {
     toast.add({
       severity: 'error',
       summary: t('workingHours.saveError'),
       life: 3000
     })
-  } finally {
-    isSavingWorkingHours.value = false
   }
 }
 
@@ -777,13 +708,6 @@ onMounted(async () => {
 
 .weekly-sum-header strong {
   font-weight: 600;
-}
-
-/* Button group aligned to the right */
-.button-group-right {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--tt-spacing-md);
 }
 
 /* Responsive adjustments */
