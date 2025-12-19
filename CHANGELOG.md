@@ -7,7 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Admin User Impersonation**: Administrators can now temporarily authenticate as another user without their password
+  - New `/api/users/{id}/impersonate` endpoint with admin-only access
+  - Compact red warning indicator in navbar (pulsing icon + user email + exit button)
+  - Admin credentials stored in sessionStorage during impersonation
+  - Automatic session cleanup on logout
+  - JWT tokens include `impersonatedBy` claim for audit trail
+  - Security: Admins cannot impersonate other admins
+  - Backend: ImpersonateUser use case, enhanced UserPrincipal with Builder pattern, JwtTokenProvider updated
+  - Frontend: Impersonate button in AdminUsersView, navbar indicator, proper localStorage key usage
+  - i18n: German (informal du) and English translations
+
 ### Changed
+- **Frontend Design System**: Redesigned color scheme based on logo gradient (lime-to-teal)
+  - Replaced previous purple-based palette with logo-inspired colors
+  - Applied 60-30-10 color distribution rule (60% neutral, 30% structure, 10% accent)
+  - Updated all action cards and stat cards with new gradient colors
+  - Standardized dialog widths: 550px for forms, 600px for editors
+  - Aligned spacing to 8px/4px grid system throughout
+  - Color palette: Lime green (#a3e635), Teal (#14b8a6), Cyan (#22d3ee), Emerald (#10b981), Yellow (#eab308), Coral (#f97316)
+  - Enhanced undo button visibility with larger size and white border
+  - Improved navbar alignment and color hierarchy
+
+- **Navigation Structure**: Flattened navigation by making time tracking items top-level menu entries
+  - Removed nested "Time Tracking" submenu
+  - All time tracking views now directly accessible from main navbar
+  - Added clickable logo and brand name to navbar for easy dashboard access
+  - Time Off View: Replaced year dropdown with button group for better usability
+
+- **Branding & Assets**:
+  - Added favicons and web manifest from RealFaviconGenerator
+  - Optimized assets by replacing 1MB+ SVG with PNGs
+  - Added logo to login page
+  - Updated favicon paths in navbar and login view
+
+- **Responsive Design**: Improved responsive table layout
+  - Fixed working hours table layout on mobile with scroll support
+  - Set minimum column widths to prevent overlap (pause: 110px, hours: 90px)
+  - Fixed InputNumber buttons with proper width and flex-shrink
+  - Reduced table cell padding on mobile for more compact layout
+
+- **German Localization**: Changed remaining formal "Sie" to informal "du" in German translations
+  - Updated user-facing messages for consistency
+  - All German text now uses informal address throughout the application
+
 - **Default Admin Password**: Updated from "admin" to "admin1" (meets 6-character minimum requirement)
   - Database migration V14 updates existing admin user password
   - New BCrypt hash generated with strength 10
@@ -18,6 +62,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Ensures invalid or corrupted access tokens (not just expired) trigger automatic refresh
   - Previously only validated when no token present, broken tokens never detected
   - Frontend: router/index.ts
+
+- **CSS Selector Issues**: Removed invalid :deep() selectors from global CSS files
+  - Fixed style.css and data-tables.css to use proper scoped selectors
+  - Improved CSS specificity and maintainability
 
 ### Added
 - **Half-Day Holidays (December 24 & 31)**: Users can enable half-day holiday counting for Christmas Eve and New Year's Eve
