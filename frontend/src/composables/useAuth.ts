@@ -76,6 +76,11 @@ export function useAuth() {
       localStorage.removeItem(REFRESH_TOKEN_KEY)
       localStorage.removeItem(USER_KEY)
 
+      // Clear sessionStorage (impersonation flags)
+      sessionStorage.removeItem('admin_token')
+      sessionStorage.removeItem('admin_refresh_token')
+      sessionStorage.removeItem('impersonated_email')
+
       setAccessToken(null)
     }
   }

@@ -3,6 +3,7 @@ package cc.remer.timetrack.adapter.security;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,6 +16,7 @@ import java.util.Collections;
  * UserDetails implementation for Spring Security.
  */
 @AllArgsConstructor
+@Builder
 @Getter
 public class UserPrincipal implements UserDetails {
 
@@ -23,7 +25,8 @@ public class UserPrincipal implements UserDetails {
     private final String password;
     private final Role role;
     private final Collection<? extends GrantedAuthority> authorities;
-    private final boolean active;
+    private final boolean enabled;
+    private final Long impersonatedBy;
 
     /**
      * Create UserPrincipal from User entity.
@@ -36,14 +39,15 @@ public class UserPrincipal implements UserDetails {
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
         );
 
-        return new UserPrincipal(
-                user.getId(),
-                user.getEmail(),
-                user.getPasswordHash(),
-                user.getRole(),
-                authorities,
-                user.getActive()
-        );
+        return UserPrincipal.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .password(user.getPasswordHash())
+                .role(user.getRole())
+                .authorities(authorities)
+                .enabled(user.getActive())
+                .impersonatedBy(null)
+                .build();
     }
 
     @Override
@@ -78,6 +82,15 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return active;
+        return enabled;
+    }
+
+    /**
+     * Check if this principal represents an impersonated session.
+     *
+     * @return true if this is an impersonated session
+     */
+    public boolean isImpersonated() {
+        return impersonatedBy != null;
     }
 }

@@ -77,7 +77,14 @@
     "updateSuccess": "Benutzer erfolgreich aktualisiert",
     "deleteSuccess": "Benutzer erfolgreich gelöscht",
     "undoPasswordReset": "Benutzer wiederhergestellt. Passwort wurde auf einen temporären Wert zurückgesetzt - Benutzer sollte es beim nächsten Login ändern.",
-    "error": "Ein Fehler ist aufgetreten"
+    "error": "Ein Fehler ist aufgetreten",
+    "impersonate": "Als Benutzer anmelden",
+    "impersonating": "Du siehst die Ansicht von"
+  },
+  "impersonation": {
+    "viewing": "Du siehst die Ansicht von",
+    "stop": "Zurück zu Admin",
+    "cannotImpersonateAdmin": "Du kannst dich nicht als Administrator anmelden"
   },
   "common": {
     "loading": "Lädt...",

@@ -267,6 +267,38 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /api/users/{id}/impersonate:
+    post:
+      tags:
+        - Users
+      summary: Impersonate a user
+      description: Impersonate another user (Admin only, cannot impersonate other admins)
+      operationId: impersonateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Impersonation token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Not authorized or cannot impersonate admin users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
   /api/working-hours:
     get:
       tags:

@@ -30,6 +30,21 @@
           <WarningsCard :inline="true" />
         </Popover>
 
+        <!-- Impersonation Indicator -->
+        <div v-if="isImpersonating" class="impersonation-indicator">
+          <i class="pi pi-exclamation-triangle impersonation-icon"></i>
+          <span class="impersonation-text">{{ impersonatedEmail }}</span>
+          <Button
+            icon="pi pi-times"
+            severity="danger"
+            text
+            rounded
+            @click="stopImpersonating"
+            :aria-label="t('impersonation.stop')"
+            class="impersonation-exit-button"
+          />
+        </div>
+
         <span class="user-name">{{ displayName }}</span>
         <Button
           class="user-avatar-button"
@@ -68,6 +83,44 @@ const { unacknowledgedCount, loadWarnings } = useConflictWarnings()
 const userMenu = ref()
 const warningsButton = ref()
 const warningsPopover = ref()
+
+// Impersonation state
+const isImpersonating = ref(false)
+const impersonatedEmail = ref('')
+
+function checkImpersonation() {
+  const adminToken = sessionStorage.getItem('admin_token')
+  const email = sessionStorage.getItem('impersonated_email')
+
+  if (adminToken && email) {
+    isImpersonating.value = true
+    impersonatedEmail.value = email
+  } else {
+    isImpersonating.value = false
+    impersonatedEmail.value = ''
+  }
+}
+
+function stopImpersonating() {
+  const adminToken = sessionStorage.getItem('admin_token')
+  const adminRefreshToken = sessionStorage.getItem('admin_refresh_token')
+
+  if (adminToken) {
+    // Restore admin tokens using correct keys
+    localStorage.setItem('timetrack_access_token', adminToken)
+    if (adminRefreshToken) {
+      localStorage.setItem('timetrack_refresh_token', adminRefreshToken)
+    }
+
+    // Clear impersonation data
+    sessionStorage.removeItem('admin_token')
+    sessionStorage.removeItem('admin_refresh_token')
+    sessionStorage.removeItem('impersonated_email')
+
+    // Force full page reload to clear all cached state
+    window.location.replace('/admin/users')
+  }
+}
 
 const displayName = computed(() => {
   if (!currentUser.value) return ''
@@ -175,6 +228,9 @@ async function handleLogout() {
 }
 
 onMounted(() => {
+  // Check impersonation state
+  checkImpersonation()
+
   // Load warnings on mount so navbar icon appears
   loadWarnings(false)
   // Reload warnings count every minute
@@ -248,5 +304,50 @@ onMounted(() => {
 
 .user-avatar-button:hover {
   background: var(--tt-color-10-hover);  /* Using 10% accent hover color */
+}
+
+/* Impersonation indicator */
+.impersonation-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--tt-spacing-xs);  /* 8px - aligned to grid */
+  background: rgba(239, 68, 68, 0.1);  /* Light red background */
+  border: 1px solid #ef4444;
+  border-radius: var(--p-border-radius);
+  padding: var(--tt-spacing-2xs) var(--tt-spacing-xs);  /* 4px 8px */
+}
+
+.impersonation-icon {
+  color: #ef4444;  /* Red color */
+  font-size: 1rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.impersonation-text {
+  color: #dc2626;  /* Darker red */
+  font-weight: 500;
+  font-size: 0.875rem;  /* 14px */
+  white-space: nowrap;
+}
+
+.impersonation-exit-button {
+  color: #ef4444;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  min-width: 2rem;
+}
+
+.impersonation-exit-button:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 </style>

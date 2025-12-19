@@ -77,7 +77,14 @@
     "updateSuccess": "User updated successfully",
     "deleteSuccess": "User deleted successfully",
     "undoPasswordReset": "User restored. Password has been reset to temporary value - user should change it on next login.",
-    "error": "An error occurred"
+    "error": "An error occurred",
+    "impersonate": "Login as user",
+    "impersonating": "You're viewing as"
+  },
+  "impersonation": {
+    "viewing": "You're viewing as",
+    "stop": "Back to Admin",
+    "cannotImpersonateAdmin": "Cannot impersonate administrator users"
   },
   "common": {
     "loading": "Loading...",

@@ -1,12 +1,14 @@
 package cc.remer.timetrack.adapter.web;
 
 import cc.remer.timetrack.api.UsersApi;
+import cc.remer.timetrack.api.model.AuthResponse;
 import cc.remer.timetrack.api.model.CreateUserRequest;
 import cc.remer.timetrack.api.model.UpdateUserRequest;
 import cc.remer.timetrack.api.model.UserResponse;
 import cc.remer.timetrack.usecase.user.CreateUser;
 import cc.remer.timetrack.usecase.user.DeleteUser;
 import cc.remer.timetrack.usecase.user.GetUser;
+import cc.remer.timetrack.usecase.user.ImpersonateUser;
 import cc.remer.timetrack.usecase.user.UpdateUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +33,7 @@ public class UserController implements UsersApi {
     private final GetUser getUser;
     private final UpdateUser updateUser;
     private final DeleteUser deleteUser;
+    private final ImpersonateUser impersonateUser;
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
@@ -78,5 +81,14 @@ public class UserController implements UsersApi {
         log.info("DELETE /users/{} - Deleting user", id);
         deleteUser.execute(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AuthResponse> impersonateUser(Long id) {
+        log.info("POST /users/{}/impersonate - Impersonating user", id);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        AuthResponse response = impersonateUser.execute(id, authentication);
+        return ResponseEntity.ok(response);
     }
 }

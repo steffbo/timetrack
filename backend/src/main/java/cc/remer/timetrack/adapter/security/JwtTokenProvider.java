@@ -61,14 +61,19 @@ public class JwtTokenProvider {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(Long.toString(userPrincipal.getId()))
                 .claim("email", userPrincipal.getUsername())
                 .claim("authorities", authorities)
                 .issuedAt(now)
-                .expiration(expiryDate)
-                .signWith(getSigningKey())
-                .compact();
+                .expiration(expiryDate);
+
+        // Add impersonation claim if present
+        if (userPrincipal.getImpersonatedBy() != null) {
+            builder.claim("impersonatedBy", userPrincipal.getImpersonatedBy());
+        }
+
+        return builder.signWith(getSigningKey()).compact();
     }
 
     /**

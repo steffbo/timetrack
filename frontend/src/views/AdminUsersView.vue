@@ -25,17 +25,27 @@
           </Column>
           <Column :header="t('common.edit')">
             <template #body="{ data }">
-              <Button
-                icon="pi pi-pencil"
-                text
-                @click="openEditDialog(data)"
-              />
-              <Button
-                icon="pi pi-trash"
-                text
-                severity="danger"
-                @click="deleteUser(data)"
-              />
+              <div class="action-buttons">
+                <Button
+                  icon="pi pi-user-edit"
+                  text
+                  severity="info"
+                  @click="impersonateUser(data)"
+                  :disabled="data.role === 'ADMIN'"
+                  v-tooltip.top="t('users.impersonate')"
+                />
+                <Button
+                  icon="pi pi-pencil"
+                  text
+                  @click="openEditDialog(data)"
+                />
+                <Button
+                  icon="pi pi-trash"
+                  text
+                  severity="danger"
+                  @click="deleteUser(data)"
+                />
+              </div>
             </template>
           </Column>
         </DataTable>
@@ -175,7 +185,8 @@ import Password from 'primevue/password'
 import Select from 'primevue/select'
 import Checkbox from 'primevue/checkbox'
 import apiClient from '@/api/client'
-import type { UserResponse, CreateUserRequest, UpdateUserRequest } from '@/api/generated'
+import type { UserResponse, CreateUserRequest, UpdateUserRequest, AuthResponse } from '@/api/generated'
+import { UsersService } from '@/api/generated'
 import { useUndoDelete } from '@/composables/useUndoDelete'
 import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
 
@@ -336,7 +347,7 @@ async function undoUserDelete() {
         halfDayHolidaysEnabled: item.halfDayHolidaysEnabled || false
       }
       await apiClient.post('/api/users', createRequest)
-      
+
       toast.add({
         severity: 'info',
         summary: t('info'),
@@ -348,6 +359,50 @@ async function undoUserDelete() {
       await loadUsers()
     }
   )
+}
+
+async function impersonateUser(user: UserResponse) {
+  try {
+    if (user.role === 'ADMIN') {
+      toast.add({
+        severity: 'warn',
+        summary: t('warning'),
+        detail: t('impersonation.cannotImpersonateAdmin'),
+        life: 3000
+      })
+      return
+    }
+
+    // Use the generated API service
+    const response = await UsersService.impersonateUser(user.id!)
+
+    // Store current admin token using correct keys
+    const currentToken = localStorage.getItem('timetrack_access_token')
+    const currentRefreshToken = localStorage.getItem('timetrack_refresh_token')
+    if (currentToken) {
+      sessionStorage.setItem('admin_token', currentToken)
+      if (currentRefreshToken) {
+        sessionStorage.setItem('admin_refresh_token', currentRefreshToken)
+      }
+      sessionStorage.setItem('impersonated_email', user.email!)
+    }
+
+    // Set new token using correct keys
+    localStorage.setItem('timetrack_access_token', response.accessToken)
+    if (response.refreshToken) {
+      localStorage.setItem('timetrack_refresh_token', response.refreshToken)
+    }
+
+    // Force full page reload to clear all cached state
+    window.location.replace('/dashboard')
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: error?.body?.message || t('users.error'),
+      life: 5000
+    })
+  }
 }
 </script>
 
@@ -361,6 +416,11 @@ async function undoUserDelete() {
   display: flex;
   justify-content: flex-end;
   margin-bottom: var(--tt-spacing-md);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.25rem;
 }
 
 .dialog-footer {
