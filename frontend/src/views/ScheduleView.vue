@@ -8,20 +8,25 @@
         {{ t('workingHours.title') }}
       </template>
       <template #content>
-        <DataTable :value="workingDays" :loading="isLoadingWorkingHours">
-          <Column field="weekday" header="Tag">
+        <DataTable
+          :value="workingDays"
+          :loading="isLoadingWorkingHours"
+          responsive-layout="scroll"
+          class="working-hours-table"
+        >
+          <Column field="weekday" header="Tag" class="col-weekday">
             <template #body="{ data }">
               {{ getWeekdayName(data.weekday) }}
             </template>
           </Column>
 
-          <Column field="isWorkingDay" :header="t('workingHours.isWorkingDay')">
+          <Column field="isWorkingDay" :header="t('workingHours.isWorkingDay')" class="col-active">
             <template #body="{ data }">
               <Checkbox v-model="data.isWorkingDay" :binary="true" />
             </template>
           </Column>
 
-          <Column field="startTime" :header="t('workingHours.startTime')">
+          <Column field="startTime" :header="t('workingHours.startTime')" class="col-time">
             <template #body="{ data }">
               <InputText
                 v-model="data.startTime"
@@ -29,11 +34,12 @@
                 :disabled="!data.isWorkingDay"
                 @change="handleTimeChange(data)"
                 fluid
+                class="time-input"
               />
             </template>
           </Column>
 
-          <Column field="endTime" :header="t('workingHours.endTime')">
+          <Column field="endTime" :header="t('workingHours.endTime')" class="col-time">
             <template #body="{ data }">
               <InputText
                 v-model="data.endTime"
@@ -41,11 +47,12 @@
                 :disabled="!data.isWorkingDay"
                 @change="handleTimeChange(data)"
                 fluid
+                class="time-input"
               />
             </template>
           </Column>
 
-          <Column field="breakMinutes" :header="t('workingHours.breakMinutes')" style="width: 110px">
+          <Column field="breakMinutes" :header="t('workingHours.breakMinutes')" class="col-break">
             <template #body="{ data }">
               <InputNumber
                 v-model="data.breakMinutes"
@@ -55,11 +62,12 @@
                 suffix=" min"
                 showButtons
                 @change="handleBreakChange(data)"
+                class="compact-input-number"
               />
             </template>
           </Column>
 
-          <Column field="hours" :header="t('workingHours.hours')" style="width: 100px">
+          <Column field="hours" :header="t('workingHours.hours')" class="col-hours">
             <template #body="{ data }">
               <InputNumber
                 :model-value="getNetHours(data)"
@@ -68,6 +76,7 @@
                 :max="24"
                 :disabled="!data.isWorkingDay || hasTimeValues(data)"
                 showButtons
+                class="compact-input-number"
               />
             </template>
           </Column>
@@ -678,5 +687,73 @@ onMounted(async () => {
   padding: var(--tt-view-padding);
 }
 
-/* All other shared styles moved to CSS modules */
+@media (max-width: 768px) {
+  .schedule-view {
+    padding: var(--tt-view-padding-mobile);
+  }
+}
+
+@media (max-width: 480px) {
+  .schedule-view {
+    padding: var(--tt-view-padding-xs);
+  }
+}
+
+.compact-input-number {
+  max-width: 100%;
+}
+
+.working-hours-table {
+  table-layout: auto;
+}
+
+:deep(.col-weekday) {
+  min-width: 100px;
+}
+
+:deep(.col-active) {
+  width: 60px;
+  text-align: center;
+}
+
+:deep(.col-time) {
+  width: 110px;
+}
+
+:deep(.col-break) {
+  width: 110px;
+  min-width: 110px;
+}
+
+:deep(.col-hours) {
+  width: 90px;
+  min-width: 90px;
+}
+
+:deep(.p-datatable-tbody > tr > td) {
+  padding: 0.5rem 0.25rem !important;
+}
+
+:deep(.compact-input-number.p-inputnumber) {
+  width: 100% !important;
+}
+
+:deep(.compact-input-number .p-inputnumber-input) {
+  width: 100% !important;
+  min-width: 50px !important;
+  padding-left: 0.4rem !important;
+  padding-right: 0.4rem !important;
+}
+
+:deep(.compact-input-number .p-inputnumber-button) {
+  width: 1.75rem !important;
+  min-width: 1.75rem !important;
+  flex-shrink: 0 !important;
+}
+
+:deep(.time-input.p-inputtext) {
+  padding-left: 0.4rem !important;
+  padding-right: 0.4rem !important;
+  min-width: 0 !important;
+}
 </style>
