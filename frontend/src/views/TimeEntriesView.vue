@@ -543,7 +543,7 @@ const createQuickWorkEntry = async () => {
     const request: CreateTimeEntryRequest = {
       clockIn: clockIn.toISOString(),
       clockOut: clockOut.toISOString(),
-      breakMinutes: 0,
+      breakMinutes: todayWorkingHours.breakMinutes ?? 0,
       entryType: 'WORK',
       notes: ''
     }

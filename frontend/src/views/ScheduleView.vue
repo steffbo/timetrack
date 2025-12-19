@@ -45,7 +45,20 @@
             </template>
           </Column>
 
-          <Column field="hours" :header="t('workingHours.hours')">
+          <Column field="breakMinutes" :header="t('workingHours.breakMinutes')" style="width: 110px">
+            <template #body="{ data }">
+              <InputNumber
+                v-model="data.breakMinutes"
+                :min="0"
+                :max="480"
+                :disabled="!data.isWorkingDay"
+                suffix=" min"
+                showButtons
+              />
+            </template>
+          </Column>
+
+          <Column field="hours" :header="t('workingHours.hours')" style="width: 100px">
             <template #body="{ data }">
               <InputNumber
                 v-model="data.hours"
@@ -53,7 +66,6 @@
                 :max="24"
                 :disabled="!data.isWorkingDay || hasTimeValues(data)"
                 showButtons
-                fluid
               />
             </template>
           </Column>

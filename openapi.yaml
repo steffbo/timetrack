@@ -1224,6 +1224,12 @@ components:
           format: time
           description: Optional end time (HH:mm format). When set with startTime, hours are calculated automatically
           example: "17:00"
+        breakMinutes:
+          type: integer
+          minimum: 0
+          description: Break duration in minutes for this working day
+          default: 0
+          example: 30
 
     UpdateWorkingHoursRequest:
       type: object
@@ -1272,6 +1278,12 @@ components:
           format: time
           description: Optional end time (HH:mm format). When set with startTime, hours are calculated automatically
           example: "17:00"
+        breakMinutes:
+          type: integer
+          minimum: 0
+          description: Break duration in minutes for this working day
+          default: 0
+          example: 30
 
     RecurringOffDayResponse:
       type: object

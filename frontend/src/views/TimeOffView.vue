@@ -6,13 +6,11 @@ import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
-import Select from 'primevue/select'
-import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
-import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
+import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
 import { TimeOffService, VacationBalanceService } from '@/api/generated'
 import type { TimeOffResponse, CreateTimeOffRequest, UpdateTimeOffRequest, VacationBalanceResponse, UpdateVacationBalanceRequest } from '@/api/generated'
 import { useAuth } from '@/composables/useAuth'
@@ -27,10 +25,7 @@ const timeOffs = ref<TimeOffResponse[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
 const deleteDialogVisible = ref(false)
-const editMode = ref(false)
-const currentTimeOff = ref<Partial<CreateTimeOffRequest | UpdateTimeOffRequest>>({
-  timeOffType: 'VACATION'
-})
+const timeOffToEdit = ref<TimeOffResponse | null>(null)
 const timeOffToDelete = ref<TimeOffResponse | null>(null)
 
 // Date range filter
@@ -56,13 +51,6 @@ const editBalanceForm = ref<UpdateVacationBalanceRequest>({
 const sickDaysCount = ref(0)
 const childSickDaysCount = ref(0)
 
-const timeOffTypeOptions = [
-  { label: t('timeOff.type.VACATION'), value: 'VACATION' },
-  { label: t('timeOff.type.SICK'), value: 'SICK' },
-  { label: t('timeOff.type.CHILD_SICK'), value: 'CHILD_SICK' },
-  { label: t('timeOff.type.PERSONAL'), value: 'PERSONAL' },
-  { label: t('timeOff.type.PUBLIC_HOLIDAY'), value: 'PUBLIC_HOLIDAY' }
-]
 
 const remainingDays = computed(() => {
   if (!balance.value) return 0
@@ -211,79 +199,18 @@ const loadTimeOffs = async () => {
 }
 
 const openCreateDialog = () => {
-  editMode.value = false
-  const today = new Date()
-  currentTimeOff.value = {
-    timeOffType: 'VACATION',
-    startDate: today,
-    endDate: today
-  }
+  timeOffToEdit.value = null
   dialogVisible.value = true
 }
 
 const openEditDialog = (timeOff: TimeOffResponse) => {
-  editMode.value = true
-  currentTimeOff.value = {
-    id: timeOff.id,
-    timeOffType: timeOff.timeOffType,
-    startDate: timeOff.startDate,
-    endDate: timeOff.endDate,
-    hoursPerDay: timeOff.hoursPerDay,
-    notes: timeOff.notes
-  }
+  timeOffToEdit.value = timeOff
   dialogVisible.value = true
 }
 
-const saveTimeOff = async () => {
-  try {
-    // Convert Date objects to ISO date strings (YYYY-MM-DD) without timezone shifts
-    const formatDate = (date: any) => {
-      if (!date) return undefined
-      if (typeof date === 'string') return date
-      if (date instanceof Date) {
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const day = String(date.getDate()).padStart(2, '0')
-        return `${year}-${month}-${day}`
-      }
-      return date
-    }
-
-    const requestData = {
-      ...currentTimeOff.value,
-      startDate: formatDate(currentTimeOff.value.startDate),
-      endDate: formatDate(currentTimeOff.value.endDate)
-    }
-
-    if (editMode.value && requestData.id) {
-      await TimeOffService.updateTimeOff(
-        requestData.id,
-        requestData as UpdateTimeOffRequest
-      )
-      toast.add({
-        severity: 'success',
-        summary: t('success'),
-        detail: t('timeOff.updateSuccess'),
-        life: 3000
-      })
-    } else {
-      await TimeOffService.createTimeOff(
-        requestData as CreateTimeOffRequest
-      )
-      toast.add({
-        severity: 'success',
-        summary: t('success'),
-        detail: t('timeOff.createSuccess'),
-        life: 3000
-      })
-    }
-    dialogVisible.value = false
-    await loadTimeOffs()
-    await loadBalance() // Refresh vacation balance after create/update
-  } catch (error: any) {
-    const errorMessage = error?.body?.message || (editMode.value ? t('timeOff.updateError') : t('timeOff.createError'))
-    handleError(error, errorMessage)
-  }
+const handleTimeOffSaved = async () => {
+  await loadTimeOffs()
+  await loadBalance() // Refresh vacation balance after create/update
 }
 
 const confirmDelete = (timeOff: TimeOffResponse) => {
@@ -314,6 +241,14 @@ const deleteTimeOff = async () => {
     })
   }
 }
+
+const timeOffTypeOptions = [
+  { label: t('timeOff.type.VACATION'), value: 'VACATION' },
+  { label: t('timeOff.type.SICK'), value: 'SICK' },
+  { label: t('timeOff.type.CHILD_SICK'), value: 'CHILD_SICK' },
+  { label: t('timeOff.type.PERSONAL'), value: 'PERSONAL' },
+  { label: t('timeOff.type.PUBLIC_HOLIDAY'), value: 'PUBLIC_HOLIDAY' }
+]
 
 const getTypeLabel = (type: string) => {
   const option = timeOffTypeOptions.find(t => t.value === type)
@@ -546,78 +481,11 @@ onMounted(() => {
     </div>
 
     <!-- Create/Edit Dialog -->
-    <Dialog
+    <TimeOffQuickForm
       v-model:visible="dialogVisible"
-      :header="editMode ? t('timeOff.edit') : t('timeOff.create')"
-      :modal="true"
-      :style="{ width: '90vw', maxWidth: '600px' }"
-      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
-    >
-      <div class="p-fluid">
-        <div class="field">
-          <label for="timeOffType">{{ t('timeOff.type.label') }} *</label>
-          <Select
-            id="timeOffType"
-            v-model="currentTimeOff.timeOffType"
-            :options="timeOffTypeOptions"
-            option-label="label"
-            option-value="value"
-          />
-        </div>
-
-        <div class="field">
-          <label for="startDate">{{ t('timeOff.startDate') }} *</label>
-          <DatePicker
-            id="startDate"
-            v-model="currentTimeOff.startDate"
-          />
-        </div>
-
-        <div class="field">
-          <label for="endDate">{{ t('timeOff.endDate') }} *</label>
-          <DatePicker
-            id="endDate"
-            v-model="currentTimeOff.endDate"
-          />
-        </div>
-
-        <div class="field">
-          <label for="hoursPerDay">{{ t('timeOff.hoursPerDay') }}</label>
-          <InputNumber
-            id="hoursPerDay"
-            v-model="currentTimeOff.hoursPerDay"
-            :min="0"
-            :max="24"
-            :max-fraction-digits="2"
-            suffix=" h"
-          />
-          <small>{{ t('timeOff.hoursPerDayHint') }}</small>
-        </div>
-
-        <div class="field">
-          <label for="notes">{{ t('timeOff.notes') }}</label>
-          <Textarea
-            id="notes"
-            v-model="currentTimeOff.notes"
-            rows="3"
-          />
-        </div>
-      </div>
-
-      <template #footer>
-        <Button
-          :label="t('cancel')"
-          icon="pi pi-times"
-          class="p-button-text"
-          @click="dialogVisible = false"
-        />
-        <Button
-          :label="t('save')"
-          icon="pi pi-check"
-          @click="saveTimeOff"
-        />
-      </template>
-    </Dialog>
+      :time-off="timeOffToEdit"
+      @saved="handleTimeOffSaved"
+    />
 
     <!-- Delete Confirmation Dialog -->
     <Dialog

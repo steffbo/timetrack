@@ -66,6 +66,9 @@ public class WorkingHoursMapper {
             config.setEndTime(workingHours.getEndTime().toString());
         }
 
+        // Set break minutes
+        config.setBreakMinutes(workingHours.getBreakMinutes());
+
         // Set day name from weekday
         DayOfWeek dayOfWeek = workingHours.getDayOfWeek();
         config.setDayName(WorkingDayConfig.DayNameEnum.fromValue(dayOfWeek.name()));

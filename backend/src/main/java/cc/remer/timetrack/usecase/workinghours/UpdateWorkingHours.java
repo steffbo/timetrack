@@ -62,6 +62,9 @@ public class UpdateWorkingHours {
             LocalTime startTime = dayConfig.getStartTime() != null ? LocalTime.parse(dayConfig.getStartTime()) : null;
             LocalTime endTime = dayConfig.getEndTime() != null ? LocalTime.parse(dayConfig.getEndTime()) : null;
 
+            // Get break minutes (default to 0 if not provided)
+            Integer breakMinutes = dayConfig.getBreakMinutes() != null ? dayConfig.getBreakMinutes() : 0;
+
             // Calculate hours from times if both are provided, otherwise use the hours field
             BigDecimal hours;
             if (startTime != null && endTime != null) {
@@ -80,6 +83,7 @@ public class UpdateWorkingHours {
                         .isWorkingDay(isWorkingDay)
                         .startTime(startTime)
                         .endTime(endTime)
+                        .breakMinutes(breakMinutes)
                         .build();
             } else {
                 // Update existing entry
@@ -87,6 +91,7 @@ public class UpdateWorkingHours {
                 workingHours.setIsWorkingDay(isWorkingDay);
                 workingHours.setStartTime(startTime);
                 workingHours.setEndTime(endTime);
+                workingHours.setBreakMinutes(breakMinutes);
             }
 
             workingHoursRepository.save(workingHours);
@@ -161,6 +166,11 @@ public class UpdateWorkingHours {
 
             // Validate hours
             ValidationUtils.validateHours(dayConfig.getHours());
+
+            // Validate break minutes
+            if (dayConfig.getBreakMinutes() != null && dayConfig.getBreakMinutes() < 0) {
+                throw new IllegalArgumentException("Pausenzeit darf nicht negativ sein für Wochentag " + dayConfig.getWeekday());
+            }
 
             if (dayConfig.getIsWorkingDay() == null) {
                 throw new IllegalArgumentException("isWorkingDay darf nicht null sein für Wochentag " + dayConfig.getWeekday());

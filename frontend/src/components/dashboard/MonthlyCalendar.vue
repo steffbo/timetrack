@@ -251,7 +251,7 @@ import type { TimeEntryResponse, TimeOffResponse } from '@/api/generated'
 interface Emits {
   (e: 'monthChange', date: Date): void
   (e: 'daySelected', payload: { date: string, summary: DailySummaryResponse | undefined }): void
-  (e: 'quickEntry', payload: { date: string, startTime: string, endTime: string }): void
+  (e: 'quickEntry', payload: { date: string, startTime: string, endTime: string, breakMinutes?: number }): void
   (e: 'manualEntry', payload: { date: string }): void
   (e: 'addTimeOff', payload: { date: string }): void
   (e: 'editAll', payload: { date: string, entries: TimeEntryResponse[], timeOffEntries: TimeOffResponse[] }): void
@@ -1128,7 +1128,8 @@ const handleQuickEntryClick = (day: number | string) => {
   emit('quickEntry', {
     date: dateStr,
     startTime: workingDayConfig.startTime,
-    endTime: workingDayConfig.endTime
+    endTime: workingDayConfig.endTime,
+    breakMinutes: workingDayConfig.breakMinutes ?? 0
   })
   stickyPanelVisible.value = false
 }

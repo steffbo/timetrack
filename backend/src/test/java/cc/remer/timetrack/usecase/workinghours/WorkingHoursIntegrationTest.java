@@ -526,4 +526,115 @@ class WorkingHoursIntegrationTest extends RepositoryTestBase {
         assertThat(tuesdayResult.getStartTime()).isNull();
         assertThat(tuesdayResult.getEndTime()).isNull();
     }
+
+    @Test
+    @DisplayName("Should save and retrieve break minutes")
+    void shouldSaveAndRetrieveBreakMinutes() {
+        // Given - create request with break minutes
+        UpdateWorkingHoursRequest request = new UpdateWorkingHoursRequest();
+        List<UpdateWorkingDayConfig> workingDays = new ArrayList<>();
+
+        // Monday with 30 min break
+        UpdateWorkingDayConfig monday = new UpdateWorkingDayConfig();
+        monday.setWeekday(1);
+        monday.setHours(8.0);
+        monday.setIsWorkingDay(true);
+        monday.setBreakMinutes(30);
+        workingDays.add(monday);
+
+        // Tuesday with 45 min break
+        UpdateWorkingDayConfig tuesday = new UpdateWorkingDayConfig();
+        tuesday.setWeekday(2);
+        tuesday.setHours(8.0);
+        tuesday.setIsWorkingDay(true);
+        tuesday.setBreakMinutes(45);
+        workingDays.add(tuesday);
+
+        // Rest of the week without break
+        for (int i = 3; i <= 5; i++) {
+            UpdateWorkingDayConfig dayConfig = new UpdateWorkingDayConfig();
+            dayConfig.setWeekday(i);
+            dayConfig.setHours(8.0);
+            dayConfig.setIsWorkingDay(true);
+            dayConfig.setBreakMinutes(0);
+            workingDays.add(dayConfig);
+        }
+
+        // Weekend
+        for (int i = 6; i <= 7; i++) {
+            UpdateWorkingDayConfig dayConfig = new UpdateWorkingDayConfig();
+            dayConfig.setWeekday(i);
+            dayConfig.setHours(0.0);
+            dayConfig.setIsWorkingDay(false);
+            dayConfig.setBreakMinutes(0);
+            workingDays.add(dayConfig);
+        }
+
+        request.setWorkingDays(workingDays);
+
+        // When
+        WorkingHoursResponse response = updateWorkingHours.execute(testUser.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+
+        WorkingDayConfig mondayResult = findDay(response, 1);
+        assertThat(mondayResult.getBreakMinutes()).isEqualTo(30);
+
+        WorkingDayConfig tuesdayResult = findDay(response, 2);
+        assertThat(tuesdayResult.getBreakMinutes()).isEqualTo(45);
+
+        WorkingDayConfig wednesdayResult = findDay(response, 3);
+        assertThat(wednesdayResult.getBreakMinutes()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("Should default break minutes to zero when not provided")
+    void shouldDefaultBreakMinutesToZeroWhenNotProvided() {
+        // Given - create request without break minutes
+        UpdateWorkingHoursRequest request = createUpdateRequest(
+                new double[]{8.0, 8.0, 8.0, 8.0, 8.0, 0.0, 0.0},
+                new boolean[]{true, true, true, true, true, false, false}
+        );
+
+        // When
+        WorkingHoursResponse response = updateWorkingHours.execute(testUser.getId(), request);
+
+        // Then
+        assertThat(response).isNotNull();
+        for (WorkingDayConfig dayConfig : response.getWorkingDays()) {
+            assertThat(dayConfig.getBreakMinutes()).isEqualTo(0);
+        }
+    }
+
+    @Test
+    @DisplayName("Should validate negative break minutes are not allowed")
+    void shouldValidateNegativeBreakMinutesNotAllowed() {
+        // Given - create request with negative break minutes
+        UpdateWorkingHoursRequest request = new UpdateWorkingHoursRequest();
+        List<UpdateWorkingDayConfig> workingDays = new ArrayList<>();
+
+        UpdateWorkingDayConfig monday = new UpdateWorkingDayConfig();
+        monday.setWeekday(1);
+        monday.setHours(8.0);
+        monday.setIsWorkingDay(true);
+        monday.setBreakMinutes(-30); // Invalid negative break
+        workingDays.add(monday);
+
+        for (int i = 2; i <= 7; i++) {
+            UpdateWorkingDayConfig dayConfig = new UpdateWorkingDayConfig();
+            dayConfig.setWeekday(i);
+            dayConfig.setHours(i <= 5 ? 8.0 : 0.0);
+            dayConfig.setIsWorkingDay(i <= 5);
+            dayConfig.setBreakMinutes(0);
+            workingDays.add(dayConfig);
+        }
+
+        request.setWorkingDays(workingDays);
+
+        // When/Then
+        assertThatThrownBy(() -> updateWorkingHours.execute(testUser.getId(), request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Pausenzeit darf nicht negativ sein");
+    }
 }

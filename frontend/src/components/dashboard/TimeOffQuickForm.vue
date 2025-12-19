@@ -1,7 +1,7 @@
 <template>
   <Dialog
     v-model:visible="isVisible"
-    :header="t('dashboard.selectedDay.addTimeOffTitle')"
+    :header="isEditMode ? t('timeOff.edit') : (header || t('dashboard.selectedDay.addTimeOffTitle'))"
     :modal="true"
     :style="{ width: '90vw', maxWidth: '600px' }"
     :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
@@ -88,6 +88,7 @@ import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import { TimeOffService } from '@/api/generated'
+import type { TimeOffResponse } from '@/api/generated'
 import { formatDateISO } from '@/utils/dateTimeUtils'
 
 const { t } = useI18n()
@@ -95,10 +96,16 @@ const toast = useToast()
 
 interface Props {
   visible: boolean
-  selectedDate: string
+  selectedDate?: string
+  timeOff?: TimeOffResponse | null // TimeOffResponse for edit mode
+  header?: string // Optional custom header
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  selectedDate: '',
+  timeOff: undefined,
+  header: undefined
+})
 
 interface Emits {
   (e: 'update:visible', value: boolean): void
@@ -115,8 +122,11 @@ const timeOffTypeOptions = [
   { label: t('timeOff.type.VACATION'), value: 'VACATION', icon: 'pi pi-sun' },
   { label: t('timeOff.type.SICK'), value: 'SICK', icon: 'pi pi-heart-fill' },
   { label: t('timeOff.type.CHILD_SICK'), value: 'CHILD_SICK', icon: 'pi pi-users' },
-  { label: t('timeOff.type.PERSONAL'), value: 'PERSONAL', icon: 'pi pi-home' }
+  { label: t('timeOff.type.PERSONAL'), value: 'PERSONAL', icon: 'pi pi-home' },
+  { label: t('timeOff.type.PUBLIC_HOLIDAY'), value: 'PUBLIC_HOLIDAY', icon: 'pi pi-calendar' }
 ]
+
+const isEditMode = computed(() => !!props.timeOff)
 
 const formData = ref({
   timeOffType: 'VACATION' as any,
@@ -124,17 +134,39 @@ const formData = ref({
   notes: ''
 })
 
-// Initialize form with selected date
+// Initialize form with selected date or existing time-off
 const initializeForm = () => {
-  if (!props.selectedDate) return
-
-  const date = new Date(props.selectedDate)
-  dateRange.value = [date, date]
-
-  formData.value = {
-    timeOffType: 'VACATION',
-    hoursPerDay: undefined,
-    notes: ''
+  if (props.timeOff) {
+    // Edit mode: load existing data
+    const startDate = new Date(props.timeOff.startDate)
+    const endDate = new Date(props.timeOff.endDate)
+    dateRange.value = [startDate, endDate]
+    
+    formData.value = {
+      timeOffType: props.timeOff.timeOffType,
+      hoursPerDay: props.timeOff.hoursPerDay,
+      notes: props.timeOff.notes || ''
+    }
+  } else if (props.selectedDate) {
+    // Create mode with selected date
+    const date = new Date(props.selectedDate)
+    dateRange.value = [date, date]
+    
+    formData.value = {
+      timeOffType: 'VACATION',
+      hoursPerDay: undefined,
+      notes: ''
+    }
+  } else {
+    // Create mode without selected date
+    const today = new Date()
+    dateRange.value = [today, today]
+    
+    formData.value = {
+      timeOffType: 'VACATION',
+      hoursPerDay: undefined,
+      notes: ''
+    }
   }
 }
 
@@ -151,10 +183,16 @@ watch(() => props.visible, (newValue) => {
 })
 
 watch(() => props.selectedDate, () => {
-  if (props.visible) {
+  if (props.visible && !props.timeOff) {
     initializeForm()
   }
 })
+
+watch(() => props.timeOff, () => {
+  if (props.visible) {
+    initializeForm()
+  }
+}, { deep: true })
 
 const handleVisibilityChange = (value: boolean) => {
   emit('update:visible', value)
@@ -178,20 +216,31 @@ const handleSave = async () => {
 
   saving.value = true
   try {
-    await TimeOffService.createTimeOff({
+    const requestData = {
       timeOffType: formData.value.timeOffType,
       startDate: formatDateISO(dateRange.value[0]),
       endDate: formatDateISO(dateRange.value[1]),
       hoursPerDay: formData.value.hoursPerDay,
       notes: formData.value.notes || undefined
-    })
+    }
 
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('dashboard.selectedDay.timeOffSaved'),
-      life: 3000
-    })
+    if (isEditMode.value && props.timeOff?.id) {
+      await TimeOffService.updateTimeOff(props.timeOff.id, requestData)
+      toast.add({
+        severity: 'success',
+        summary: t('success'),
+        detail: t('timeOff.updateSuccess'),
+        life: 3000
+      })
+    } else {
+      await TimeOffService.createTimeOff(requestData)
+      toast.add({
+        severity: 'success',
+        summary: t('success'),
+        detail: props.selectedDate ? t('dashboard.selectedDay.timeOffSaved') : t('timeOff.createSuccess'),
+        life: 3000
+      })
+    }
 
     emit('update:visible', false)
     emit('saved')
@@ -199,7 +248,7 @@ const handleSave = async () => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error?.body?.message || t('dashboard.selectedDay.timeOffSaveError'),
+      detail: error?.body?.message || (isEditMode.value ? t('timeOff.updateError') : (props.selectedDate ? t('dashboard.selectedDay.timeOffSaveError') : t('timeOff.createError'))),
       life: 5000
     })
   } finally {

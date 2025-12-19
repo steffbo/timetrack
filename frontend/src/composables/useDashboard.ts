@@ -415,7 +415,7 @@ export function useDashboard() {
       await TimeEntriesService.createTimeEntry({
         clockIn: clockIn.toISOString(),
         clockOut: clockOut.toISOString(),
-        breakMinutes: 0,
+        breakMinutes: todayWorkingHours.breakMinutes ?? 0,
         entryType: 'WORK' as any, // API expects specific string literal type
         notes: ''
       })
@@ -428,7 +428,7 @@ export function useDashboard() {
   }
 
   // Handle quick entry from calendar
-  const handleQuickEntryFromCalendar = async (payload: { date: string; startTime: string; endTime: string }) => {
+  const handleQuickEntryFromCalendar = async (payload: { date: string; startTime: string; endTime: string; breakMinutes?: number }) => {
     try {
       const date = new Date(payload.date)
       const startParts = payload.startTime.split(':').map(Number)
@@ -454,7 +454,7 @@ export function useDashboard() {
       await TimeEntriesService.createTimeEntry({
         clockIn: clockIn.toISOString(),
         clockOut: clockOut.toISOString(),
-        breakMinutes: 0,
+        breakMinutes: payload.breakMinutes ?? 0,
         entryType: 'WORK' as any, // API expects specific string literal type
         notes: ''
       })
@@ -583,6 +583,26 @@ export function useDashboard() {
   // Handle form saved
   const handleFormSaved = async () => {
     await invalidateCacheAndReload()
+    
+    // Reload next vacation since it may have changed
+    await loadNextVacation()
+    
+    // Update entries for the selected date if modal is open
+    if (selectedDate.value) {
+      const summary = dailySummaries.value.find(s => s.date === selectedDate.value)
+      if (summary) {
+        selectedEntries.value = summary.entries || []
+        selectedTimeOffEntries.value = summary.timeOffEntries || []
+        
+        // Close modal if no entries remain
+        if (selectedEntries.value.length === 0 && selectedTimeOffEntries.value.length === 0) {
+          showEditDialog.value = false
+        }
+      } else {
+        // If summary not found, close modal (date might be out of range)
+        showEditDialog.value = false
+      }
+    }
   }
 
   return {

@@ -66,6 +66,14 @@ public class WorkingHours {
     @Column(name = "end_time")
     private LocalTime endTime;
 
+    /**
+     * Break duration in minutes for this working day.
+     * Defaults to 0 (no break).
+     */
+    @Column(name = "break_minutes", nullable = false)
+    @Builder.Default
+    private Integer breakMinutes = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

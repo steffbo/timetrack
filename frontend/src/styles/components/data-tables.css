@@ -29,9 +29,10 @@
   width: 140px;
 }
 
-/* Reduce width of hours column */
+/* Reduce width of InputNumber columns - default for general use */
 :deep(.p-datatable tbody td:has(.p-inputnumber)) {
-  width: 120px;
+  width: auto;
+  min-width: 80px;
 }
 
 /* Reduce width of actions column */

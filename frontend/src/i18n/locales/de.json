@@ -58,6 +58,7 @@
     "hours": "Stunden",
     "startTime": "Startzeit",
     "endTime": "Endzeit",
+    "breakMinutes": "Pause",
     "isWorkingDay": "Arbeitstag",
     "weeklySum": "Wöchentliche Summe",
     "save": "Speichern",
