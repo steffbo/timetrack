@@ -46,9 +46,9 @@
 
 .action-hint {
   display: block;
-  margin-top: 0.35rem;
+  margin-top: var(--tt-spacing-2xs);  /* 4px - aligned to grid */
   color: var(--tt-text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.75rem;  /* 12px - aligned to grid */
 }
 
 /* Active Entry Cards Layout */
@@ -90,7 +90,9 @@
   color: var(--tt-text-primary);
 }
 
-/* Action Card Color Variants */
+/* Action Card Color Variants - 60-30-10 Rule Applied */
+
+/* 10% - Primary action: Bold gradient (Clock In/Out) */
 .action-card.action-clock-in,
 .action-card-small.action-clock-in {
   background: linear-gradient(135deg, var(--tt-lime-from) 0%, var(--tt-lime-to) 100%);
@@ -115,40 +117,54 @@
   color: white;
 }
 
-.action-card.action-cancel,
-.action-card-small.action-cancel {
-  background: linear-gradient(135deg, var(--tt-slate-from) 0%, var(--tt-slate-to) 100%);
-}
-
-.action-card.action-cancel .action-icon,
-.action-card.action-cancel .action-label,
-.action-card-small.action-cancel .action-icon-small,
-.action-card-small.action-cancel .action-label-small {
-  color: white;
-}
-
+/* 30% - Secondary action: Subtle colored background */
 .action-card.action-quick-entry,
 .action-card-small.action-quick-entry {
-  background: linear-gradient(135deg, var(--tt-cyan-from) 0%, var(--tt-cyan-to) 100%);
+  background: rgba(34, 211, 238, 0.12);
+  border-left: 4px solid var(--tt-cyan-to);
 }
 
 .action-card.action-quick-entry .action-icon,
-.action-card.action-quick-entry .action-label,
-.action-card-small.action-quick-entry .action-icon-small,
-.action-card-small.action-quick-entry .action-label-small {
-  color: white;
+.action-card-small.action-quick-entry .action-icon-small {
+  color: var(--tt-cyan-to);
 }
 
+.action-card.action-quick-entry .action-label,
+.action-card-small.action-quick-entry .action-label-small {
+  color: var(--tt-color-30-primary);
+}
+
+/* 60% - Most cards: Light backgrounds */
 .action-card.action-manual-entry,
 .action-card-small.action-manual-entry {
-  background: linear-gradient(135deg, var(--tt-teal-from) 0%, var(--tt-teal-to) 100%);
+  background: white;
+  border: 2px solid var(--tt-color-30-tertiary);
 }
 
 .action-card.action-manual-entry .action-icon,
+.action-card-small.action-manual-entry .action-icon-small {
+  color: var(--tt-teal-to);
+}
+
 .action-card.action-manual-entry .action-label,
-.action-card-small.action-manual-entry .action-icon-small,
 .action-card-small.action-manual-entry .action-label-small {
-  color: white;
+  color: var(--tt-color-30-primary);
+}
+
+.action-card.action-cancel,
+.action-card-small.action-cancel {
+  background: white;
+  border: 2px solid var(--tt-color-30-tertiary);
+}
+
+.action-card.action-cancel .action-icon,
+.action-card-small.action-cancel .action-icon-small {
+  color: var(--tt-slate-to);
+}
+
+.action-card.action-cancel .action-label,
+.action-card-small.action-cancel .action-label-small {
+  color: var(--tt-color-30-primary);
 }
 
 /* Responsive - Dashboard Layout */

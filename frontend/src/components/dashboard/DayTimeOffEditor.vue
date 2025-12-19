@@ -3,7 +3,7 @@
     v-model:visible="isVisible"
     :header="t('dashboard.selectedDay.editTimeOffTitle')"
     :modal="true"
-    :style="{ width: '90vw', maxWidth: '700px' }"
+    :style="{ width: '90vw', maxWidth: '600px' }"
     :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     @update:visible="handleVisibilityChange"
   >
@@ -65,7 +65,7 @@
     v-model:visible="editDialogVisible"
     :header="t('dashboard.selectedDay.editTimeOffEntryTitle')"
     :modal="true"
-    :style="{ width: '90vw', maxWidth: '500px' }"
+    :style="{ width: '90vw', maxWidth: '550px' }"
     :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
   >
     <div v-if="editingEntry" class="p-fluid">

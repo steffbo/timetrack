@@ -57,8 +57,8 @@ onMounted(() => {
   <div class="public-holidays-view">
     <h1 class="page-title">{{ t('publicHolidays.title') }}</h1>
 
-    <div class="filters-card">
-      <div class="filter-group">
+    <div class="filters-container">
+      <div class="filter-card">
         <label class="filter-label">{{ t('publicHolidays.year') }}</label>
         <div class="filter-buttons">
           <button
@@ -71,7 +71,8 @@ onMounted(() => {
           </button>
         </div>
       </div>
-      <div class="filter-group">
+
+      <div class="filter-card">
         <label class="filter-label">{{ t('publicHolidays.state') }}</label>
         <div class="filter-buttons">
           <button
@@ -116,21 +117,22 @@ onMounted(() => {
   padding: var(--tt-view-padding);
 }
 
-.filters-card {
-  display: flex;
-  gap: 2rem;
-  padding: 1.25rem;
+.filters-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.filter-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
   background: var(--p-surface-0);
   border: 1px solid var(--p-surface-border);
   border-radius: 0.75rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
 }
 
 .filter-label {
@@ -141,6 +143,7 @@ onMounted(() => {
 
 .filter-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 

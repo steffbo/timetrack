@@ -1142,7 +1142,7 @@ onMounted(() => {
       v-model:visible="clockOutDialogVisible"
       :header="t('timeEntries.clockOut')"
       :modal="true"
-      :style="{ width: '90vw', maxWidth: '400px' }"
+      :style="{ width: '90vw', maxWidth: '550px' }"
       :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="field">
@@ -1166,7 +1166,7 @@ onMounted(() => {
       v-model:visible="manualEntryDialogVisible"
       :header="t('timeEntries.manualEntry')"
       :modal="true"
-      :style="{ width: '90vw', maxWidth: '500px' }"
+      :style="{ width: '90vw', maxWidth: '550px' }"
       :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="manual-entry-form">
@@ -1256,7 +1256,7 @@ onMounted(() => {
       v-model:visible="editDialogVisible"
       :header="t('timeEntries.edit')"
       :modal="true"
-      :style="{ width: '90vw', maxWidth: '500px' }"
+      :style="{ width: '90vw', maxWidth: '550px' }"
       :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="manual-entry-form">

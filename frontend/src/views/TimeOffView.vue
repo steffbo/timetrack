@@ -512,7 +512,7 @@ onMounted(() => {
       v-model:visible="editBalanceDialogVisible"
       :header="t('vacationBalance.edit')"
       :modal="true"
-      :style="{ width: '90vw', maxWidth: '500px' }"
+      :style="{ width: '90vw', maxWidth: '550px' }"
       :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
     >
       <div class="p-fluid">
@@ -730,44 +730,63 @@ onMounted(() => {
   color: #1f2937;
 }
 
-/* Time-off specific stat colors */
-.stat-card.stat-used {
-  background: linear-gradient(135deg, var(--tt-coral-from) 0%, var(--tt-coral-to) 100%);
+/* Time-off specific stat colors - 60-30-10 Rule Applied */
+
+/* 60% - Most cards: Light backgrounds with subtle accents (neutral) */
+.stat-card {
+  background: white;
+  border-left: 4px solid var(--tt-slate-to);
 }
 
-.stat-card.stat-used .stat-label,
-.stat-card.stat-used .stat-value,
-.stat-card.stat-used .stat-unit {
-  color: white;
+.stat-card .stat-label {
+  color: var(--tt-color-30-tertiary);
 }
 
+.stat-card .stat-value {
+  color: var(--tt-color-30-primary);
+}
+
+.stat-card .stat-unit {
+  color: var(--tt-color-30-tertiary);
+}
+
+/* 30% - Secondary emphasis cards: Subtle colored backgrounds */
 .stat-card.stat-planned {
-  background: linear-gradient(135deg, var(--tt-teal-from) 0%, var(--tt-teal-to) 100%);
+  background: rgba(20, 184, 166, 0.08);
+  border-left: 4px solid var(--tt-teal-to);
 }
 
-.stat-card.stat-planned .stat-label,
-.stat-card.stat-planned .stat-value,
-.stat-card.stat-planned .stat-unit {
-  color: white;
+.stat-card.stat-planned .stat-value {
+  color: var(--tt-teal-to);
 }
 
+.stat-card.stat-used {
+  background: rgba(249, 115, 22, 0.08);
+  border-left: 4px solid var(--tt-coral-to);
+}
+
+.stat-card.stat-used .stat-value {
+  color: var(--tt-coral-to);
+}
+
+.stat-card.stat-sick {
+  background: rgba(249, 115, 22, 0.08);
+  border-left: 4px solid var(--tt-coral-to);
+}
+
+.stat-card.stat-sick .stat-value {
+  color: var(--tt-coral-to);
+}
+
+/* 10% - Accent card: Bold gradient for the most important metric */
 .stat-card.stat-remaining {
   background: linear-gradient(135deg, var(--tt-lime-from) 0%, var(--tt-lime-to) 100%);
+  border-left: none;
 }
 
 .stat-card.stat-remaining .stat-label,
 .stat-card.stat-remaining .stat-value,
 .stat-card.stat-remaining .stat-unit {
-  color: white;
-}
-
-.stat-card.stat-sick {
-  background: linear-gradient(135deg, var(--tt-coral-from) 0%, var(--tt-coral-to) 100%);
-}
-
-.stat-card.stat-sick .stat-label,
-.stat-card.stat-sick .stat-value,
-.stat-card.stat-sick .stat-unit {
   color: white;
 }
 

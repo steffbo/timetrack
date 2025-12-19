@@ -5,7 +5,13 @@
     <!-- Working Hours Section -->
     <Card class="section-card">
       <template #title>
-        {{ t('workingHours.title') }}
+        <div class="card-title-row">
+          <span>{{ t('workingHours.title') }}</span>
+          <div class="weekly-sum-header">
+            <strong>{{ t('workingHours.weeklySum') }}:</strong>
+            <span>{{ weeklySum.toFixed(2) }} {{ t('workingHours.hours') }}</span>
+          </div>
+        </div>
       </template>
       <template #content>
         <DataTable
@@ -82,12 +88,7 @@
           </Column>
         </DataTable>
 
-        <div class="weekly-sum">
-          <strong>{{ t('workingHours.weeklySum') }}:</strong>
-          <span>{{ weeklySum.toFixed(2) }} {{ t('workingHours.hours') }}</span>
-        </div>
-
-        <div class="button-group">
+        <div class="button-group-right">
           <Button
             :label="t('workingHours.save')"
             :loading="isSavingWorkingHours"
@@ -755,5 +756,46 @@ onMounted(async () => {
   padding-left: 0.4rem !important;
   padding-right: 0.4rem !important;
   min-width: 0 !important;
+}
+
+/* Card title row with weekly sum */
+.card-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
+
+.weekly-sum-header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 1rem;
+  color: var(--tt-color-30-primary);
+}
+
+.weekly-sum-header strong {
+  font-weight: 600;
+}
+
+/* Button group aligned to the right */
+.button-group-right {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--tt-spacing-md);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .card-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .weekly-sum-header {
+    font-size: 0.9rem;
+  }
 }
 </style>

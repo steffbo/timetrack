@@ -25,7 +25,7 @@
         <Popover
           ref="warningsPopover"
           :dismissable="true"
-          :style="{ width: '90vw', maxWidth: '500px' }"
+          :style="{ width: '90vw', maxWidth: '550px' }"
         >
           <WarningsCard :inline="true" />
         </Popover>
@@ -183,6 +183,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 60-30-10 Color Distribution: Navbar is part of 30% (Dark Contrast) */
+:deep(.p-menubar) {
+  background: var(--tt-color-60-primary);  /* White background */
+  border-bottom: 1px solid var(--p-surface-border);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);  /* Subtle depth */
+}
+
 /* Ensure menubar end section stays right-aligned */
 :deep(.p-menubar-end) {
   margin-left: auto;
@@ -191,9 +198,9 @@ onMounted(() => {
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--tt-spacing-sm);  /* 12px - aligned to grid */
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
+  padding: var(--tt-spacing-2xs) var(--tt-spacing-xs);  /* 4px 8px - aligned to grid */
   border-radius: var(--p-border-radius);
   transition: background-color 0.2s;
 }
@@ -218,28 +225,28 @@ onMounted(() => {
 .navbar-end {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--tt-spacing-sm);  /* 12px - aligned to grid */
 }
 
 .user-name {
   color: var(--p-text-color);
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 1rem;  /* 16px - aligned to grid */
 }
 
 .user-avatar-button {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.5rem;   /* 40px - aligned to 8px grid */
+  height: 2.5rem;  /* 40px - aligned to 8px grid */
   border-radius: 50%;
-  background: var(--p-primary-color);
+  background: var(--tt-color-10-primary);  /* Using 10% accent color */
   color: white;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1rem;  /* 16px - aligned to grid */
   padding: 0;
   min-width: 2.5rem;
 }
 
 .user-avatar-button:hover {
-  background: var(--p-primary-600);
+  background: var(--tt-color-10-hover);  /* Using 10% accent hover color */
 }
 </style>

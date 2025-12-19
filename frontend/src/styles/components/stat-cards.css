@@ -38,9 +38,9 @@
 }
 
 .stat-label {
-  font-size: 0.8rem;
+  font-size: 0.75rem;  /* 12px - aligned to grid */
   color: var(--tt-text-secondary);
-  margin-bottom: 0.4rem;
+  margin-bottom: var(--tt-spacing-xs);  /* 8px - aligned to grid */
   font-weight: 500;
 }
 
@@ -51,7 +51,9 @@
   line-height: 1;
 }
 
-/* Stat card gradient colors */
+/* Stat card colors - 60-30-10 Rule Applied */
+
+/* 10% - Most important stat: Bold gradient */
 .stat-card.stat-vacation {
   background: linear-gradient(135deg, var(--tt-emerald-from) 0%, var(--tt-emerald-to) 100%);
 }
@@ -61,29 +63,43 @@
   color: white;
 }
 
+/* 30% - Secondary stats: Subtle colored backgrounds */
 .stat-card.stat-current {
-  background: linear-gradient(135deg, var(--tt-cyan-from) 0%, var(--tt-cyan-to) 100%);
+  background: rgba(34, 211, 238, 0.12);
+  border-left: 4px solid var(--tt-cyan-to);
 }
 
-.stat-card.stat-current .stat-label,
+.stat-card.stat-current .stat-label {
+  color: var(--tt-color-30-tertiary);
+}
+
 .stat-card.stat-current .stat-value {
-  color: white;
+  color: var(--tt-cyan-to);
 }
 
+/* 60% - Less prominent stats: Light backgrounds */
 .stat-card.stat-last {
-  background: linear-gradient(135deg, var(--tt-yellow-from) 0%, var(--tt-yellow-to) 100%);
+  background: white;
+  border-left: 4px solid var(--tt-slate-to);
 }
 
-.stat-card.stat-last .stat-label,
+.stat-card.stat-last .stat-label {
+  color: var(--tt-color-30-tertiary);
+}
+
 .stat-card.stat-last .stat-value {
-  color: white;
+  color: var(--tt-color-30-primary);
 }
 
 .stat-card.stat-average {
-  background: linear-gradient(135deg, var(--tt-teal-from) 0%, var(--tt-teal-to) 100%);
+  background: white;
+  border-left: 4px solid var(--tt-slate-to);
 }
 
-.stat-card.stat-average .stat-label,
+.stat-card.stat-average .stat-label {
+  color: var(--tt-color-30-tertiary);
+}
+
 .stat-card.stat-average .stat-value {
-  color: white;
+  color: var(--tt-color-30-primary);
 }

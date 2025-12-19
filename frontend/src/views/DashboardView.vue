@@ -95,7 +95,7 @@
       v-model:visible="showManualEntryDialog"
       :header="t('timeEntries.manualEntry')"
       :modal="true"
-      :style="{ width: '90vw', maxWidth: '500px' }"
+      :style="{ width: '90vw', maxWidth: '550px' }"
       :breakpoints="{ '960px': '75vw', '640px': '80vw', '480px': '90vw' }"
     >
       <div class="manual-entry-form">
@@ -250,7 +250,7 @@ onMounted(async () => {
 .dashboard-layout {
   display: grid;
   grid-template-columns: 1fr 400px;
-  gap: 2rem;
+  gap: var(--tt-spacing-xl);  /* 32px - aligned to grid */
   align-items: start;
   max-width: 100%;
 }
@@ -388,7 +388,7 @@ onMounted(async () => {
 .manual-entry-form .datetime-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: var(--tt-spacing-md);  /* 16px - aligned to grid */
   max-width: 300px;
 }
 

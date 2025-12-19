@@ -20,27 +20,29 @@
   --tt-coral-from: #f97316; /* Coral orange (warm complement) */
   --tt-coral-to: #ea580c;
 
-  /* Spacing */
-  --tt-spacing-xs: 0.5rem;
-  --tt-spacing-sm: 0.75rem;
-  --tt-spacing-md: 1rem;
-  --tt-spacing-lg: 1.5rem;
-  --tt-spacing-xl: 2rem;
+  /* Spacing - 8px/4px Grid System */
+  --tt-spacing-2xs: 0.25rem;  /* 4px */
+  --tt-spacing-xs: 0.5rem;    /* 8px */
+  --tt-spacing-sm: 0.75rem;   /* 12px */
+  --tt-spacing-md: 1rem;      /* 16px */
+  --tt-spacing-lg: 1.5rem;    /* 24px */
+  --tt-spacing-xl: 2rem;      /* 32px */
+  --tt-spacing-2xl: 3rem;     /* 48px */
 
-  /* View Padding */
-  --tt-view-padding: 1rem 2rem 2rem 2rem;
-  --tt-view-padding-mobile: 0.75rem 1rem 1rem 1rem;
-  --tt-view-padding-xs: 0.5rem 0.75rem 0.75rem 0.75rem;
+  /* View Padding - Aligned to 8px Grid */
+  --tt-view-padding: 1rem 2rem 2rem 2rem;        /* 16px 32px 32px 32px */
+  --tt-view-padding-mobile: 0.75rem 1rem 1rem 1rem;  /* 12px 16px 16px 16px */
+  --tt-view-padding-xs: 0.5rem 0.75rem 0.75rem 0.75rem; /* 8px 12px 12px 12px */
 
-  /* Typography */
-  --tt-title-size: 1.75rem;
+  /* Typography - Aligned to 8px Grid */
+  --tt-title-size: 1.75rem;   /* 28px */
   --tt-title-weight: 600;
-  --tt-title-margin: 0 0 1.5rem 0;
+  --tt-title-margin: 0 0 1.5rem 0;  /* 0 0 24px 0 */
 
-  /* Card Spacing */
-  --tt-card-gap: 2rem;
-  --tt-card-padding: 1.25rem;
-  --tt-card-padding-sm: 1rem;
+  /* Card Spacing - Aligned to 8px Grid */
+  --tt-card-gap: 2rem;        /* 32px */
+  --tt-card-padding: 1.5rem;  /* 24px - changed from 20px */
+  --tt-card-padding-sm: 1rem; /* 16px */
 
   /* Shadows */
   --tt-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.08);
@@ -73,6 +75,20 @@
   --tt-bg-white: #ffffff;
   --tt-bg-light: #f8f9fa;
   --tt-bg-dark: #1a1a1a;
+
+  /* 60-30-10 Color Distribution System */
+  /* 60% - Light/Neutral (main content areas) */
+  --tt-color-60-primary: #ffffff;      /* White - cards, content */
+  --tt-color-60-secondary: #f8fafc;    /* Light gray - backgrounds */
+
+  /* 30% - Dark Contrast (structure, text) */
+  --tt-color-30-primary: #1f2937;      /* Dark gray - primary text */
+  --tt-color-30-secondary: #334155;    /* Medium dark - secondary text */
+  --tt-color-30-tertiary: #64748b;     /* Slate - muted text */
+
+  /* 10% - Accent (attention, CTAs) */
+  --tt-color-10-primary: #10b981;      /* Emerald - primary actions */
+  --tt-color-10-hover: #059669;        /* Darker emerald - hover state */
 
   /* Breakpoints */
   --tt-breakpoint-sm: 480px;

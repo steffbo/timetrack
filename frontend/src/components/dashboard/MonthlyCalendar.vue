@@ -1404,14 +1404,14 @@ const handleEditAllClick = (day: number | string) => {
 }
 
 .day-details-content {
-  font-size: 0.95rem;
+  font-size: 1rem;  /* 16px - aligned to grid */
 }
 
 .detail-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.4rem 0;
+  padding: var(--tt-spacing-xs) 0;  /* 8px 0 - aligned to grid */
   line-height: 1.5;
 }
 
@@ -1447,7 +1447,7 @@ const handleEditAllClick = (day: number | string) => {
 
 .quick-entry-buttons {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--tt-spacing-2xs);  /* 4px - aligned to grid */
   width: 100%;
 }
 
@@ -1470,13 +1470,13 @@ const handleEditAllClick = (day: number | string) => {
 }
 
 .detail-section {
-  margin-top: 0.75rem;
-  margin-bottom: 0.25rem;
+  margin-top: var(--tt-spacing-sm);   /* 12px - aligned to grid */
+  margin-bottom: var(--tt-spacing-2xs);  /* 4px - aligned to grid */
 }
 
 .detail-item {
-  margin-left: 0.5rem;
-  margin-bottom: 0.25rem;
+  margin-left: var(--tt-spacing-xs);   /* 8px - aligned to grid */
+  margin-bottom: var(--tt-spacing-2xs);  /* 4px - aligned to grid */
   line-height: 1.4;
 }
 
