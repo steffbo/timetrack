@@ -4,19 +4,21 @@
  */
 
 :root {
-  /* Custom Color Palette */
-  --tt-green-from: #10b981;
-  --tt-green-to: #059669;
-  --tt-red-from: #ef4444;
-  --tt-red-to: #dc2626;
-  --tt-blue-from: #3b82f6;
-  --tt-blue-to: #2563eb;
-  --tt-purple-from: #8b5cf6;
-  --tt-purple-to: #7c3aed;
-  --tt-gray-from: #6b7280;
-  --tt-gray-to: #4b5563;
-  --tt-orange-from: #f59e0b;
-  --tt-orange-to: #d97706;
+  /* Custom Color Palette - Based on Logo Gradient (Lime to Teal) */
+  --tt-lime-from: #a3e635; /* Primary lime green from logo */
+  --tt-lime-to: #84cc16;
+  --tt-teal-from: #14b8a6; /* Primary teal from logo */
+  --tt-teal-to: #0d9488;
+  --tt-cyan-from: #22d3ee; /* Bright cyan (between lime and teal) */
+  --tt-cyan-to: #06b6d4;
+  --tt-emerald-from: #10b981; /* Emerald green (teal-green blend) */
+  --tt-emerald-to: #059669;
+  --tt-yellow-from: #eab308; /* Yellow (warmer lime) */
+  --tt-yellow-to: #ca8a04;
+  --tt-slate-from: #64748b; /* Neutral slate gray */
+  --tt-slate-to: #475569;
+  --tt-coral-from: #f97316; /* Coral orange (warm complement) */
+  --tt-coral-to: #ea580c;
 
   /* Spacing */
   --tt-spacing-xs: 0.5rem;
@@ -55,12 +57,12 @@
 
   /* Row Background Colors */
   --tt-row-bg-work: rgba(255, 255, 255, 1);
-  --tt-row-bg-public-holiday: rgba(245, 158, 11, 0.1);
-  --tt-row-bg-vacation: rgba(16, 185, 129, 0.1);
-  --tt-row-bg-sick: rgba(239, 68, 68, 0.1);
-  --tt-row-bg-personal: rgba(59, 130, 246, 0.1);
-  --tt-row-bg-recurring-off: rgba(139, 92, 246, 0.1);
-  --tt-row-bg-weekend: rgba(107, 114, 128, 0.1);
+  --tt-row-bg-public-holiday: rgba(234, 179, 8, 0.12); /* Yellow from palette */
+  --tt-row-bg-vacation: rgba(16, 185, 129, 0.12); /* Emerald from palette */
+  --tt-row-bg-sick: rgba(249, 115, 22, 0.12); /* Coral from palette */
+  --tt-row-bg-personal: rgba(34, 211, 238, 0.12); /* Cyan from palette */
+  --tt-row-bg-recurring-off: rgba(20, 184, 166, 0.12); /* Teal from palette */
+  --tt-row-bg-weekend: rgba(100, 116, 139, 0.12); /* Slate from palette */
 
   /* Text Colors */
   --tt-text-primary: #1f2937;

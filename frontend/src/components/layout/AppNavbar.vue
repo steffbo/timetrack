@@ -183,6 +183,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Ensure menubar end section stays right-aligned */
+:deep(.p-menubar-end) {
+  margin-left: auto;
+}
+
 .navbar-brand {
   display: flex;
   align-items: center;

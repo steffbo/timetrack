@@ -93,7 +93,7 @@
 /* Action Card Color Variants */
 .action-card.action-clock-in,
 .action-card-small.action-clock-in {
-  background: linear-gradient(135deg, var(--tt-green-from) 0%, var(--tt-green-to) 100%);
+  background: linear-gradient(135deg, var(--tt-lime-from) 0%, var(--tt-lime-to) 100%);
 }
 
 .action-card.action-clock-in .action-icon,
@@ -105,7 +105,7 @@
 
 .action-card.action-clock-out,
 .action-card-small.action-clock-out {
-  background: linear-gradient(135deg, var(--tt-red-from) 0%, var(--tt-red-to) 100%);
+  background: linear-gradient(135deg, var(--tt-coral-from) 0%, var(--tt-coral-to) 100%);
 }
 
 .action-card.action-clock-out .action-icon,
@@ -117,7 +117,7 @@
 
 .action-card.action-cancel,
 .action-card-small.action-cancel {
-  background: linear-gradient(135deg, var(--tt-gray-from) 0%, var(--tt-gray-to) 100%);
+  background: linear-gradient(135deg, var(--tt-slate-from) 0%, var(--tt-slate-to) 100%);
 }
 
 .action-card.action-cancel .action-icon,
@@ -129,7 +129,7 @@
 
 .action-card.action-quick-entry,
 .action-card-small.action-quick-entry {
-  background: linear-gradient(135deg, var(--tt-blue-from) 0%, var(--tt-blue-to) 100%);
+  background: linear-gradient(135deg, var(--tt-cyan-from) 0%, var(--tt-cyan-to) 100%);
 }
 
 .action-card.action-quick-entry .action-icon,
@@ -141,7 +141,7 @@
 
 .action-card.action-manual-entry,
 .action-card-small.action-manual-entry {
-  background: linear-gradient(135deg, var(--tt-purple-from) 0%, var(--tt-purple-to) 100%);
+  background: linear-gradient(135deg, var(--tt-teal-from) 0%, var(--tt-teal-to) 100%);
 }
 
 .action-card.action-manual-entry .action-icon,

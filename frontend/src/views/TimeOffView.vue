@@ -8,6 +8,7 @@ import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import Tag from 'primevue/tag'
 import Message from 'primevue/message'
+import InputNumber from 'primevue/inputnumber'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
@@ -159,7 +160,9 @@ const saveBalance = async () => {
   }
 }
 
-const onYearChange = async () => {
+const selectYear = async (year: number) => {
+  selectedYear.value = year
+
   // Update date filters to cover entire selected year
   startDateFilter.value = `${selectedYear.value}-01-01`
   endDateFilter.value = `${selectedYear.value}-12-31`
@@ -319,15 +322,16 @@ onMounted(() => {
             <h3>{{ t('timeOff.yearSelection.title') }}</h3>
             <p class="year-selection-hint">{{ t('timeOff.yearSelection.hint') }}</p>
           </div>
-          <Select
-            v-model="selectedYear"
-            :options="years"
-            @change="onYearChange"
-            class="year-select"
-            :pt="{
-              root: { class: 'year-select-large' }
-            }"
-          />
+          <div class="year-buttons">
+            <button
+              v-for="year in years"
+              :key="year"
+              :class="['year-btn', { active: selectedYear === year }]"
+              @click="selectYear(year)"
+            >
+              {{ year }}
+            </button>
+          </div>
           <Button
             v-if="balance"
             :label="t('edit')"
@@ -591,7 +595,7 @@ onMounted(() => {
 .year-selection-card {
   grid-column: span 2;
   grid-row: span 2;
-  background: linear-gradient(135deg, var(--tt-blue-from) 0%, var(--tt-blue-to) 100%);
+  background: linear-gradient(135deg, var(--tt-cyan-from) 0%, var(--tt-cyan-to) 100%);
   border-radius: var(--tt-radius-sm);
   padding: var(--tt-spacing-md);
   box-shadow: var(--tt-shadow-sm);
@@ -620,8 +624,35 @@ onMounted(() => {
   line-height: 1.4;
 }
 
-.year-select {
-  width: 100%;
+.year-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.year-btn {
+  padding: 0.625rem 1.25rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 0.5rem;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.year-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+.year-btn.active {
+  background: white;
+  border-color: white;
+  color: var(--tt-cyan-to);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .edit-balance-button {
@@ -629,13 +660,13 @@ onMounted(() => {
   margin-top: var(--tt-spacing-xs);
   background: white;
   border: none;
-  color: var(--tt-blue-to);
+  color: var(--tt-cyan-to);
   font-weight: 600;
 }
 
 .edit-balance-button:hover {
   background: rgba(255, 255, 255, 0.9);
-  color: var(--tt-blue-to);
+  color: var(--tt-cyan-to);
 }
 
 /* Statistics Container - Spans remaining 4 columns, 2 rows */
@@ -701,7 +732,7 @@ onMounted(() => {
 
 /* Time-off specific stat colors */
 .stat-card.stat-used {
-  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  background: linear-gradient(135deg, var(--tt-coral-from) 0%, var(--tt-coral-to) 100%);
 }
 
 .stat-card.stat-used .stat-label,
@@ -711,7 +742,7 @@ onMounted(() => {
 }
 
 .stat-card.stat-planned {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--tt-teal-from) 0%, var(--tt-teal-to) 100%);
 }
 
 .stat-card.stat-planned .stat-label,
@@ -721,7 +752,7 @@ onMounted(() => {
 }
 
 .stat-card.stat-remaining {
-  background: linear-gradient(135deg, var(--tt-green-from) 0%, var(--tt-green-to) 100%);
+  background: linear-gradient(135deg, var(--tt-lime-from) 0%, var(--tt-lime-to) 100%);
 }
 
 .stat-card.stat-remaining .stat-label,
@@ -731,7 +762,7 @@ onMounted(() => {
 }
 
 .stat-card.stat-sick {
-  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  background: linear-gradient(135deg, var(--tt-coral-from) 0%, var(--tt-coral-to) 100%);
 }
 
 .stat-card.stat-sick .stat-label,

@@ -61,13 +61,13 @@ const formatMessage = (message: string): string => {
 }
 
 .undo-button {
-  background: linear-gradient(135deg, var(--tt-green-from) 0%, var(--tt-green-to) 100%);
-  border: none;
-  box-shadow: var(--tt-shadow-sm);
-  border-radius: 6px;
-  padding: 0.25rem 0.5rem;
-  height: 1.75rem;
-  min-width: 1.75rem;
+  background: linear-gradient(135deg, var(--tt-lime-from) 0%, var(--tt-lime-to) 100%);
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,19 +77,21 @@ const formatMessage = (message: string): string => {
 }
 
 .undo-button:hover {
-  box-shadow: var(--tt-shadow-hover);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px) scale(1.05);
+  border-color: rgba(255, 255, 255, 0.9);
 }
 
 .undo-button:active {
-  transform: translateY(0);
-  box-shadow: var(--tt-shadow-sm);
+  transform: translateY(0) scale(1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .undo-button i {
   color: white;
-  font-size: 0.75rem;
+  font-size: 1rem;
   line-height: 1;
+  font-weight: 700;
 }
 
 /* Override PrimeVue Toast message padding for better fit */

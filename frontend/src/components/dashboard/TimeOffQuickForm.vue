@@ -32,6 +32,7 @@
           :manual-input="false"
           date-format="dd.mm.yy"
           show-button-bar
+          select-other-months
           :placeholder="t('timeOff.selectDateRange')"
         />
       </div>

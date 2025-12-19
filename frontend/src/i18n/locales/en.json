@@ -434,6 +434,7 @@
   "no": "No",
   "error": "Error",
   "success": "Success",
+  "undoSuccess": "Restored",
   "warning": "Warning",
   "info": "Information",
   "filter": "Filter",
