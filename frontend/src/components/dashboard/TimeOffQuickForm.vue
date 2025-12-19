@@ -109,7 +109,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 interface Emits {
   (e: 'update:visible', value: boolean): void
-  (e: 'saved'): void
+  (e: 'saved', dateRange?: { startDate: string; endDate: string }): void
 }
 
 const emit = defineEmits<Emits>()
@@ -245,7 +245,11 @@ const handleSave = async () => {
     }
 
     emit('update:visible', false)
-    emit('saved')
+    // Emit date range for efficient refresh
+    emit('saved', {
+      startDate: formatDateISO(dateRange.value[0]),
+      endDate: formatDateISO(dateRange.value[1])
+    })
   } catch (error: any) {
     toast.add({
       severity: 'error',

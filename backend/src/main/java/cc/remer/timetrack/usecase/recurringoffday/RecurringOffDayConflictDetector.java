@@ -78,6 +78,7 @@ public class RecurringOffDayConflictDetector {
 
     /**
      * Clean up warnings when a time entry is deleted.
+     * Note: Database has CASCADE DELETE, but we call this for explicit cleanup and logging.
      *
      * @param timeEntryId the time entry ID that was deleted
      */
@@ -85,7 +86,15 @@ public class RecurringOffDayConflictDetector {
     public void cleanupWarningsForTimeEntry(Long timeEntryId) {
         if (timeEntryId != null) {
             log.debug("Cleaning up warnings for deleted time entry {}", timeEntryId);
-            warningRepository.deleteByTimeEntryId(timeEntryId);
+            // Use query-based delete which won't fail if records were already cascade-deleted
+            // This is safe even if the database CASCADE already removed the warnings
+            try {
+                warningRepository.deleteByTimeEntryId(timeEntryId);
+                log.debug("Cleaned up warnings for time entry {}", timeEntryId);
+            } catch (Exception e) {
+                // If warnings were already deleted by CASCADE, that's fine - just log it
+                log.debug("No warnings to clean up for time entry {} (may have been cascade-deleted)", timeEntryId);
+            }
         }
     }
 

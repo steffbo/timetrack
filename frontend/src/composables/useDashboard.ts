@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/composables/useAuth'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { useCache } from '@/composables/useCache'
+import { useConflictWarnings } from '@/composables/useConflictWarnings'
 import { TimeEntriesService, PublicHolidaysService, WorkingHoursService, TimeOffService } from '@/api/generated'
 import type { DailySummaryResponse, PublicHolidayResponse, TimeOffResponse, WorkingHoursResponse, TimeEntryResponse } from '@/api/generated'
 import { TimeOffType } from '@/types/enums'
@@ -15,6 +16,7 @@ export function useDashboard() {
   const { t } = useI18n()
   const { currentUser } = useAuth()
   const { handleError, handleSuccess, handleWarning } = useErrorHandler()
+  const { loadWarnings } = useConflictWarnings()
 
   // State
   const currentMonth = ref<Date>(new Date())
@@ -336,6 +338,61 @@ export function useDashboard() {
   }
 
   // Invalidate cache and reload
+  // Refresh specific day(s) instead of full reload
+  const refreshDays = async (dates: string[]) => {
+    if (dates.length === 0) return
+
+    try {
+      // Find min and max dates for the API call
+      const sortedDates = dates.sort()
+      const startDate = sortedDates[0]
+      const endDate = sortedDates[sortedDates.length - 1]
+
+      // Fetch summaries for the date range
+      const summaries = await TimeEntriesService.getDailySummary(startDate, endDate)
+
+      // Get public holidays for the years in the range
+      const yearsNeeded = new Set([
+        new Date(startDate).getFullYear(),
+        new Date(endDate).getFullYear()
+      ])
+      const holidayResponses = await Promise.all(
+        Array.from(yearsNeeded).map(y => getPublicHolidaysForYear(y))
+      )
+      const publicHolidays = holidayResponses.flat() as PublicHolidayResponse[]
+      const summariesWithHolidays = mergePublicHolidays(summaries, publicHolidays)
+
+      // Check if any summary has a conflict warning - only load warnings if needed
+      const hasConflictWarning = summariesWithHolidays.some(s => s.conflictWarning != null)
+      if (hasConflictWarning) {
+        await loadWarnings(false)
+      }
+
+      // Update cache for each day
+      summariesWithHolidays.forEach(summary => {
+        if (summary.date) {
+          dailySummaryCache.setCache(summary.date, summary)
+        }
+      })
+
+      // Update the dailySummaries array - replace or add summaries for the refreshed days
+      const summariesMap = new Map(dailySummaries.value.map(s => [s.date, s]))
+      summariesWithHolidays.forEach(summary => {
+        if (summary.date) {
+          summariesMap.set(summary.date, summary)
+        }
+      })
+      dailySummaries.value = Array.from(summariesMap.values()).sort((a, b) => 
+        a.date && b.date ? a.date.localeCompare(b.date) : 0
+      )
+
+      // Update cache range metadata
+      dailySummaryCache.updateCacheRange(startDate, endDate)
+    } catch (error) {
+      handleError(error, t('dashboard.loadError'))
+    }
+  }
+
   const invalidateCacheAndReload = async () => {
     dailySummaryCache.clearCache()
     await loadInitialData()
@@ -354,6 +411,10 @@ export function useDashboard() {
       await TimeEntriesService.clockIn({ notes: '' })
       handleSuccess(t('dashboard.clockInSuccess'))
       await loadActiveEntry()
+      
+      // Refresh today's summary since we just clocked in
+      const today = new Date().toISOString().split('T')[0]
+      await refreshDays([today])
     } catch (error: any) {
       handleError(error, t('dashboard.clockInError'))
     }
@@ -365,7 +426,13 @@ export function useDashboard() {
       await TimeEntriesService.clockOut({ notes: '' })
       handleSuccess(t('dashboard.clockOutSuccess'))
       activeEntry.value = null
-      await invalidateCacheAndReload()
+      
+      // Refresh today's summary since we just clocked out
+      // refreshDays will check for conflict warnings and load them if needed
+      const today = new Date().toISOString().split('T')[0]
+      await refreshDays([today])
+      
+      await calculateOvertime()
     } catch (error: any) {
       handleError(error, t('dashboard.clockOutError'))
     }
@@ -375,9 +442,14 @@ export function useDashboard() {
   const cancelEntry = async () => {
     try {
       if (activeEntry.value?.id) {
+        const entryDate = activeEntry.value.entryDate || new Date().toISOString().split('T')[0]
         await TimeEntriesService.deleteTimeEntry(activeEntry.value.id)
         handleSuccess(t('dashboard.entryCancelled'))
         activeEntry.value = null
+        
+        // Refresh the day where entry was deleted
+        await refreshDays([entryDate])
+        await calculateOvertime()
       }
     } catch (error) {
       handleError(error, t('dashboard.cancelError'))
@@ -421,7 +493,13 @@ export function useDashboard() {
       })
 
       handleSuccess(t('dashboard.quickEntryCreated'))
-      await invalidateCacheAndReload()
+      
+      // Refresh only the affected day(s) - entry date
+      // refreshDays will check for conflict warnings and load them if needed
+      const entryDate = today.toISOString().split('T')[0]
+      await refreshDays([entryDate])
+      
+      await calculateOvertime()
     } catch (error: any) {
       handleError(error, t('dashboard.quickEntryError'))
     }
@@ -460,7 +538,13 @@ export function useDashboard() {
       })
 
       handleSuccess(t('dashboard.quickEntryCreated'))
-      await invalidateCacheAndReload()
+      
+      // Refresh only the affected day(s) - entry date
+      // refreshDays will check for conflict warnings and load them if needed
+      const entryDate = date.toISOString().split('T')[0]
+      await refreshDays([entryDate])
+      
+      await calculateOvertime()
     } catch (error: any) {
       handleError(error, t('dashboard.quickEntryError'))
     }
@@ -560,7 +644,13 @@ export function useDashboard() {
 
       handleSuccess(t('dashboard.manualEntryCreated'))
       showManualEntryDialog.value = false
-      await invalidateCacheAndReload()
+      
+      // Refresh only the affected day(s) - entry date
+      // refreshDays will check for conflict warnings and load them if needed
+      const entryDate = date.toISOString().split('T')[0]
+      await refreshDays([entryDate])
+      
+      await calculateOvertime()
     } catch (error: any) {
       handleError(error, t('dashboard.manualEntryError'))
     }
@@ -580,12 +670,39 @@ export function useDashboard() {
     showEditDialog.value = true
   }
 
-  // Handle form saved
-  const handleFormSaved = async () => {
-    await invalidateCacheAndReload()
+  // Handle form saved - can receive date range for time off entries
+  const handleFormSaved = async (dateRange?: { startDate: string; endDate: string }) => {
+    // Refresh only the affected day(s) instead of full reload
+    if (dateRange) {
+      // Time off entry - refresh all days in the range
+      const datesToRefresh: string[] = []
+      const start = new Date(dateRange.startDate)
+      const end = new Date(dateRange.endDate)
+      const current = new Date(start)
+      
+      while (current <= end) {
+        datesToRefresh.push(current.toISOString().split('T')[0])
+        current.setDate(current.getDate() + 1)
+      }
+      
+      await refreshDays(datesToRefresh)
+    } else if (selectedDate.value) {
+      // Single day entry - refresh just that day
+      await refreshDays([selectedDate.value])
+    } else {
+      // Fallback - refresh today
+      const today = new Date().toISOString().split('T')[0]
+      await refreshDays([today])
+    }
+    
+    // Always reload warnings when form is saved (entries/time-off created/updated/deleted)
+    // This ensures navbar updates immediately when warnings are added or removed
+    await loadWarnings(false)
     
     // Reload next vacation since it may have changed
     await loadNextVacation()
+    
+    await calculateOvertime()
     
     // Update entries for the selected date if modal is open
     if (selectedDate.value) {

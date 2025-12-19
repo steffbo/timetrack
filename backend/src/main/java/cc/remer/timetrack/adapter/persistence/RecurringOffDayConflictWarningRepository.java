@@ -2,6 +2,7 @@ package cc.remer.timetrack.adapter.persistence;
 
 import cc.remer.timetrack.domain.recurringoffday.RecurringOffDayConflictWarning;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -66,9 +67,20 @@ public interface RecurringOffDayConflictWarningRepository extends JpaRepository<
     boolean existsByUserIdAndConflictDate(Long userId, LocalDate conflictDate);
 
     /**
+     * Find warnings for a specific time entry.
+     *
+     * @param timeEntryId the time entry ID
+     * @return list of warnings for this time entry
+     */
+    @Query("SELECT w FROM RecurringOffDayConflictWarning w WHERE w.timeEntryId = :timeEntryId")
+    List<RecurringOffDayConflictWarning> findByTimeEntryId(@Param("timeEntryId") Long timeEntryId);
+
+    /**
      * Delete warnings for a specific time entry.
      *
      * @param timeEntryId the time entry ID
      */
-    void deleteByTimeEntryId(Long timeEntryId);
+    @Modifying
+    @Query("DELETE FROM RecurringOffDayConflictWarning w WHERE w.timeEntryId = :timeEntryId")
+    void deleteByTimeEntryId(@Param("timeEntryId") Long timeEntryId);
 }

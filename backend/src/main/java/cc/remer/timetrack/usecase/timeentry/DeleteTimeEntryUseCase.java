@@ -3,6 +3,7 @@ package cc.remer.timetrack.usecase.timeentry;
 import cc.remer.timetrack.adapter.persistence.TimeEntryRepository;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
 import cc.remer.timetrack.domain.user.User;
+import cc.remer.timetrack.usecase.recurringoffday.RecurringOffDayConflictDetector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeleteTimeEntryUseCase {
 
     private final TimeEntryRepository timeEntryRepository;
+    private final RecurringOffDayConflictDetector conflictDetector;
 
     /**
      * Delete a time entry.
@@ -39,7 +41,12 @@ public class DeleteTimeEntryUseCase {
                     "Sie haben keine Berechtigung, diesen Eintrag zu löschen.");
         }
 
+        Long entryIdToDelete = entry.getId();
         timeEntryRepository.delete(entry);
+        
+        // Clean up any conflict warnings for this deleted entry
+        conflictDetector.cleanupWarningsForTimeEntry(entryIdToDelete);
+        
         log.info("Deleted time entry {} for user {}", entryId, user.getId());
     }
 }

@@ -557,6 +557,9 @@ const createQuickWorkEntry = async () => {
       life: 3000
     })
 
+    // Refresh warnings if needed (they may have been created)
+    await loadConflictWarnings()
+
     await loadTimeEntries()
   } catch (error: any) {
     toast.add({
@@ -597,6 +600,9 @@ const createManualEntry = async () => {
       detail: t('timeEntries.createSuccess'),
       life: 3000
     })
+
+    // Refresh warnings if needed (they may have been created)
+    await loadConflictWarnings()
 
     manualEntryDialogVisible.value = false
     await loadTimeEntries()

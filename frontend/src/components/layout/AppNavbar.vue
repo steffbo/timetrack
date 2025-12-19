@@ -4,9 +4,9 @@
       <div class="navbar-end">
         <!-- Warnings Icon -->
         <Button
-          v-if="warningsCount > 0"
+          v-if="unacknowledgedCount > 0"
           ref="warningsButton"
-          :badge="warningsCount.toString()"
+          :badge="unacknowledgedCount.toString()"
           badgeSeverity="warn"
           icon="pi pi-exclamation-triangle"
           severity="warning"
@@ -17,8 +17,7 @@
           class="warnings-button"
         />
         <Popover
-          v-model:visible="warningsPanelVisible"
-          :target="warningsButton"
+          ref="warningsPopover"
           :dismissable="true"
           :style="{ width: '90vw', maxWidth: '500px' }"
         >
@@ -53,18 +52,16 @@ import Menu from 'primevue/menu'
 import Popover from 'primevue/popover'
 import WarningsCard from '@/components/dashboard/WarningsCard.vue'
 import { useAuth } from '@/composables/useAuth'
-import { useErrorHandler } from '@/composables/useErrorHandler'
-import { RecurringOffDayWarningsService } from '@/api/generated'
+import { useConflictWarnings } from '@/composables/useConflictWarnings'
 import type { MenuItem } from 'primevue/menuitem'
 
 const router = useRouter()
 const { t } = useI18n()
 const { currentUser, isAdmin, logout } = useAuth()
-const { handleError } = useErrorHandler()
+const { unacknowledgedCount, loadWarnings } = useConflictWarnings()
 const userMenu = ref()
 const warningsButton = ref()
-const warningsPanelVisible = ref(false)
-const warningsCount = ref(0)
+const warningsPopover = ref()
 
 const displayName = computed(() => {
   if (!currentUser.value) return ''
@@ -166,17 +163,10 @@ function toggleUserMenu(event: Event) {
   userMenu.value.toggle(event)
 }
 
-function toggleWarnings() {
-  warningsPanelVisible.value = !warningsPanelVisible.value
-}
-
-async function loadWarningsCount() {
-  try {
-    const warnings = await RecurringOffDayWarningsService.getConflictWarnings()
-    const unacknowledged = warnings.filter(w => !w.acknowledged)
-    warningsCount.value = unacknowledged.length
-  } catch (error) {
-    handleError(error, 'Failed to load warnings count', { logError: true, severity: 'warn' })
+function toggleWarnings(event: Event) {
+  if (warningsPopover.value && warningsButton.value) {
+    const targetElement = warningsButton.value.$el || warningsButton.value
+    warningsPopover.value.toggle(event, targetElement)
   }
 }
 
@@ -186,9 +176,10 @@ async function handleLogout() {
 }
 
 onMounted(() => {
-  loadWarningsCount()
+  // Load warnings on mount so navbar icon appears
+  loadWarnings(false)
   // Reload warnings count every minute
-  setInterval(loadWarningsCount, 60000)
+  setInterval(() => loadWarnings(false), 60000)
 })
 </script>
 
