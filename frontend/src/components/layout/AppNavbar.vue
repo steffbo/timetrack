@@ -2,7 +2,7 @@
   <Menubar :model="menuItems">
     <template #start>
       <div class="navbar-brand" @click="goToDashboard">
-        <img src="/favicon.svg" alt="TymeTrack" class="navbar-logo" />
+        <img src="/favicon-96x96.png" alt="TymeTrack" class="navbar-logo" />
         <span class="navbar-title">TymeTrack</span>
       </div>
     </template>
