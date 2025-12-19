@@ -424,19 +424,19 @@ async function handleSaveWorkingHours() {
       return dayCopy
     })
 
-    await apiClient.put(
+    const response = await apiClient.put(
       `/api/working-hours`,
       { workingDays: dataToSave }
     )
+
+    // Use the updated working hours returned by the PUT request
+    workingDays.value = response.data.workingDays
 
     toast.add({
       severity: 'success',
       summary: t('workingHours.saveSuccess'),
       life: 3000
     })
-    
-    // Reload to get updated values from backend
-    await loadWorkingHours()
   } catch (error) {
     toast.add({
       severity: 'error',

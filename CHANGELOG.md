@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Translations: "Quick Clock-Out" (EN), "Ausstempeln" (DE)
 
 ### Changed
+- **Schedule View: Working Hours Save Optimization**: Eliminated redundant GET request after PUT
+  - PUT endpoint already returns updated working hours in response
+  - Reduced API calls from 2 to 1 when saving working hours configuration
+  - Improved save operation performance and reduced network overhead
+
 - **Public Holidays API**: Optimized to return all years (2023-2027) and states (BERLIN, BRANDENBURG) in a single request
   - Backend now returns nested map structure: `Map<year, Map<state, List<Holiday>>>`
   - Frontend caches all holiday data on first load
