@@ -31,7 +31,8 @@
             {{ entry.notes }}
           </div>
         </div>
-        <div class="entry-actions">
+        <!-- Hide edit/delete buttons for public holidays -->
+        <div v-if="entry.timeOffType !== 'PUBLIC_HOLIDAY'" class="entry-actions">
           <Button
             icon="pi pi-pencil"
             text
@@ -108,34 +109,11 @@
     </template>
   </Dialog>
 
-  <!-- Delete Confirmation Dialog -->
-  <Dialog
-    v-model:visible="deleteDialogVisible"
-    :header="t('confirm')"
-    :modal="true"
-    :style="{ width: '90vw', maxWidth: '450px' }"
-    :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
-  >
-    <div class="flex align-items-center">
-      <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
-      <span>{{ timeOffToDelete ? t('dashboard.selectedDay.deleteTimeOffConfirm') : t('dashboard.selectedDay.deleteEntryConfirm') }}</span>
-    </div>
-    <template #footer>
-      <Button
-        :label="t('no')"
-        icon="pi pi-times"
-        class="p-button-text"
-        @click="deleteDialogVisible = false"
-      />
-      <Button
-        :label="t('yes')"
-        icon="pi pi-check"
-        class="p-button-danger"
-        @click="timeOffToDelete ? confirmDeleteTimeOff() : confirmDelete()"
-        :loading="deleting"
-      />
-    </template>
-  </Dialog>
+  <!-- Toast for undo delete - Time Entry -->
+  <UndoDeleteToast :group="timeEntryUndo.undoGroup" :on-undo="undoTimeEntryDelete" />
+
+  <!-- Toast for undo delete - Time Off -->
+  <UndoDeleteToast :group="timeOffUndo.undoGroup" :on-undo="undoTimeOffDelete" />
 
   <!-- Edit Entry Dialog -->
   <Dialog
@@ -214,12 +192,18 @@ import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import Tag from 'primevue/tag'
+import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
 import { TimeEntriesService, TimeOffService } from '@/api/generated'
-import type { TimeEntryResponse, TimeOffResponse } from '@/api/generated'
+import type { TimeEntryResponse, TimeOffResponse, CreateTimeEntryRequest, CreateTimeOffRequest } from '@/api/generated'
 import { formatTime, formatDate, calculateDuration } from '@/utils/dateTimeUtils'
+import { useUndoDelete } from '@/composables/useUndoDelete'
 
 const { t } = useI18n()
 const toast = useToast()
+
+// Undo delete composables
+const timeEntryUndo = useUndoDelete<TimeEntryResponse>('delete-undo-entry')
+const timeOffUndo = useUndoDelete<TimeOffResponse>('delete-undo-timeoff')
 
 interface Props {
   visible: boolean
@@ -245,16 +229,9 @@ interface Emits {
 const emit = defineEmits<Emits>()
 
 const isVisible = ref(props.visible)
-const deleteDialogVisible = ref(false)
 const editDialogVisible = ref(false)
-const entryToDelete = ref<TimeEntryResponse | null>(null)
 const editingEntry = ref<TimeEntryResponse | null>(null)
-const deleting = ref(false)
 const saving = ref(false)
-
-// Time-off related state
-const timeOffToDelete = ref<TimeOffResponse | null>(null)
-const editingTimeOff = ref<TimeOffResponse | null>(null)
 
 const editForm = ref({
   clockIn: new Date(),
@@ -286,38 +263,44 @@ const handleEdit = (entry: TimeEntryResponse) => {
   editDialogVisible.value = true
 }
 
-const handleDelete = (entry: TimeEntryResponse) => {
-  entryToDelete.value = entry
-  deleteDialogVisible.value = true
+const handleDelete = async (entry: TimeEntryResponse) => {
+  await timeEntryUndo.deleteWithUndo(
+    entry,
+    async (id) => {
+      await TimeEntriesService.deleteTimeEntry(id as number)
+    },
+    async () => {
+      emit('saved')
+    },
+    (item) => {
+      const entryDate = new Date(item.clockIn)
+      const dayString = entryDate.toLocaleDateString(t('locale'), {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      })
+      return t('timeEntries.deletedForDay', { day: dayString })
+    }
+  )
 }
 
-const confirmDelete = async () => {
-  if (!entryToDelete.value) return
-
-  deleting.value = true
-  try {
-    await TimeEntriesService.deleteTimeEntry(entryToDelete.value.id)
-
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('dashboard.selectedDay.entryDeleted'),
-      life: 3000
-    })
-
-    deleteDialogVisible.value = false
-    entryToDelete.value = null
-    emit('saved')
-  } catch (error: any) {
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: error?.body?.message || t('dashboard.selectedDay.deleteError'),
-      life: 5000
-    })
-  } finally {
-    deleting.value = false
-  }
+const undoTimeEntryDelete = async () => {
+  await timeEntryUndo.undoDelete(
+    async (item) => {
+      const createRequest: CreateTimeEntryRequest = {
+        entryType: 'WORK' as any,
+        clockIn: item.clockIn,
+        clockOut: item.clockOut,
+        breakMinutes: item.breakMinutes,
+        notes: item.notes
+      }
+      await TimeEntriesService.createTimeEntry(createRequest)
+    },
+    async () => {
+      emit('saved')
+    }
+  )
 }
 
 const saveEdit = async () => {
@@ -377,38 +360,41 @@ const handleEditTimeOff = (entry: TimeOffResponse) => {
   })
 }
 
-const handleDeleteTimeOff = (entry: TimeOffResponse) => {
-  timeOffToDelete.value = entry
-  deleteDialogVisible.value = true
+const handleDeleteTimeOff = async (entry: TimeOffResponse) => {
+  await timeOffUndo.deleteWithUndo(
+    entry,
+    async (id) => {
+      await TimeOffService.deleteTimeOff(id as number)
+    },
+    async () => {
+      emit('saved')
+    },
+    (item) => {
+      const startDate = new Date(item.startDate)
+      const endDate = new Date(item.endDate)
+      const startStr = startDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
+      const endStr = endDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
+      return t('timeOff.deleteSuccess') + ` (${startStr} - ${endStr})`
+    }
+  )
 }
 
-const confirmDeleteTimeOff = async () => {
-  if (!timeOffToDelete.value) return
-
-  deleting.value = true
-  try {
-    await TimeOffService.deleteTimeOff(timeOffToDelete.value.id)
-
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('dashboard.selectedDay.timeOffDeleted'),
-      life: 3000
-    })
-
-    deleteDialogVisible.value = false
-    timeOffToDelete.value = null
-    emit('saved')
-  } catch (error: any) {
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: error?.body?.message || t('dashboard.selectedDay.deleteError'),
-      life: 5000
-    })
-  } finally {
-    deleting.value = false
-  }
+const undoTimeOffDelete = async () => {
+  await timeOffUndo.undoDelete(
+    async (item) => {
+      const createRequest: CreateTimeOffRequest = {
+        timeOffType: item.timeOffType,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        hoursPerDay: item.hoursPerDay,
+        notes: item.notes
+      }
+      await TimeOffService.createTimeOff(createRequest)
+    },
+    async () => {
+      emit('saved')
+    }
+  )
 }
 </script>
 

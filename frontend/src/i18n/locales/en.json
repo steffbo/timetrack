@@ -76,6 +76,7 @@
     "createSuccess": "User created successfully",
     "updateSuccess": "User updated successfully",
     "deleteSuccess": "User deleted successfully",
+    "undoPasswordReset": "User restored. Password has been reset to temporary value - user should change it on next login.",
     "error": "An error occurred"
   },
   "common": {
@@ -302,7 +303,7 @@
     "createError": "Error creating time off",
     "updateSuccess": "Time off updated successfully",
     "updateError": "Error updating time off",
-    "deleteSuccess": "Time off deleted successfully",
+    "deleteSuccess": "Time off deleted",
     "deleteError": "Error deleting time off",
     "deleteConfirm": "Do you really want to delete this time off entry?"
   },
@@ -396,6 +397,7 @@
     "undo": "Undo",
     "undoSuccess": "Deletion undone",
     "undoError": "Error restoring entry",
+    "deleteError": "Error deleting item",
     "deleteSuccess": "Time entry deleted successfully",
     "deleteError": "Error deleting time entry",
     "quickWorkEntry": "Quick Entry",

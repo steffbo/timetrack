@@ -34,7 +34,7 @@
                 icon="pi pi-trash"
                 text
                 severity="danger"
-                @click="confirmDelete(data)"
+                @click="deleteUser(data)"
               />
             </template>
           </Column>
@@ -155,6 +155,9 @@
         </div>
       </form>
     </Dialog>
+
+    <!-- Toast for undo delete -->
+    <UndoDeleteToast :group="userUndo.undoGroup" :on-undo="undoUserDelete" />
   </div>
 </template>
 
@@ -162,7 +165,6 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
-import { useConfirm } from 'primevue/useconfirm'
 import Card from 'primevue/card'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -174,10 +176,14 @@ import Select from 'primevue/select'
 import Checkbox from 'primevue/checkbox'
 import apiClient from '@/api/client'
 import type { UserResponse, CreateUserRequest, UpdateUserRequest } from '@/api/generated'
+import { useUndoDelete } from '@/composables/useUndoDelete'
+import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
 
 const { t } = useI18n()
 const toast = useToast()
-const confirm = useConfirm()
+
+// Undo delete composable
+const userUndo = useUndoDelete<UserResponse>('delete-undo-user')
 
 const isLoading = ref(false)
 const isSaving = ref(false)
@@ -300,31 +306,48 @@ async function handleSave() {
   }
 }
 
-function confirmDelete(user: UserResponse) {
-  confirm.require({
-    message: t('users.confirmDelete'),
-    header: t('users.deleteUser'),
-    icon: 'pi pi-exclamation-triangle',
-    accept: () => handleDelete(user.id!)
-  })
+async function deleteUser(user: UserResponse) {
+  await userUndo.deleteWithUndo(
+    user,
+    async (id) => {
+      await apiClient.delete(`/api/users/${id}`)
+    },
+    async () => {
+      await loadUsers()
+    },
+    (item) => {
+      return t('users.deleteSuccess') + `: ${item.email}`
+    }
+  )
 }
 
-async function handleDelete(userId: number) {
-  try {
-    await apiClient.delete(`/api/users/${userId}`)
-    toast.add({
-      severity: 'success',
-      summary: t('users.deleteSuccess'),
-      life: 3000
-    })
-    await loadUsers()
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('users.error'),
-      life: 3000
-    })
-  }
+async function undoUserDelete() {
+  await userUndo.undoDelete(
+    async (item) => {
+      // Recreate user with temporary password (user will need to reset password)
+      const createRequest: CreateUserRequest = {
+        email: item.email!,
+        firstName: item.firstName!,
+        lastName: item.lastName!,
+        password: 'TempPassword123!', // Temporary password - user should reset
+        role: item.role!,
+        active: item.active!,
+        state: item.state!,
+        halfDayHolidaysEnabled: item.halfDayHolidaysEnabled || false
+      }
+      await apiClient.post('/api/users', createRequest)
+      
+      toast.add({
+        severity: 'info',
+        summary: t('info'),
+        detail: t('users.undoPasswordReset'),
+        life: 5000
+      })
+    },
+    async () => {
+      await loadUsers()
+    }
+  )
 }
 </script>
 

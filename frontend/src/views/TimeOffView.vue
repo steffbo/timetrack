@@ -11,10 +11,12 @@ import Message from 'primevue/message'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
+import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
 import { TimeOffService, VacationBalanceService } from '@/api/generated'
 import type { TimeOffResponse, CreateTimeOffRequest, UpdateTimeOffRequest, VacationBalanceResponse, UpdateVacationBalanceRequest } from '@/api/generated'
 import { useAuth } from '@/composables/useAuth'
 import { useErrorHandler } from '@/composables/useErrorHandler'
+import { useUndoDelete } from '@/composables/useUndoDelete'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -24,9 +26,10 @@ const { handleError } = useErrorHandler()
 const timeOffs = ref<TimeOffResponse[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
-const deleteDialogVisible = ref(false)
 const timeOffToEdit = ref<TimeOffResponse | null>(null)
-const timeOffToDelete = ref<TimeOffResponse | null>(null)
+
+// Undo delete composable
+const timeOffUndo = useUndoDelete<TimeOffResponse>('delete-undo-timeoff')
 
 // Date range filter
 const startDateFilter = ref<string>()
@@ -213,33 +216,43 @@ const handleTimeOffSaved = async () => {
   await loadBalance() // Refresh vacation balance after create/update
 }
 
-const confirmDelete = (timeOff: TimeOffResponse) => {
-  timeOffToDelete.value = timeOff
-  deleteDialogVisible.value = true
+const deleteTimeOff = async (timeOff: TimeOffResponse) => {
+  await timeOffUndo.deleteWithUndo(
+    timeOff,
+    async (id) => {
+      await TimeOffService.deleteTimeOff(id as number)
+    },
+    async () => {
+      await loadTimeOffs()
+      await loadBalance() // Refresh vacation balance after delete
+    },
+    (item) => {
+      const startDate = new Date(item.startDate)
+      const endDate = new Date(item.endDate)
+      const startStr = startDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
+      const endStr = endDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
+      return t('timeOff.deleteSuccess') + ` (${startStr} - ${endStr})`
+    }
+  )
 }
 
-const deleteTimeOff = async () => {
-  if (!timeOffToDelete.value) return
-
-  try {
-    await TimeOffService.deleteTimeOff(timeOffToDelete.value.id)
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('timeOff.deleteSuccess'),
-      life: 3000
-    })
-    deleteDialogVisible.value = false
-    await loadTimeOffs()
-    await loadBalance() // Refresh vacation balance after delete
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: t('timeOff.deleteError'),
-      life: 3000
-    })
-  }
+const undoTimeOffDelete = async () => {
+  await timeOffUndo.undoDelete(
+    async (item) => {
+      const createRequest: CreateTimeOffRequest = {
+        timeOffType: item.timeOffType,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        hoursPerDay: item.hoursPerDay,
+        notes: item.notes
+      }
+      await TimeOffService.createTimeOff(createRequest)
+    },
+    async () => {
+      await loadTimeOffs()
+      await loadBalance()
+    }
+  )
 }
 
 const timeOffTypeOptions = [
@@ -468,7 +481,7 @@ onMounted(() => {
                 text
                 rounded
                 severity="danger"
-                @click="confirmDelete(data)"
+                @click="deleteTimeOff(data)"
               />
             </div>
           </template>
@@ -487,33 +500,8 @@ onMounted(() => {
       @saved="handleTimeOffSaved"
     />
 
-    <!-- Delete Confirmation Dialog -->
-    <Dialog
-      v-model:visible="deleteDialogVisible"
-      :header="t('confirm')"
-      :modal="true"
-      :style="{ width: '90vw', maxWidth: '450px' }"
-      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
-    >
-      <div class="flex align-items-center">
-        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
-        <span>{{ t('timeOff.deleteConfirm') }}</span>
-      </div>
-      <template #footer>
-        <Button
-          :label="t('no')"
-          icon="pi pi-times"
-          class="p-button-text"
-          @click="deleteDialogVisible = false"
-        />
-        <Button
-          :label="t('yes')"
-          icon="pi pi-check"
-          class="p-button-danger"
-          @click="deleteTimeOff"
-        />
-      </template>
-    </Dialog>
+    <!-- Toast for undo delete -->
+    <UndoDeleteToast :group="timeOffUndo.undoGroup" :on-undo="undoTimeOffDelete" />
 
     <!-- Edit Vacation Balance Dialog -->
     <Dialog

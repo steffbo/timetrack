@@ -13,7 +13,7 @@ import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
-import Toast from 'primevue/toast'
+import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
@@ -1297,20 +1297,7 @@ onMounted(() => {
     </Dialog>
 
     <!-- Toast for undo delete -->
-    <Toast position="bottom-center" group="delete-undo">
-      <template #message="slotProps">
-        <div class="flex align-items-center gap-3 flex-1">
-          <span class="flex-1 text-sm">{{ slotProps.message.summary }}</span>
-          <Button
-            :label="t('timeEntries.undo')"
-            severity="secondary"
-            size="small"
-            outlined
-            @click="undoDelete"
-          />
-        </div>
-      </template>
-    </Toast>
+    <UndoDeleteToast group="delete-undo" :on-undo="undoDelete" />
   </div>
 </template>
 

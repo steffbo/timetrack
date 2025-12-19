@@ -60,35 +60,6 @@
     </template>
   </Dialog>
 
-  <!-- Delete Confirmation Dialog -->
-  <Dialog
-    v-model:visible="deleteDialogVisible"
-    :header="t('confirm')"
-    :modal="true"
-    :style="{ width: '90vw', maxWidth: '450px' }"
-    :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
-  >
-    <div class="flex align-items-center">
-      <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
-      <span>{{ t('dashboard.selectedDay.deleteTimeOffConfirm') }}</span>
-    </div>
-    <template #footer>
-      <Button
-        :label="t('no')"
-        icon="pi pi-times"
-        class="p-button-text"
-        @click="deleteDialogVisible = false"
-      />
-      <Button
-        :label="t('yes')"
-        icon="pi pi-check"
-        class="p-button-danger"
-        @click="confirmDelete"
-        :loading="deleting"
-      />
-    </template>
-  </Dialog>
-
   <!-- Edit Time Off Dialog -->
   <Dialog
     v-model:visible="editDialogVisible"
@@ -161,8 +132,11 @@
         @click="saveEdit"
         :loading="saving"
       />
-    </template>
-  </Dialog>
+      </template>
+    </Dialog>
+
+  <!-- Toast for undo delete -->
+  <UndoDeleteToast :group="timeOffUndo.undoGroup" :on-undo="undoTimeOffDelete" />
 </template>
 
 <script setup lang="ts">
@@ -177,10 +151,15 @@ import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
 import DatePicker from '@/components/common/DatePicker.vue'
 import { TimeOffService } from '@/api/generated'
-import type { TimeOffResponse } from '@/api/generated'
+import type { TimeOffResponse, CreateTimeOffRequest } from '@/api/generated'
+import { useUndoDelete } from '@/composables/useUndoDelete'
+import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
 
 const { t } = useI18n()
 const toast = useToast()
+
+// Undo delete composable
+const timeOffUndo = useUndoDelete<TimeOffResponse>('delete-undo-timeoff-editor')
 
 interface Props {
   visible: boolean
@@ -197,11 +176,8 @@ interface Emits {
 const emit = defineEmits<Emits>()
 
 const isVisible = ref(props.visible)
-const deleteDialogVisible = ref(false)
 const editDialogVisible = ref(false)
-const entryToDelete = ref<TimeOffResponse | null>(null)
 const editingEntry = ref<TimeOffResponse | null>(null)
-const deleting = ref(false)
 const saving = ref(false)
 
 const timeOffTypeOptions = [
@@ -268,38 +244,41 @@ const handleEdit = (entry: TimeOffResponse) => {
   editDialogVisible.value = true
 }
 
-const handleDelete = (entry: TimeOffResponse) => {
-  entryToDelete.value = entry
-  deleteDialogVisible.value = true
+const handleDelete = async (entry: TimeOffResponse) => {
+  await timeOffUndo.deleteWithUndo(
+    entry,
+    async (id) => {
+      await TimeOffService.deleteTimeOff(id as number)
+    },
+    async () => {
+      emit('changed')
+    },
+    (item) => {
+      const startDate = new Date(item.startDate)
+      const endDate = new Date(item.endDate)
+      const startStr = startDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
+      const endStr = endDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
+      return t('dashboard.selectedDay.timeOffDeleted') + ` (${startStr} - ${endStr})`
+    }
+  )
 }
 
-const confirmDelete = async () => {
-  if (!entryToDelete.value) return
-
-  deleting.value = true
-  try {
-    await TimeOffService.deleteTimeOff(entryToDelete.value.id)
-
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('dashboard.selectedDay.timeOffDeleted'),
-      life: 3000
-    })
-
-    deleteDialogVisible.value = false
-    entryToDelete.value = null
-    emit('changed')
-  } catch (error: any) {
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: error?.body?.message || t('dashboard.selectedDay.deleteError'),
-      life: 5000
-    })
-  } finally {
-    deleting.value = false
-  }
+const undoTimeOffDelete = async () => {
+  await timeOffUndo.undoDelete(
+    async (item) => {
+      const createRequest: CreateTimeOffRequest = {
+        timeOffType: item.timeOffType,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        hoursPerDay: item.hoursPerDay,
+        notes: item.notes
+      }
+      await TimeOffService.createTimeOff(createRequest)
+    },
+    async () => {
+      emit('changed')
+    }
+  )
 }
 
 const saveEdit = async () => {

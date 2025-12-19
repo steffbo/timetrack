@@ -142,7 +142,7 @@
               <Button
                 icon="pi pi-trash"
                 class="p-button-text p-button-danger p-button-sm"
-                @click="confirmDelete(data)"
+                @click="deleteOffDay(data)"
               />
             </template>
           </Column>
@@ -276,33 +276,8 @@
       </template>
     </Dialog>
 
-    <!-- Delete Confirmation Dialog -->
-    <Dialog
-      v-model:visible="deleteDialogVisible"
-      :header="t('confirm')"
-      :modal="true"
-      :style="{ width: '90vw', maxWidth: '450px' }"
-      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
-    >
-      <div class="flex align-items-center">
-        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
-        <span>{{ t('recurringOffDays.deleteConfirm') }}</span>
-      </div>
-      <template #footer>
-        <Button
-          :label="t('no')"
-          icon="pi pi-times"
-          class="p-button-text"
-          @click="deleteDialogVisible = false"
-        />
-        <Button
-          :label="t('yes')"
-          icon="pi pi-check"
-          class="p-button-danger"
-          @click="deleteOffDay"
-        />
-      </template>
-    </Dialog>
+    <!-- Toast for undo delete -->
+    <UndoDeleteToast :group="recurringOffDayUndo.undoGroup" :on-undo="undoRecurringOffDayDelete" />
   </div>
 </template>
 
@@ -325,9 +300,14 @@ import DatePicker from '@/components/common/DatePicker.vue'
 import apiClient from '@/api/client'
 import { RecurringOffDaysService } from '@/api/generated'
 import type { WorkingDayConfig, RecurringOffDayResponse, CreateRecurringOffDayRequest, UpdateRecurringOffDayRequest } from '@/api/generated'
+import { useUndoDelete } from '@/composables/useUndoDelete'
+import Toast from 'primevue/toast'
 
 const { t } = useI18n()
 const toast = useToast()
+
+// Undo delete composable
+const recurringOffDayUndo = useUndoDelete<RecurringOffDayResponse>('delete-undo-recurring-offday')
 
 // ===== Working Hours State =====
 const isLoadingWorkingHours = ref(false)
@@ -416,7 +396,6 @@ async function handleSaveWorkingHours() {
 const offDays = ref<RecurringOffDayResponse[]>([])
 const isLoadingOffDays = ref(false)
 const dialogVisible = ref(false)
-const deleteDialogVisible = ref(false)
 const editMode = ref(false)
 const currentOffDay = ref<Partial<CreateRecurringOffDayRequest | UpdateRecurringOffDayRequest>>({
   recurrencePattern: 'EVERY_NTH_WEEK',
@@ -424,7 +403,6 @@ const currentOffDay = ref<Partial<CreateRecurringOffDayRequest | UpdateRecurring
   weekInterval: 4,
   isActive: true
 })
-const offDayToDelete = ref<RecurringOffDayResponse | null>(null)
 
 const weekdayOptions = [
   { label: t('weekday.monday'), value: 1 },
@@ -558,32 +536,61 @@ const saveOffDay = async () => {
   }
 }
 
-const confirmDelete = (offDay: RecurringOffDayResponse) => {
-  offDayToDelete.value = offDay
-  deleteDialogVisible.value = true
+const deleteOffDay = async (offDay: RecurringOffDayResponse) => {
+  await recurringOffDayUndo.deleteWithUndo(
+    offDay,
+    async (id) => {
+      await RecurringOffDaysService.deleteRecurringOffDay(id as number)
+    },
+    async () => {
+      await loadOffDays()
+    },
+    (item) => {
+      return t('recurringOffDays.deleteSuccess') + (item.description ? `: ${item.description}` : '')
+    }
+  )
 }
 
-const deleteOffDay = async () => {
-  if (!offDayToDelete.value) return
+const undoRecurringOffDayDelete = async () => {
+  await recurringOffDayUndo.undoDelete(
+    async (item) => {
+      const formatDate = (date: any) => {
+        if (!date) return undefined
+        if (typeof date === 'string') return date
+        if (date instanceof Date) {
+          const year = date.getFullYear()
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const day = String(date.getDate()).padStart(2, '0')
+          return `${year}-${month}-${day}`
+        }
+        return date
+      }
 
-  try {
-    await RecurringOffDaysService.deleteRecurringOffDay(offDayToDelete.value.id)
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('recurringOffDays.deleteSuccess'),
-      life: 3000
-    })
-    deleteDialogVisible.value = false
-    await loadOffDays()
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: t('recurringOffDays.deleteError'),
-      life: 3000
-    })
-  }
+      const requestData: CreateRecurringOffDayRequest = {
+        recurrencePattern: item.recurrencePattern,
+        weekday: item.weekday,
+        startDate: item.startDate,
+        weekInterval: item.weekInterval,
+        referenceDate: formatDate(item.referenceDate),
+        weekOfMonth: item.weekOfMonth,
+        endDate: formatDate(item.endDate),
+        description: item.description
+      }
+
+      // Clean up fields based on pattern type
+      if (requestData.recurrencePattern === 'EVERY_NTH_WEEK') {
+        delete (requestData as any).weekOfMonth
+      } else if (requestData.recurrencePattern === 'NTH_WEEKDAY_OF_MONTH') {
+        delete (requestData as any).weekInterval
+        delete (requestData as any).referenceDate
+      }
+
+      await RecurringOffDaysService.createRecurringOffDay(requestData)
+    },
+    async () => {
+      await loadOffDays()
+    }
+  )
 }
 
 const getWeekdayLabel = (weekday: number) => {

@@ -76,6 +76,7 @@
     "createSuccess": "Benutzer erfolgreich erstellt",
     "updateSuccess": "Benutzer erfolgreich aktualisiert",
     "deleteSuccess": "Benutzer erfolgreich gelöscht",
+    "undoPasswordReset": "Benutzer wiederhergestellt. Passwort wurde auf einen temporären Wert zurückgesetzt - Benutzer sollte es beim nächsten Login ändern.",
     "error": "Ein Fehler ist aufgetreten"
   },
   "common": {
@@ -302,7 +303,7 @@
     "createError": "Fehler beim Erstellen der Abwesenheit",
     "updateSuccess": "Abwesenheit erfolgreich aktualisiert",
     "updateError": "Fehler beim Aktualisieren der Abwesenheit",
-    "deleteSuccess": "Abwesenheit erfolgreich gelöscht",
+    "deleteSuccess": "Abwesenheit gelöscht",
     "deleteError": "Fehler beim Löschen der Abwesenheit",
     "deleteConfirm": "Möchtest du diese Abwesenheit wirklich löschen?"
   },
@@ -396,6 +397,7 @@
     "undo": "Rückgängig",
     "undoSuccess": "Löschen rückgängig gemacht",
     "undoError": "Fehler beim Wiederherstellen des Eintrags",
+    "deleteError": "Fehler beim Löschen",
     "deleteSuccess": "Zeiteintrag erfolgreich gelöscht",
     "deleteError": "Fehler beim Löschen des Zeiteintrags",
     "quickWorkEntry": "Schnelleintrag",
