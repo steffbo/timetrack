@@ -698,33 +698,15 @@ paths:
       tags:
         - Public Holidays
       summary: Get public holidays
-      description: Get German public holidays for a specific year and state
+      description: Get German public holidays for years 2023-2027 and all states (BERLIN, BRANDENBURG)
       operationId: getPublicHolidays
-      parameters:
-        - name: year
-          in: query
-          required: false
-          schema:
-            type: integer
-          description: Year for public holidays (defaults to current year)
-          example: 2025
-        - name: state
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [BERLIN, BRANDENBURG]
-          description: German state (defaults to user's state)
-          example: BERLIN
       responses:
         '200':
-          description: Public holidays retrieved successfully
+          description: Public holidays retrieved successfully for all years and states
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PublicHolidayResponse'
+                $ref: '#/components/schemas/PublicHolidaysResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
@@ -1726,6 +1708,37 @@ components:
           type: boolean
           description: Whether this holiday is state-specific
           example: false
+
+    PublicHolidaysResponse:
+      type: object
+      required:
+        - holidaysByYearAndState
+      properties:
+        holidaysByYearAndState:
+          type: object
+          description: Map of years to states to holidays
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: array
+              items:
+                $ref: '#/components/schemas/PublicHolidayResponse'
+          example:
+            "2025":
+              BERLIN:
+                - date: "2025-01-01"
+                  name: "Neujahr"
+                  isStateSpecific: false
+                - date: "2025-03-08"
+                  name: "Internationaler Frauentag"
+                  isStateSpecific: true
+              BRANDENBURG:
+                - date: "2025-01-01"
+                  name: "Neujahr"
+                  isStateSpecific: false
+                - date: "2025-10-31"
+                  name: "Reformationstag"
+                  isStateSpecific: true
 
     ClockInRequest:
       type: object

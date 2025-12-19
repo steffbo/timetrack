@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
 import HolidayCard from '@/components/holidays/HolidayCard.vue'
 import { PublicHolidaysService } from '@/api/generated'
-import type { PublicHolidayResponse } from '@/api/generated'
+import type { PublicHolidayResponse, PublicHolidaysResponse } from '@/api/generated'
 
 const { t } = useI18n()
 const toast = useToast()
 
-const holidays = ref<PublicHolidayResponse[]>([])
+// Cache to store all holidays data (years 2023-2027, all states)
+const holidaysCache = ref<PublicHolidaysResponse | null>(null)
 const loading = ref(false)
 const selectedYear = ref(new Date().getFullYear())
 const selectedState = ref<'BERLIN' | 'BRANDENBURG'>('BERLIN')
@@ -21,11 +22,30 @@ const states = [
   { label: 'state.BRANDENBURG', value: 'BRANDENBURG' as const }
 ]
 
+// Computed property to get holidays for selected year and state from cache
+const holidays = computed<PublicHolidayResponse[]>(() => {
+  if (!holidaysCache.value) {
+    return []
+  }
+
+  const yearData = holidaysCache.value.holidaysByYearAndState[selectedYear.value.toString()]
+  if (!yearData) {
+    return []
+  }
+
+  return yearData[selectedState.value] || []
+})
+
 const loadHolidays = async () => {
+  // Only load if not already cached
+  if (holidaysCache.value) {
+    return
+  }
+
   loading.value = true
   try {
-    const response = await PublicHolidaysService.getPublicHolidays(selectedYear.value, selectedState.value)
-    holidays.value = response
+    const response = await PublicHolidaysService.getPublicHolidays()
+    holidaysCache.value = response
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -40,12 +60,12 @@ const loadHolidays = async () => {
 
 const selectYear = (year: number) => {
   selectedYear.value = year
-  loadHolidays()
+  // No need to reload - data is already cached
 }
 
 const selectState = (state: 'BERLIN' | 'BRANDENBURG') => {
   selectedState.value = state
-  loadHolidays()
+  // No need to reload - data is already cached
 }
 
 onMounted(() => {

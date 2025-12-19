@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Public Holidays API**: Optimized to return all years (2023-2027) and states (BERLIN, BRANDENBURG) in a single request
+  - Backend now returns nested map structure: `Map<year, Map<state, List<Holiday>>>`
+  - Frontend caches all holiday data on first load
+  - Switching years/states now instant with no network requests
+  - Reduced API calls from up to 10 (5 years × 2 states) to just 1
+  - Payload remains small (~100 holiday objects total)
+  - OpenAPI spec updated with new `PublicHolidaysResponse` schema
+  - Removed query parameters from `/api/public-holidays` endpoint
+
 ### Added
 - **Admin User Impersonation**: Administrators can now temporarily authenticate as another user without their password
   - New `/api/users/{id}/impersonate` endpoint with admin-only access

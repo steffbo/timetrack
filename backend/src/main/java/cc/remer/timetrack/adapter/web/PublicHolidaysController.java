@@ -1,21 +1,17 @@
 package cc.remer.timetrack.adapter.web;
 
-import cc.remer.timetrack.adapter.persistence.UserRepository;
-import cc.remer.timetrack.adapter.security.UserPrincipal;
 import cc.remer.timetrack.api.PublicHolidaysApi;
 import cc.remer.timetrack.api.model.PublicHolidayResponse;
+import cc.remer.timetrack.api.model.PublicHolidaysResponse;
 import cc.remer.timetrack.domain.publicholiday.GermanPublicHolidays;
 import cc.remer.timetrack.domain.user.GermanState;
-import cc.remer.timetrack.domain.user.User;
-import cc.remer.timetrack.exception.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,7 +25,6 @@ import java.util.stream.Collectors;
 public class PublicHolidaysController implements PublicHolidaysApi {
 
     private final GermanPublicHolidays germanPublicHolidays;
-    private final UserRepository userRepository;
 
     // Map of holiday names in German
     private static final Map<String, String> HOLIDAY_NAMES = Map.ofEntries(
@@ -43,39 +38,38 @@ public class PublicHolidaysController implements PublicHolidaysApi {
     );
 
     @Override
-    public ResponseEntity<List<PublicHolidayResponse>> getPublicHolidays(Integer year, String stateParam) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+    public ResponseEntity<PublicHolidaysResponse> getPublicHolidays() {
+        log.info("GET /public-holidays - Getting public holidays for years 2023-2027 and all states");
 
-        // Get user to determine their state if not provided
-        User user = userRepository.findById(principal.getId())
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + principal.getId()));
+        Map<String, Map<String, List<PublicHolidayResponse>>> holidaysByYearAndState = new HashMap<>();
 
-        // Use provided year or current year
-        int targetYear = year != null ? year : LocalDate.now().getYear();
+        // Generate holidays for years 2023-2027
+        for (int year = 2023; year <= 2027; year++) {
+            Map<String, List<PublicHolidayResponse>> stateHolidays = new HashMap<>();
 
-        // Use provided state or user's state
-        GermanState state;
-        if (stateParam != null) {
-            state = GermanState.valueOf(stateParam);
-        } else {
-            state = user.getState();
+            // Generate for both states
+            for (GermanState state : GermanState.values()) {
+                List<LocalDate> holidays = germanPublicHolidays.getPublicHolidays(year, state);
+
+                List<PublicHolidayResponse> holidayResponses = holidays.stream()
+                        .map(date -> {
+                            PublicHolidayResponse holiday = new PublicHolidayResponse();
+                            holiday.setDate(date);
+                            holiday.setName(getHolidayName(date, state));
+                            holiday.setIsStateSpecific(isStateSpecific(date, state));
+                            return holiday;
+                        })
+                        .sorted((h1, h2) -> h1.getDate().compareTo(h2.getDate()))
+                        .collect(Collectors.toList());
+
+                stateHolidays.put(state.name(), holidayResponses);
+            }
+
+            holidaysByYearAndState.put(String.valueOf(year), stateHolidays);
         }
 
-        log.info("GET /public-holidays - Getting public holidays for year {} and state {}", targetYear, state);
-
-        List<LocalDate> holidays = germanPublicHolidays.getPublicHolidays(targetYear, state);
-
-        List<PublicHolidayResponse> response = holidays.stream()
-                .map(date -> {
-                    PublicHolidayResponse holiday = new PublicHolidayResponse();
-                    holiday.setDate(date);
-                    holiday.setName(getHolidayName(date, state));
-                    holiday.setIsStateSpecific(isStateSpecific(date, state));
-                    return holiday;
-                })
-                .sorted((h1, h2) -> h1.getDate().compareTo(h2.getDate()))
-                .collect(Collectors.toList());
+        PublicHolidaysResponse response = new PublicHolidaysResponse();
+        response.setHolidaysByYearAndState(holidaysByYearAndState);
 
         return ResponseEntity.ok(response);
     }
