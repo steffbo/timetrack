@@ -1,5 +1,11 @@
 <template>
   <Menubar :model="menuItems">
+    <template #start>
+      <div class="navbar-brand" @click="goToDashboard">
+        <img src="/favicon.svg" alt="TymeTrack" class="navbar-logo" />
+        <span class="navbar-title">TymeTrack</span>
+      </div>
+    </template>
     <template #end>
       <div class="navbar-end">
         <!-- Warnings Icon -->
@@ -124,35 +130,24 @@ const userMenuItems = computed<MenuItem[]>(() => {
 const menuItems = computed<MenuItem[]>(() => {
   const items: MenuItem[] = [
     {
-      label: t('nav.dashboard'),
-      icon: 'pi pi-home',
-      command: () => router.push('/dashboard')
+      label: t('nav.schedule'),
+      icon: 'pi pi-clock',
+      command: () => router.push('/schedule')
     },
     {
-      label: t('nav.timeTracking'),
-      icon: 'pi pi-calendar',
-      items: [
-        {
-          label: t('nav.schedule'),
-          icon: 'pi pi-clock',
-          command: () => router.push('/schedule')
-        },
-        {
-          label: t('nav.timeEntries'),
-          icon: 'pi pi-play-circle',
-          command: () => router.push('/time-entries')
-        },
-        {
-          label: t('nav.timeOff'),
-          icon: 'pi pi-calendar-times',
-          command: () => router.push('/time-off')
-        },
-        {
-          label: t('nav.publicHolidays'),
-          icon: 'pi pi-sun',
-          command: () => router.push('/public-holidays')
-        }
-      ]
+      label: t('nav.timeEntries'),
+      icon: 'pi pi-play-circle',
+      command: () => router.push('/time-entries')
+    },
+    {
+      label: t('nav.timeOff'),
+      icon: 'pi pi-calendar-times',
+      command: () => router.push('/time-off')
+    },
+    {
+      label: t('nav.publicHolidays'),
+      icon: 'pi pi-sun',
+      command: () => router.push('/public-holidays')
     }
   ]
 
@@ -170,6 +165,10 @@ function toggleWarnings(event: Event) {
   }
 }
 
+function goToDashboard() {
+  router.push('/dashboard')
+}
+
 async function handleLogout() {
   await logout()
   router.push('/login')
@@ -184,6 +183,33 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--p-border-radius);
+  transition: background-color 0.2s;
+}
+
+.navbar-brand:hover {
+  background-color: var(--p-surface-hover);
+}
+
+.navbar-logo {
+  height: 2rem;
+  width: 2rem;
+  flex-shrink: 0;
+}
+
+.navbar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+  white-space: nowrap;
+}
+
 .navbar-end {
   display: flex;
   align-items: center;

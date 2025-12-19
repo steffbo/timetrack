@@ -1,5 +1,9 @@
 <template>
   <div class="login-container">
+    <div class="login-header">
+      <img src="/favicon.svg" alt="TymeTrack" class="login-logo" />
+      <h1 class="login-app-title">TymeTrack</h1>
+    </div>
     <Card style="width: 400px" :class="{ 'shake': isShaking }">
       <template #title>
         {{ t('login.title') }}
@@ -95,10 +99,32 @@ async function handleLogin() {
 <style scoped>
 .login-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   background: var(--p-surface-50);
+  gap: 2rem;
+}
+
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.login-logo {
+  height: 4rem;
+  width: 4rem;
+}
+
+.login-app-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+  margin: 0;
 }
 
 .field {
