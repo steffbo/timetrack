@@ -45,6 +45,20 @@
               </div>
             </div>
 
+            <!-- Quick Clock-Out Card -->
+            <div
+              v-if="!activeEntry"
+              class="action-card action-quick-clock-out"
+              :class="{ disabled: !hasTodayWorkingHours }"
+              @click="hasTodayWorkingHours && quickClockOutNow()"
+            >
+              <i class="pi pi-stopwatch action-icon"></i>
+              <div class="action-label">{{ t('dashboard.quickClockOut') }}</div>
+              <small v-if="!hasTodayWorkingHours" class="action-hint">
+                {{ t('dashboard.noWorkingHoursToday') }}
+              </small>
+            </div>
+
             <!-- Quick Work Entry Card -->
             <div
               class="action-card action-quick-entry"
@@ -213,6 +227,7 @@ const {
   formatOvertime,
   clockInNow,
   clockOutNow,
+  quickClockOutNow,
   cancelEntry,
   createQuickWorkEntry,
   handleQuickEntryFromCalendar,

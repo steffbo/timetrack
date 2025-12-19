@@ -134,6 +134,22 @@
   color: var(--tt-color-30-primary);
 }
 
+.action-card.action-quick-clock-out,
+.action-card-small.action-quick-clock-out {
+  background: rgba(251, 146, 60, 0.12);
+  border-left: 4px solid var(--tt-coral-to);
+}
+
+.action-card.action-quick-clock-out .action-icon,
+.action-card-small.action-quick-clock-out .action-icon-small {
+  color: var(--tt-coral-to);
+}
+
+.action-card.action-quick-clock-out .action-label,
+.action-card-small.action-quick-clock-out .action-label-small {
+  color: var(--tt-color-30-primary);
+}
+
 /* 60% - Most cards: Light backgrounds */
 .action-card.action-manual-entry,
 .action-card-small.action-manual-entry {

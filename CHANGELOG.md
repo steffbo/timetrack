@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Dashboard: Quick Clock-Out Button**: New button to clock out without clocking in first
+  - Uses start time from current weekday's working hours configuration
+  - End time set to current time
+  - Creates completed time entry with zero break minutes
+  - Validation: Shows error toast if no working hours configured for today
+  - Validation: Shows error toast if start time is after current time (prevents negative work time)
+  - Only visible when no active clock-in session exists
+  - Styled with orange/coral theme matching clock-out action
+  - Translations: "Quick Clock-Out" (EN), "Ausstempeln" (DE)
+
 ### Changed
 - **Public Holidays API**: Optimized to return all years (2023-2027) and states (BERLIN, BRANDENBURG) in a single request
   - Backend now returns nested map structure: `Map<year, Map<state, List<Holiday>>>`

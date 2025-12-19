@@ -426,12 +426,65 @@ export function useDashboard() {
       await TimeEntriesService.clockOut({ notes: '' })
       handleSuccess(t('dashboard.clockOutSuccess'))
       activeEntry.value = null
-      
+
       // Refresh today's summary since we just clocked out
       // refreshDays will check for conflict warnings and load them if needed
       const today = new Date().toISOString().split('T')[0]
       await refreshDays([today])
-      
+
+      await calculateOvertime()
+    } catch (error: any) {
+      handleError(error, t('dashboard.clockOutError'))
+    }
+  }
+
+  // Quick clock out - clock out without clocking in first
+  // Uses start time from today's working hours config and end time as "now"
+  const quickClockOutNow = async () => {
+    try {
+      if (!workingHours.value) return
+
+      const now = new Date()
+      const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay()
+      const todayWorkingHours = workingHours.value.workingDays.find(wd => wd.weekday === dayOfWeek)
+
+      // Validation: Check if working hours exist for today
+      if (!todayWorkingHours || !todayWorkingHours.isWorkingDay || !todayWorkingHours.startTime) {
+        handleWarning(t('dashboard.noWorkingHoursToday'))
+        return
+      }
+
+      const [startHour, startMin] = todayWorkingHours.startTime.split(':').map(Number)
+
+      if (startHour === undefined || startMin === undefined) {
+        handleWarning(t('dashboard.noWorkingHoursToday'))
+        return
+      }
+
+      const clockIn = new Date(now)
+      clockIn.setHours(startHour, startMin, 0, 0)
+
+      // Validation: Check if start time is before now (work time can't be negative)
+      if (clockIn >= now) {
+        handleWarning(t('dashboard.workStartTimeAfterNow'))
+        return
+      }
+
+      // Create time entry with start time from config and end time as now
+      await TimeEntriesService.createTimeEntry({
+        clockIn: clockIn.toISOString(),
+        clockOut: now.toISOString(),
+        breakMinutes: 0, // No break for quick clock-out
+        entryType: 'WORK' as any,
+        notes: ''
+      })
+
+      handleSuccess(t('dashboard.clockOutSuccess'))
+
+      // Refresh today's summary
+      const today = now.toISOString().split('T')[0]
+      await refreshDays([today])
+
       await calculateOvertime()
     } catch (error: any) {
       handleError(error, t('dashboard.clockOutError'))
@@ -758,6 +811,7 @@ export function useDashboard() {
     formatOvertime,
     clockInNow,
     clockOutNow,
+    quickClockOutNow,
     cancelEntry,
     createQuickWorkEntry,
     handleQuickEntryFromCalendar,
