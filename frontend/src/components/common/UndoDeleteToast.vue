@@ -1,5 +1,5 @@
 <template>
-  <Toast position="bottom-center" :group="group">
+  <Toast :position="position" :group="group">
     <template #message="slotProps">
       <div class="undo-toast-content">
         <span class="undo-toast-message" v-html="formatMessage(slotProps.message.summary)"></span>
@@ -23,9 +23,12 @@ import Toast from 'primevue/toast'
 interface Props {
   group: string
   onUndo: () => void | Promise<void>
+  position?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  position: 'top-right'
+})
 const { t } = useI18n()
 
 const handleUndo = async () => {
