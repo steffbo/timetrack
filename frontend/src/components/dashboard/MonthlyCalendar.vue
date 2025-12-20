@@ -163,9 +163,28 @@
 
       <!-- Action buttons for sticky panel -->
       <div class="day-details-actions">
-        <!-- Single Edit button if there are entries or time off -->
+        <!-- Edit + Delete buttons when there's exactly one entry -->
+        <div v-if="hasSingleEntry(stickyDay)" class="edit-delete-buttons">
+          <Button
+            :label="t('edit')"
+            icon="pi pi-pencil"
+            size="small"
+            @click="handleEditAllClick(stickyDay)"
+            outlined
+            class="edit-button"
+          />
+          <Button
+            icon="pi pi-times"
+            size="small"
+            @click="handleQuickDeleteClick(stickyDay)"
+            severity="danger"
+            class="delete-button"
+            :title="t('delete')"
+          />
+        </div>
+        <!-- Single Edit button if there are multiple entries or time off -->
         <Button
-          v-if="hasTimeEntries(stickyDay) || hasTimeOff(stickyDay)"
+          v-else-if="hasTimeEntries(stickyDay) || hasTimeOff(stickyDay)"
           :label="t('edit')"
           icon="pi pi-pencil"
           size="small"
@@ -257,6 +276,7 @@ interface Emits {
   (e: 'manualEntry', payload: { date: string }): void
   (e: 'addTimeOff', payload: { date: string }): void
   (e: 'editAll', payload: { date: string, entries: TimeEntryResponse[], timeOffEntries: TimeOffResponse[] }): void
+  (e: 'quickDelete', payload: { date: string, entry?: TimeEntryResponse, timeOffEntry?: TimeOffResponse }): void
 }
 
 const emit = defineEmits<Emits>()
@@ -1087,6 +1107,29 @@ const hasTimeOff = (day: number | string): boolean => {
   return summary?.timeOffEntries && summary.timeOffEntries.length > 0 || false
 }
 
+// Check if day has exactly one entry (either 1 time entry OR 1 time-off, not both)
+const hasSingleEntry = (day: number | string): boolean => {
+  const summary = getSummaryForAnyDay(day)
+  if (!summary) return false
+  const timeEntryCount = summary.entries?.length || 0
+  const timeOffCount = summary.timeOffEntries?.length || 0
+  // Exactly one entry total (1 time entry with no time-off, or 1 time-off with no time entries)
+  return (timeEntryCount === 1 && timeOffCount === 0) || (timeOffCount === 1 && timeEntryCount === 0)
+}
+
+// Get the single entry for a day (returns either a time entry or time-off entry)
+const getSingleEntry = (day: number | string): { entry?: TimeEntryResponse, timeOffEntry?: TimeOffResponse } => {
+  const summary = getSummaryForAnyDay(day)
+  if (!summary) return {}
+  if (summary.entries?.length === 1 && (!summary.timeOffEntries || summary.timeOffEntries.length === 0)) {
+    return { entry: summary.entries[0] }
+  }
+  if (summary.timeOffEntries?.length === 1 && (!summary.entries || summary.entries.length === 0)) {
+    return { timeOffEntry: summary.timeOffEntries[0] }
+  }
+  return {}
+}
+
 // Check if quick entry can be created for a day (has working hours)
 const canCreateQuickEntry = (day: number | string): boolean => {
   let weekday: number
@@ -1248,6 +1291,41 @@ const handleEditAllClick = (day: number | string) => {
     timeOffEntries: summary.timeOffEntries || []
   })
   stickyPanelVisible.value = false
+}
+
+const handleQuickDeleteClick = (day: number | string) => {
+  const singleEntry = getSingleEntry(day)
+  if (!singleEntry.entry && !singleEntry.timeOffEntry) return
+
+  let dateStr: string
+
+  if (typeof day === 'string' && (day.startsWith('prev-') || day.startsWith('next-'))) {
+    // Adjacent month day
+    const [type, dayNum] = day.split('-')
+    const actualDay = parseInt(dayNum)
+    const monthData = type === 'prev'
+      ? previousMonthDays.value.find(d => d.day === actualDay)
+      : nextMonthDays.value.find(d => d.day === actualDay)
+
+    if (monthData) {
+      dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+    } else {
+      return
+    }
+  } else {
+    // Current month day
+    const actualDay = typeof day === 'number' ? day : parseInt(day)
+    dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
+  }
+
+  emit('quickDelete', {
+    date: dateStr,
+    entry: singleEntry.entry,
+    timeOffEntry: singleEntry.timeOffEntry
+  })
+  
+  // Close the popover after triggering delete
+  hideStickyPanel()
 }
 
 </script>
@@ -1504,6 +1582,22 @@ const handleEditAllClick = (day: number | string) => {
 }
 
 .quick-entry-right {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  padding: 0.5rem;
+}
+
+.edit-delete-buttons {
+  display: flex;
+  gap: var(--tt-spacing-2xs);  /* 4px - aligned to grid */
+  width: 100%;
+}
+
+.edit-delete-buttons .edit-button {
+  flex: 1;
+}
+
+.edit-delete-buttons .delete-button {
   flex: 0 0 auto;
   min-width: 2.5rem;
   padding: 0.5rem;

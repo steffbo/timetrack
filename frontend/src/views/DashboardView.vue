@@ -13,6 +13,7 @@
           @manual-entry="handleManualEntryFromCalendar"
           @add-time-off="handleTimeOffFromCalendar"
           @edit-all="handleEditAllFromCalendar"
+          @quick-delete="handleQuickDeleteFromCalendar"
         />
       </div>
 
@@ -238,6 +239,7 @@ const {
   handleManualEntryFromCalendar,
   handleTimeOffFromCalendar,
   handleEditAllFromCalendar,
+  handleQuickDeleteFromCalendar,
   handleFormSaved,
   onManualEntryDateChange,
   createManualEntry

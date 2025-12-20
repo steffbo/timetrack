@@ -4,7 +4,8 @@ import { useAuth } from '@/composables/useAuth'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { useCache } from '@/composables/useCache'
 import { useConflictWarnings } from '@/composables/useConflictWarnings'
-import { TimeEntriesService, PublicHolidaysService, WorkingHoursService, TimeOffService } from '@/api/generated'
+import { useMultiUndoDelete } from '@/composables/useMultiUndoDelete'
+import { TimeEntriesService, PublicHolidaysService, WorkingHoursService, TimeOffService, type CreateTimeEntryRequest, type CreateTimeOffRequest } from '@/api/generated'
 import type { DailySummaryResponse, PublicHolidayResponse, TimeOffResponse, WorkingHoursResponse, TimeEntryResponse } from '@/api/generated'
 import { TimeOffType } from '@/types/enums'
 
@@ -17,6 +18,7 @@ export function useDashboard() {
   const { currentUser } = useAuth()
   const { handleError, handleSuccess, handleWarning } = useErrorHandler()
   const { loadWarnings } = useConflictWarnings()
+  const { deleteWithUndo } = useMultiUndoDelete()
 
   // State
   const currentMonth = ref<Date>(new Date())
@@ -723,6 +725,100 @@ export function useDashboard() {
     showEditDialog.value = true
   }
 
+  // Handle quick delete from calendar popover (for single entries only)
+  const handleQuickDeleteFromCalendar = async (payload: { date: string; entry?: TimeEntryResponse; timeOffEntry?: TimeOffResponse }) => {
+    const dateRange = { startDate: payload.date, endDate: payload.date }
+    
+    const reloadFn = async () => {
+      await refreshDays([payload.date])
+      await loadWarnings(false)
+      await calculateOvertime()
+    }
+    
+    if (payload.entry) {
+      // Delete time entry
+      await deleteWithUndo(
+        'time-entry',
+        payload.entry,
+        async (id) => {
+          await TimeEntriesService.deleteTimeEntry(id as number)
+        },
+        reloadFn,
+        (item) => {
+          const typedItem = item as TimeEntryResponse
+          const entryDate = new Date(typedItem.clockIn)
+          const dayString = entryDate.toLocaleDateString(t('locale'), {
+            weekday: 'short',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })
+          return t('timeEntries.deletedForDay', { day: dayString })
+        },
+        async (item) => {
+          const typedItem = item as TimeEntryResponse
+          const createRequest: CreateTimeEntryRequest = {
+            entryType: 'WORK' as any,
+            clockIn: typedItem.clockIn,
+            clockOut: typedItem.clockOut,
+            breakMinutes: typedItem.breakMinutes,
+            notes: typedItem.notes
+          }
+          await TimeEntriesService.createTimeEntry(createRequest)
+        }
+      )
+    } else if (payload.timeOffEntry) {
+      // Delete time off entry
+      const timeOff = payload.timeOffEntry
+      await deleteWithUndo(
+        'time-off',
+        timeOff,
+        async (id) => {
+          await TimeOffService.deleteTimeOff(id as number)
+        },
+        async () => {
+          // For time-off, refresh all days in the range
+          const datesToRefresh: string[] = []
+          const [startYear, startMonth, startDay] = timeOff.startDate.split('-').map(Number)
+          const [endYear, endMonth, endDay] = timeOff.endDate.split('-').map(Number)
+          const start = new Date(startYear, startMonth - 1, startDay)
+          const end = new Date(endYear, endMonth - 1, endDay)
+          const current = new Date(start)
+          while (current <= end) {
+            const year = current.getFullYear()
+            const month = String(current.getMonth() + 1).padStart(2, '0')
+            const day = String(current.getDate()).padStart(2, '0')
+            datesToRefresh.push(`${year}-${month}-${day}`)
+            current.setDate(current.getDate() + 1)
+          }
+          await refreshDays(datesToRefresh)
+          await loadWarnings(false)
+          await loadNextVacation()
+          await calculateOvertime()
+        },
+        (item) => {
+          const typedItem = item as TimeOffResponse
+          const startDate = new Date(typedItem.startDate)
+          const endDate = new Date(typedItem.endDate)
+          const startStr = startDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
+          const endStr = endDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
+          return t('timeOff.deleteSuccess') + ` (${startStr} - ${endStr})`
+        },
+        async (item) => {
+          const typedItem = item as TimeOffResponse
+          const createRequest: CreateTimeOffRequest = {
+            timeOffType: typedItem.timeOffType,
+            startDate: typedItem.startDate,
+            endDate: typedItem.endDate,
+            hoursPerDay: typedItem.hoursPerDay,
+            notes: typedItem.notes
+          }
+          await TimeOffService.createTimeOff(createRequest)
+        }
+      )
+    }
+  }
+
   // Handle form saved - can receive date range for time off entries
   const handleFormSaved = async (dateRange?: { startDate: string; endDate: string }) => {
     // Refresh only the affected day(s) instead of full reload
@@ -826,6 +922,7 @@ export function useDashboard() {
     handleManualEntryFromCalendar,
     handleTimeOffFromCalendar,
     handleEditAllFromCalendar,
+    handleQuickDeleteFromCalendar,
     handleFormSaved,
     applyDefaultWorkingHours,
     onManualEntryDateChange,
