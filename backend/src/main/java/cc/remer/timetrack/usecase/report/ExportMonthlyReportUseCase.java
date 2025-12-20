@@ -1,21 +1,23 @@
 package cc.remer.timetrack.usecase.report;
 
+import cc.remer.timetrack.adapter.persistence.RecurringOffDayRepository;
 import cc.remer.timetrack.adapter.persistence.TimeEntryRepository;
 import cc.remer.timetrack.adapter.persistence.TimeOffRepository;
 import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.adapter.persistence.WorkingHoursRepository;
+import cc.remer.timetrack.domain.recurringoffday.RecurringOffDay;
 import cc.remer.timetrack.domain.timeentry.TimeEntry;
 import cc.remer.timetrack.domain.timeoff.TimeOff;
 import cc.remer.timetrack.domain.timeoff.TimeOffType;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.workinghours.WorkingHours;
+import cc.remer.timetrack.usecase.recurringoffday.RecurringOffDayEvaluator;
 import cc.remer.timetrack.usecase.report.DailyReportEntry.DayType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -38,6 +40,8 @@ public class ExportMonthlyReportUseCase {
     private final TimeOffRepository timeOffRepository;
     private final WorkingHoursRepository workingHoursRepository;
     private final UserRepository userRepository;
+    private final RecurringOffDayRepository recurringOffDayRepository;
+    private final RecurringOffDayEvaluator recurringOffDayEvaluator;
     private final MonthlyReportPdfGenerator pdfGenerator;
     private final MonthlyReportCsvGenerator csvGenerator;
 
@@ -91,6 +95,13 @@ public class ExportMonthlyReportUseCase {
 
         log.debug("Found working hours configuration for {} weekdays", workingHoursMap.size());
 
+        // Fetch recurring off-days for the user
+        List<RecurringOffDay> recurringOffDays = recurringOffDayRepository.findByUserIdAndIsActiveTrue(userId);
+        
+        // Build set of dates that are recurring off-days
+        Set<LocalDate> recurringOffDayDates = buildRecurringOffDayDates(recurringOffDays, startDate, endDate);
+        log.debug("Found {} recurring off-day dates for the period", recurringOffDayDates.size());
+
         // Group time entries by date
         Map<LocalDate, List<TimeEntry>> entriesByDate = timeEntries.stream()
                 .collect(Collectors.groupingBy(TimeEntry::getEntryDate));
@@ -107,7 +118,8 @@ public class ExportMonthlyReportUseCase {
                     currentDate,
                     entriesByDate.getOrDefault(currentDate, Collections.emptyList()),
                     workingHoursMap,
-                    timeOffByDate
+                    timeOffByDate,
+                    recurringOffDayDates
             );
             dailyEntries.add(dailyEntry);
             currentDate = currentDate.plusDays(1);
@@ -152,6 +164,12 @@ public class ExportMonthlyReportUseCase {
         Map<Short, WorkingHours> workingHoursMap = workingHoursConfig.stream()
                 .collect(Collectors.toMap(WorkingHours::getWeekday, wh -> wh));
 
+        // Fetch recurring off-days for the user
+        List<RecurringOffDay> recurringOffDays = recurringOffDayRepository.findByUserIdAndIsActiveTrue(userId);
+        
+        // Build set of dates that are recurring off-days
+        Set<LocalDate> recurringOffDayDates = buildRecurringOffDayDates(recurringOffDays, startDate, endDate);
+
         // Group time entries by date
         Map<LocalDate, List<TimeEntry>> entriesByDate = timeEntries.stream()
                 .collect(Collectors.groupingBy(TimeEntry::getEntryDate));
@@ -168,7 +186,8 @@ public class ExportMonthlyReportUseCase {
                     currentDate,
                     entriesByDate.getOrDefault(currentDate, Collections.emptyList()),
                     workingHoursMap,
-                    timeOffByDate
+                    timeOffByDate,
+                    recurringOffDayDates
             );
             dailyEntries.add(dailyEntry);
             currentDate = currentDate.plusDays(1);
@@ -226,7 +245,8 @@ public class ExportMonthlyReportUseCase {
             LocalDate date,
             List<TimeEntry> entries,
             Map<Short, WorkingHours> workingHoursMap,
-            Map<LocalDate, TimeOff> timeOffByDate
+            Map<LocalDate, TimeOff> timeOffByDate,
+            Set<LocalDate> recurringOffDayDates
     ) {
         // Get expected hours for this day of week (subtract break minutes)
         DayOfWeek dayOfWeek = date.getDayOfWeek();
@@ -244,9 +264,12 @@ public class ExportMonthlyReportUseCase {
 
         // Get time-off for this date
         TimeOff timeOff = timeOffByDate.get(date);
+        
+        // Check if this is a recurring off-day
+        boolean isRecurringOffDay = recurringOffDayDates.contains(date);
 
         // Determine day type
-        DayType dayType = determineDayType(date, timeOff);
+        DayType dayType = determineDayType(date, timeOff, isRecurringOffDay);
 
         // Determine notes: priority is time entry notes > time-off notes > time-off type
         String notes = null;
@@ -340,9 +363,29 @@ public class ExportMonthlyReportUseCase {
     }
 
     /**
-     * Determine the day type based on time-off and weekend status.
+     * Build a set of dates that match recurring off-day patterns.
      */
-    private DayType determineDayType(LocalDate date, TimeOff timeOff) {
+    private Set<LocalDate> buildRecurringOffDayDates(List<RecurringOffDay> recurringOffDays, LocalDate startDate, LocalDate endDate) {
+        Set<LocalDate> dates = new HashSet<>();
+        
+        LocalDate currentDate = startDate;
+        while (!currentDate.isAfter(endDate)) {
+            final LocalDate dateToCheck = currentDate;
+            boolean isRecurringOffDay = recurringOffDays.stream()
+                    .anyMatch(rod -> recurringOffDayEvaluator.appliesToDate(rod, dateToCheck));
+            if (isRecurringOffDay) {
+                dates.add(currentDate);
+            }
+            currentDate = currentDate.plusDays(1);
+        }
+        
+        return dates;
+    }
+
+    /**
+     * Determine the day type based on time-off, recurring off-day, and weekend status.
+     */
+    private DayType determineDayType(LocalDate date, TimeOff timeOff, boolean isRecurringOffDay) {
         if (timeOff != null) {
             TimeOffType timeOffType = timeOff.getTimeOffType();
             return switch (timeOffType) {
@@ -352,6 +395,11 @@ public class ExportMonthlyReportUseCase {
                 case PUBLIC_HOLIDAY -> DayType.PUBLIC_HOLIDAY;
                 default -> DayType.REGULAR;
             };
+        }
+
+        // Check if recurring off-day
+        if (isRecurringOffDay) {
+            return DayType.RECURRING_OFF_DAY;
         }
 
         // Check if weekend

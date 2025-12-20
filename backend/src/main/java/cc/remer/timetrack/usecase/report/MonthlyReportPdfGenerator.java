@@ -157,8 +157,8 @@ public class MonthlyReportPdfGenerator {
             xPosition += columnWidths[i] * tableWidth;
         }
 
-        // Draw border
-        contentStream.setStrokingColor(0, 0, 0);
+        // Draw border (same light grey as data rows for consistent appearance)
+        contentStream.setStrokingColor(200/255f, 200/255f, 200/255f);
         contentStream.addRect(xStart, yPosition - rowHeight, tableWidth, rowHeight);
         contentStream.stroke();
 
@@ -169,10 +169,14 @@ public class MonthlyReportPdfGenerator {
      * Draw table data row.
      */
     private float drawTableDataRow(PDPageContentStream contentStream, float yPosition, float xStart, float[] columnWidths, float tableWidth, DailyReportEntry entry, float rowHeight) throws IOException {
-        // Determine notes: use entry notes if present, otherwise use time-off type name
+        // Determine notes: use entry notes if present, otherwise use time-off type name or day type
         String notes = entry.notes();
         if ((notes == null || notes.isBlank()) && entry.timeOffType() != null) {
             notes = formatTimeOffType(entry.timeOffType());
+        }
+        // For recurring off-days without notes, show "Freier Tag"
+        if ((notes == null || notes.isBlank()) && entry.dayType() == DayType.RECURRING_OFF_DAY) {
+            notes = "Freier Tag";
         }
 
         String[] values = {
@@ -231,6 +235,7 @@ public class MonthlyReportPdfGenerator {
             case SICK -> new float[]{1.0f, 0.9f, 0.9f};              // Soft red
             case VACATION -> new float[]{0.9f, 1.0f, 0.9f};          // Soft green
             case PUBLIC_HOLIDAY -> new float[]{0.95f, 0.95f, 1.0f};  // Soft blue
+            case RECURRING_OFF_DAY -> new float[]{0.9f, 1.0f, 0.9f}; // Soft green (same as vacation)
             case REGULAR -> null;                                     // No background
         };
     }
@@ -245,11 +250,11 @@ public class MonthlyReportPdfGenerator {
                 .mapToDouble(DailyReportEntry::totalHours)
                 .sum();
 
-        // Only count expected hours for regular working days (exclude sick, vacation, public holidays)
+        // Only count expected hours for regular working days (exclude sick, vacation, public holidays, recurring off-days)
+        // Note: WEEKEND days are excluded by the dayType filter; they typically have 0 expected hours anyway
         double totalExpectedHours = entries.stream()
                 .filter(e -> e.expectedHours() != null)
-                .filter(e -> e.dayType() == DayType.REGULAR || e.dayType() == DayType.WEEKEND)
-                .filter(e -> e.timeOffType() == null) // Exclude any time-off days
+                .filter(e -> e.dayType() == DayType.REGULAR) // Only regular working days count toward expected hours
                 .mapToDouble(DailyReportEntry::expectedHours)
                 .sum();
 

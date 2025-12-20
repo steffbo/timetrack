@@ -66,10 +66,11 @@ public record DailyReportEntry(
      * Types of days for color coding in reports.
      */
     public enum DayType {
-        REGULAR,       // Regular work day
-        WEEKEND,       // Weekend day
-        SICK,          // Sick day
-        VACATION,      // Vacation day
-        PUBLIC_HOLIDAY // Public holiday
+        REGULAR,           // Regular work day
+        WEEKEND,           // Weekend day
+        SICK,              // Sick day
+        VACATION,          // Vacation day
+        PUBLIC_HOLIDAY,    // Public holiday
+        RECURRING_OFF_DAY  // Recurring off-day (e.g., every 4th Monday)
     }
 }
