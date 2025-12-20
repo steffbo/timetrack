@@ -807,7 +807,14 @@ onMounted(() => {
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .stats-layout {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr);
+    grid-auto-rows: auto;
+  }
+
+  .year-selection-card,
+  .stats-container {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .stats-grid {
@@ -817,7 +824,7 @@ onMounted(() => {
 
 @media (max-width: 992px) {
   .stats-layout {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: minmax(220px, 1fr) minmax(0, 1.6fr);
   }
 
   .stats-grid {

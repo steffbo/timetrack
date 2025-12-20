@@ -244,11 +244,31 @@ onMounted(() => {
   background: var(--tt-color-60-primary);  /* White background */
   border-bottom: 1px solid var(--p-surface-border);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);  /* Subtle depth */
+  display: flex;
+  flex-wrap: nowrap;
 }
 
 /* Ensure menubar end section stays right-aligned */
 :deep(.p-menubar-end) {
   margin-left: auto;
+}
+
+:deep(.p-menubar-start),
+:deep(.p-menubar-end) {
+  flex: 0 0 auto;
+}
+
+:deep(.p-menubar-root-list) {
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+:deep(.p-menubar-root-list)::-webkit-scrollbar {
+  display: none;
 }
 
 .navbar-brand {
@@ -340,6 +360,29 @@ onMounted(() => {
 
 .impersonation-exit-button:hover {
   background: rgba(239, 68, 68, 0.2);
+}
+
+@media (max-width: 1100px) {
+  .navbar-title {
+    display: none;
+  }
+
+  .navbar-logo {
+    height: 1.75rem;
+    width: 1.75rem;
+  }
+
+  .navbar-end {
+    gap: var(--tt-spacing-xs);
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  :deep(.p-menubar-root-list > .p-menuitem > .p-menuitem-link) {
+    padding: 0.5rem 0.5rem;
+  }
 }
 
 @keyframes pulse {
