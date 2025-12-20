@@ -98,6 +98,7 @@
   "dashboard": {
     "welcome": "Willkommen, {name}!",
     "loadError": "Fehler beim Laden der Dashboard-Daten",
+    "deletedItems": "{count} Eintrag/Einträge gelöscht",
     "quickActions": "Schnellaktionen",
     "overview": "Übersicht",
     "clockInNow": "Einstempeln",
@@ -444,6 +445,8 @@
   "error": "Fehler",
   "success": "Erfolg",
   "undoSuccess": "Wiederhergestellt",
+  "undoError": "Fehler beim Wiederherstellen",
+  "deleteError": "Fehler beim Löschen",
   "warning": "Warnung",
   "info": "Information",
   "filter": "Filtern",

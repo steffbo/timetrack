@@ -98,6 +98,7 @@
   "dashboard": {
     "welcome": "Welcome, {name}!",
     "loadError": "Error loading dashboard data",
+    "deletedItems": "{count} deleted item(s)",
     "quickActions": "Quick Actions",
     "overview": "Overview",
     "clockInNow": "Clock In Now",
@@ -444,6 +445,8 @@
   "error": "Error",
   "success": "Success",
   "undoSuccess": "Restored",
+  "undoError": "Error restoring item",
+  "deleteError": "Error deleting item",
   "warning": "Warning",
   "info": "Information",
   "filter": "Filter",

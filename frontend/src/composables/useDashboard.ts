@@ -545,7 +545,7 @@ export function useDashboard() {
         notes: ''
       })
 
-      handleSuccess(t('dashboard.quickEntryCreated'))
+      // No success toast - calendar update is immediate feedback
 
       // Refresh only the affected day(s) - entry date
       // refreshDays will check for conflict warnings and load them if needed
@@ -590,7 +590,7 @@ export function useDashboard() {
         notes: ''
       })
 
-      handleSuccess(t('dashboard.quickEntryCreated'))
+      // No success toast - calendar update is immediate feedback
 
       // Refresh only the affected day(s) - entry date
       // refreshDays will check for conflict warnings and load them if needed

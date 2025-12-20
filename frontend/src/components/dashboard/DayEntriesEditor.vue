@@ -109,11 +109,7 @@
     </template>
   </Dialog>
 
-  <!-- Toast for undo delete - Time Entry -->
-  <UndoDeleteToast :group="timeEntryUndo.undoGroup" :on-undo="undoTimeEntryDelete" />
 
-  <!-- Toast for undo delete - Time Off -->
-  <UndoDeleteToast :group="timeOffUndo.undoGroup" :on-undo="undoTimeOffDelete" />
 
   <!-- Edit Time Off Dialog -->
   <TimeOffQuickForm
@@ -200,19 +196,17 @@ import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import Tag from 'primevue/tag'
-import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
 import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
 import { TimeEntriesService, TimeOffService } from '@/api/generated'
 import type { TimeEntryResponse, TimeOffResponse, CreateTimeEntryRequest, CreateTimeOffRequest } from '@/api/generated'
 import { formatTime, formatDate, calculateDuration } from '@/utils/dateTimeUtils'
-import { useUndoDelete } from '@/composables/useUndoDelete'
+import { useMultiUndoDelete } from '@/composables/useMultiUndoDelete'
 
 const { t } = useI18n()
 const toast = useToast()
 
-// Undo delete composables
-const timeEntryUndo = useUndoDelete<TimeEntryResponse>('delete-undo-entry')
-const timeOffUndo = useUndoDelete<TimeOffResponse>('delete-undo-timeoff')
+// Unified multi-undo delete composable
+const { deleteWithUndo } = useMultiUndoDelete()
 
 interface Props {
   visible: boolean
@@ -276,16 +270,22 @@ const handleEdit = (entry: TimeEntryResponse) => {
 }
 
 const handleDelete = async (entry: TimeEntryResponse) => {
-  await timeEntryUndo.deleteWithUndo(
+  // Extract date from clockIn for calendar refresh
+  const entryDate = entry.clockIn.split('T')[0]
+  const dateRange = { startDate: entryDate, endDate: entryDate }
+  
+  await deleteWithUndo(
+    'time-entry',
     entry,
     async (id) => {
       await TimeEntriesService.deleteTimeEntry(id as number)
     },
     async () => {
-      emit('saved')
+      emit('saved', dateRange)
     },
     (item) => {
-      const entryDate = new Date(item.clockIn)
+      const typedItem = item as TimeEntryResponse
+      const entryDate = new Date(typedItem.clockIn)
       const dayString = entryDate.toLocaleDateString(t('locale'), {
         weekday: 'short',
         day: '2-digit',
@@ -293,24 +293,17 @@ const handleDelete = async (entry: TimeEntryResponse) => {
         year: 'numeric'
       })
       return t('timeEntries.deletedForDay', { day: dayString })
-    }
-  )
-}
-
-const undoTimeEntryDelete = async () => {
-  await timeEntryUndo.undoDelete(
+    },
     async (item) => {
+      const typedItem = item as TimeEntryResponse
       const createRequest: CreateTimeEntryRequest = {
         entryType: 'WORK' as any,
-        clockIn: item.clockIn,
-        clockOut: item.clockOut,
-        breakMinutes: item.breakMinutes,
-        notes: item.notes
+        clockIn: typedItem.clockIn,
+        clockOut: typedItem.clockOut,
+        breakMinutes: typedItem.breakMinutes,
+        notes: typedItem.notes
       }
       await TimeEntriesService.createTimeEntry(createRequest)
-    },
-    async () => {
-      emit('saved')
     }
   )
 }
@@ -375,7 +368,8 @@ const handleTimeOffSaved = (dateRange?: { startDate: string; endDate: string }) 
 
 const handleDeleteTimeOff = async (entry: TimeOffResponse) => {
   const dateRange = { startDate: entry.startDate, endDate: entry.endDate }
-  await timeOffUndo.deleteWithUndo(
+  await deleteWithUndo(
+    'time-off',
     entry,
     async (id) => {
       await TimeOffService.deleteTimeOff(id as number)
@@ -384,29 +378,23 @@ const handleDeleteTimeOff = async (entry: TimeOffResponse) => {
       emit('saved', dateRange)
     },
     (item) => {
-      const startDate = new Date(item.startDate)
-      const endDate = new Date(item.endDate)
+      const typedItem = item as TimeOffResponse
+      const startDate = new Date(typedItem.startDate)
+      const endDate = new Date(typedItem.endDate)
       const startStr = startDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
       const endStr = endDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
       return t('timeOff.deleteSuccess') + ` (${startStr} - ${endStr})`
-    }
-  )
-}
-
-const undoTimeOffDelete = async () => {
-  await timeOffUndo.undoDelete(
-    async (item) => {
-      const createRequest: CreateTimeOffRequest = {
-        timeOffType: item.timeOffType,
-        startDate: item.startDate,
-        endDate: item.endDate,
-        hoursPerDay: item.hoursPerDay,
-        notes: item.notes
-      }
-      await TimeOffService.createTimeOff(createRequest)
     },
     async (item) => {
-      emit('saved', { startDate: item.startDate, endDate: item.endDate })
+      const typedItem = item as TimeOffResponse
+      const createRequest: CreateTimeOffRequest = {
+        timeOffType: typedItem.timeOffType,
+        startDate: typedItem.startDate,
+        endDate: typedItem.endDate,
+        hoursPerDay: typedItem.hoursPerDay,
+        notes: typedItem.notes
+      }
+      await TimeOffService.createTimeOff(createRequest)
     }
   )
 }

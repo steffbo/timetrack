@@ -135,8 +135,6 @@
       </template>
     </Dialog>
 
-  <!-- Toast for undo delete -->
-  <UndoDeleteToast :group="timeOffUndo.undoGroup" :on-undo="undoTimeOffDelete" />
 </template>
 
 <script setup lang="ts">
@@ -152,14 +150,13 @@ import Textarea from 'primevue/textarea'
 import DatePicker from '@/components/common/DatePicker.vue'
 import { TimeOffService } from '@/api/generated'
 import type { TimeOffResponse, CreateTimeOffRequest } from '@/api/generated'
-import { useUndoDelete } from '@/composables/useUndoDelete'
-import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
+import { useMultiUndoDelete } from '@/composables/useMultiUndoDelete'
 
 const { t } = useI18n()
 const toast = useToast()
 
-// Undo delete composable
-const timeOffUndo = useUndoDelete<TimeOffResponse>('delete-undo-timeoff-editor')
+// Unified multi-undo delete composable
+const { deleteWithUndo } = useMultiUndoDelete()
 
 interface Props {
   visible: boolean
@@ -245,7 +242,10 @@ const handleEdit = (entry: TimeOffResponse) => {
 }
 
 const handleDelete = async (entry: TimeOffResponse) => {
-  await timeOffUndo.deleteWithUndo(
+  const dateRange = { startDate: entry.startDate, endDate: entry.endDate }
+  
+  await deleteWithUndo(
+    'time-off',
     entry,
     async (id) => {
       await TimeOffService.deleteTimeOff(id as number)
@@ -254,29 +254,23 @@ const handleDelete = async (entry: TimeOffResponse) => {
       emit('changed')
     },
     (item) => {
-      const startDate = new Date(item.startDate)
-      const endDate = new Date(item.endDate)
+      const typedItem = item as TimeOffResponse
+      const startDate = new Date(typedItem.startDate)
+      const endDate = new Date(typedItem.endDate)
       const startStr = startDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
       const endStr = endDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
       return t('dashboard.selectedDay.timeOffDeleted') + ` (${startStr} - ${endStr})`
-    }
-  )
-}
-
-const undoTimeOffDelete = async () => {
-  await timeOffUndo.undoDelete(
+    },
     async (item) => {
+      const typedItem = item as TimeOffResponse
       const createRequest: CreateTimeOffRequest = {
-        timeOffType: item.timeOffType,
-        startDate: item.startDate,
-        endDate: item.endDate,
-        hoursPerDay: item.hoursPerDay,
-        notes: item.notes
+        timeOffType: typedItem.timeOffType,
+        startDate: typedItem.startDate,
+        endDate: typedItem.endDate,
+        hoursPerDay: typedItem.hoursPerDay,
+        notes: typedItem.notes
       }
       await TimeOffService.createTimeOff(createRequest)
-    },
-    async () => {
-      emit('changed')
     }
   )
 }
