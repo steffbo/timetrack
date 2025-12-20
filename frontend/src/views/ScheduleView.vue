@@ -335,6 +335,12 @@ function hasTimeValues(data: WorkingDayConfig): boolean {
   return !!(data.startTime && data.endTime)
 }
 
+function hasPartialTimeValues(data: WorkingDayConfig): boolean {
+  const hasStart = !!data.startTime
+  const hasEnd = !!data.endTime
+  return (hasStart && !hasEnd) || (!hasStart && hasEnd)
+}
+
 async function loadWorkingHours() {
   isLoadingWorkingHours.value = true
   try {
@@ -354,6 +360,10 @@ async function loadWorkingHours() {
 
 // Auto-save on field change
 async function handleFieldChange(data: WorkingDayConfig) {
+  if (data.isWorkingDay && hasPartialTimeValues(data)) {
+    return
+  }
+
   try {
     // Save single day to backend
     const updated = await WorkingHoursService.updateWorkingDay(data.weekday, {
