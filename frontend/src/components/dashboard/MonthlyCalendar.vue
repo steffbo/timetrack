@@ -20,6 +20,7 @@
               @click="goToToday"
               size="small"
               outlined
+              class="today-button"
               :class="{ 'invisible-button': isCurrentMonth }"
             />
             <Button
@@ -28,6 +29,7 @@
               size="small"
               icon="pi pi-file-pdf"
               outlined
+              class="pdf-button"
               :loading="exportLoading"
             />
           </div>
@@ -205,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, nextTick } from 'vue'
+import { computed, ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
@@ -702,6 +704,32 @@ const goToToday = () => {
   const newDate = new Date(today.getFullYear(), today.getMonth(), 1)
   emit('monthChange', newDate)
 }
+
+const isTypingTarget = (target: EventTarget | null): boolean => {
+  if (!target || !(target instanceof HTMLElement)) return false
+  const tag = target.tagName
+  return target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+}
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (isTypingTarget(event.target)) return
+
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    previousMonth()
+  } else if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    nextMonth()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 
 // Day ref management
 const setDayRef = (day: number, el: any, type: 'prev' | 'current' | 'next' = 'current') => {
@@ -1261,9 +1289,21 @@ const handleEditAllClick = (day: number | string) => {
 }
 
 .calendar-actions {
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
+  column-gap: 0.5rem;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.today-button {
+  justify-self: end;
+}
+
+.pdf-button {
+  justify-self: center;
 }
 
 .invisible-button {

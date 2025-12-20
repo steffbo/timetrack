@@ -15,7 +15,7 @@
       </template>
       <template #content>
         <DataTable
-          :value="workingDays"
+          :value="sortedWorkingDays"
           :loading="isLoadingWorkingHours"
           responsive-layout="scroll"
           class="working-hours-table"
@@ -315,6 +315,9 @@ const recurringOffDayUndo = useUndoDelete<RecurringOffDayResponse>('delete-undo-
 // ===== Working Hours State =====
 const isLoadingWorkingHours = ref(false)
 const workingDays = ref<WorkingDayConfig[]>([])
+const sortedWorkingDays = computed(() =>
+  [...workingDays.value].sort((a, b) => (a.weekday || 0) - (b.weekday || 0))
+)
 
 // Map weekday number (1-7) to day name
 const weekdayMap = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
@@ -346,7 +349,7 @@ async function loadWorkingHours() {
   try {
     const response = await WorkingHoursService.getWorkingHours()
     // Backend returns net hours (hours minus break) - use as-is
-    workingDays.value = response.workingDays
+    workingDays.value = [...response.workingDays].sort((a, b) => (a.weekday || 0) - (b.weekday || 0))
   } catch (error) {
     toast.add({
       severity: 'error',

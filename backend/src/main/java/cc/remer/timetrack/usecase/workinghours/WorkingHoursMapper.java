@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,7 @@ public class WorkingHoursMapper {
         response.setUserId(userId);
 
         List<WorkingDayConfig> workingDays = workingHoursList.stream()
+                .sorted(Comparator.comparing(WorkingHours::getWeekday))
                 .map(this::toWorkingDayConfig)
                 .collect(Collectors.toList());
 
