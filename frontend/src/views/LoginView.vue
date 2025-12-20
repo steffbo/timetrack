@@ -4,7 +4,7 @@
       <img src="/web-app-manifest-192x192.png" alt="TymeTrack" class="login-logo" />
       <h1 class="login-app-title">TymeTrack</h1>
     </div>
-    <Card style="width: 400px" :class="{ 'shake': isShaking }">
+    <Card class="login-card" :class="{ 'shake': isShaking }">
       <template #title>
         {{ t('login.title') }}
       </template>
@@ -102,9 +102,10 @@ async function handleLogin() {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  min-height: 100svh;
   background: var(--p-surface-50);
   gap: 2rem;
+  padding: 2.5rem 1.5rem;
 }
 
 .login-header {
@@ -112,7 +113,7 @@ async function handleLogin() {
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .login-logo {
@@ -127,6 +128,10 @@ async function handleLogin() {
   margin: 0;
 }
 
+.login-card {
+  width: min(400px, 100%);
+}
+
 .field {
   margin-bottom: 1.5rem;
 }
@@ -139,6 +144,23 @@ async function handleLogin() {
 
 form button {
   margin-top: 1rem;
+}
+
+@media (max-width: 640px) {
+  .login-container {
+    justify-content: flex-start;
+    gap: 1.5rem;
+    padding: 1.75rem 1.25rem 2.5rem;
+  }
+
+  .login-logo {
+    height: 3.25rem;
+    width: 3.25rem;
+  }
+
+  .login-app-title {
+    font-size: 1.75rem;
+  }
 }
 
 .shake {
