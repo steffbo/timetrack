@@ -1,5 +1,6 @@
 <template>
   <div class="dashboard">
+    <ChristmasGreeting />
     <div class="dashboard-layout">
       <!-- Calendar -->
       <div class="calendar-section">
@@ -199,6 +200,7 @@ import TomorrowPreviewCard from '@/components/dashboard/TomorrowPreviewCard.vue'
 import WeeklyOverviewCard from '@/components/dashboard/WeeklyOverviewCard.vue'
 import MonthlyOverviewCard from '@/components/dashboard/MonthlyOverviewCard.vue'
 import VacationBalanceCard from '@/components/dashboard/VacationBalanceCard.vue'
+import ChristmasGreeting from '@/components/dashboard/ChristmasGreeting.vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import DatePicker from '@/components/common/DatePicker.vue'
