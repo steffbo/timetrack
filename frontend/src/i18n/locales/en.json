@@ -139,6 +139,7 @@
       "used": "used",
       "planned": "planned",
       "taken": "taken",
+      "unplanned": "unplanned",
       "total": "total",
       "noData": "No vacation data",
       "viewDetails": "View details"
@@ -153,8 +154,12 @@
       "activeSession": "Active session",
       "nonWorkingDay": "Non-working day"
     },
+    "tomorrowPreview": {
+      "title": "Tomorrow"
+    },
     "weeklyOverview": {
       "title": "This Week",
+      "calendarWeek": "Week {week}",
       "planned": "planned",
       "noEntry": "No entry",
       "overtime": "overtime",
@@ -460,7 +465,6 @@
     "undo": "Undo",
     "undoSuccess": "Deletion undone",
     "undoError": "Error restoring entry",
-    "deleteError": "Error deleting item",
     "deleteSuccess": "Time entry deleted successfully",
     "deleteError": "Error deleting time entry",
     "quickWorkEntry": "Quick Entry",

@@ -68,6 +68,18 @@ export function useDashboard() {
     return currentWeekSummaries.value.find(s => s.date === today) || null
   })
 
+  // Get tomorrow's summary (used for Tomorrow Preview Card)
+  const tomorrowSummary = computed(() => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowStr = formatDateString(tomorrow)
+    // Check currentWeekSummaries first (if tomorrow is in current week)
+    const fromCurrentWeek = currentWeekSummaries.value.find(s => s.date === tomorrowStr)
+    if (fromCurrentWeek) return fromCurrentWeek
+    // Fall back to dailySummaries (if tomorrow is in displayed month)
+    return dailySummaries.value.find(s => s.date === tomorrowStr) || null
+  })
+
   const nextVacationText = computed(() => {
     if (!nextVacation.value) return t('dashboard.noUpcomingVacation')
 
@@ -505,6 +517,22 @@ export function useDashboard() {
       dailySummaries.value = Array.from(summariesMap.values()).sort((a, b) => 
         a.date && b.date ? a.date.localeCompare(b.date) : 0
       )
+
+      // Also update currentWeekSummaries if any of the refreshed dates are in current week
+      // This ensures TodayStatusCard updates immediately
+      const currentWeekMap = new Map(currentWeekSummaries.value.map(s => [s.date, s]))
+      let currentWeekUpdated = false
+      summariesWithHolidays.forEach(summary => {
+        if (summary.date && currentWeekMap.has(summary.date)) {
+          currentWeekMap.set(summary.date, summary)
+          currentWeekUpdated = true
+        }
+      })
+      if (currentWeekUpdated) {
+        currentWeekSummaries.value = Array.from(currentWeekMap.values()).sort((a, b) => 
+          a.date && b.date ? a.date.localeCompare(b.date) : 0
+        )
+      }
 
       // Update cache range metadata
       dailySummaryCache.updateCacheRange(startDate, endDate)
@@ -1020,6 +1048,7 @@ export function useDashboard() {
     // Computed
     hasTodayWorkingHours,
     todaySummary,
+    tomorrowSummary,
     nextVacationText,
 
     // Methods

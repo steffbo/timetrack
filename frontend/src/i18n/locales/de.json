@@ -139,6 +139,7 @@
       "used": "genommen",
       "planned": "geplant",
       "taken": "genommen",
+      "unplanned": "ungeplant",
       "total": "gesamt",
       "noData": "Keine Urlaubsdaten",
       "viewDetails": "Details ansehen"
@@ -153,8 +154,12 @@
       "activeSession": "Aktive Sitzung",
       "nonWorkingDay": "Kein Arbeitstag"
     },
+    "tomorrowPreview": {
+      "title": "Morgen"
+    },
     "weeklyOverview": {
       "title": "Aktuelle Woche",
+      "calendarWeek": "KW {week}",
       "planned": "geplant",
       "noEntry": "Kein Eintrag",
       "overtime": "Überstunden",
@@ -460,7 +465,6 @@
     "undo": "Rückgängig",
     "undoSuccess": "Löschen rückgängig gemacht",
     "undoError": "Fehler beim Wiederherstellen des Eintrags",
-    "deleteError": "Fehler beim Löschen",
     "deleteSuccess": "Zeiteintrag erfolgreich gelöscht",
     "deleteError": "Fehler beim Löschen des Zeiteintrags",
     "quickWorkEntry": "Schnelleintrag",

@@ -1,8 +1,9 @@
 <template>
-  <div class="info-card vacation-balance-card">
+  <router-link to="/time-off" class="info-card vacation-balance-card">
     <div class="card-header">
       <span class="card-icon">🏝️</span>
       <h4>{{ t('dashboard.vacationBalance.title') }}</h4>
+      <i class="pi pi-angle-right header-arrow"></i>
     </div>
     
     <div v-if="loading" class="card-loading">
@@ -10,10 +11,10 @@
     </div>
     
     <div v-else-if="balance" class="card-content">
-      <!-- Main remaining days display -->
+      <!-- Main unplanned days display -->
       <div class="main-stat">
-        <span class="stat-value">{{ formatDays(balance.remainingDays) }}</span>
-        <span class="stat-label">{{ t('dashboard.vacationBalance.daysLeft') }}</span>
+        <span class="stat-value">{{ formatDays(unplannedDays) }}</span>
+        <span class="stat-label">{{ t('dashboard.vacationBalance.unplanned') }}</span>
       </div>
       
       <!-- Progress bar -->
@@ -22,7 +23,7 @@
           <div 
             class="progress-used" 
             :style="{ width: usedPercentage + '%' }"
-            :title="t('dashboard.vacationBalance.used')"
+            :title="t('dashboard.vacationBalance.taken')"
           ></div>
           <div 
             class="progress-planned" 
@@ -31,20 +32,8 @@
           ></div>
         </div>
         <div class="progress-labels">
-          <span>{{ formatDays(balance.usedDays) }} {{ t('dashboard.vacationBalance.used') }}</span>
+          <span>{{ formatDays(balance.plannedDays) }} {{ t('dashboard.vacationBalance.planned') }}</span>
           <span>{{ formatDays(totalDays) }} {{ t('dashboard.vacationBalance.total') }}</span>
-        </div>
-      </div>
-      
-      <!-- Quick stats row -->
-      <div class="quick-stats">
-        <div class="quick-stat">
-          <span class="quick-stat-value">{{ formatDays(balance.plannedDays) }}</span>
-          <span class="quick-stat-label">{{ t('dashboard.vacationBalance.planned') }}</span>
-        </div>
-        <div class="quick-stat">
-          <span class="quick-stat-value">{{ formatDays(balance.usedDays) }}</span>
-          <span class="quick-stat-label">{{ t('dashboard.vacationBalance.taken') }}</span>
         </div>
       </div>
     </div>
@@ -52,13 +41,7 @@
     <div v-else class="card-empty">
       {{ t('dashboard.vacationBalance.noData') }}
     </div>
-    
-    <!-- Link to time-off view -->
-    <router-link to="/time-off" class="card-link">
-      {{ t('dashboard.vacationBalance.viewDetails') }}
-      <i class="pi pi-angle-right"></i>
-    </router-link>
-  </div>
+  </router-link>
 </template>
 
 <script setup lang="ts">
@@ -88,6 +71,12 @@ const plannedPercentage = computed(() => {
   // Only show planned days that aren't already used
   const futurePlanned = balance.value.plannedDays - balance.value.usedDays
   return Math.min((futurePlanned / totalDays.value) * 100, 100 - usedPercentage.value)
+})
+
+// Unplanned days (total - planned)
+const unplannedDays = computed(() => {
+  if (!balance.value) return 0
+  return totalDays.value - balance.value.plannedDays
 })
 
 // Format days with 0.5 precision
@@ -122,6 +111,13 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: var(--tt-spacing-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s ease;
+}
+
+.info-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .card-header {
@@ -139,6 +135,18 @@ onMounted(() => {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--tt-text-primary);
+  flex: 1;
+}
+
+.header-arrow {
+  color: var(--tt-text-tertiary);
+  font-size: 0.875rem;
+  transition: transform 0.2s ease;
+}
+
+.info-card:hover .header-arrow {
+  transform: translateX(2px);
+  color: var(--tt-emerald-from);
 }
 
 .card-loading {
@@ -212,55 +220,10 @@ onMounted(() => {
   color: var(--tt-text-secondary);
 }
 
-/* Quick stats row */
-.quick-stats {
-  display: flex;
-  gap: var(--tt-spacing-md);
-  padding-top: var(--tt-spacing-xs);
-  border-top: 1px solid var(--tt-bg-light);
-}
-
-.quick-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.quick-stat-value {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--tt-text-primary);
-}
-
-.quick-stat-label {
-  font-size: 0.75rem;
-  color: var(--tt-text-secondary);
-}
-
 .card-empty {
   color: var(--tt-text-secondary);
   font-size: 0.875rem;
   text-align: center;
   padding: var(--tt-spacing-sm);
-}
-
-.card-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--tt-spacing-xs);
-  padding-top: var(--tt-spacing-xs);
-  font-size: 0.75rem;
-  color: var(--tt-emerald-from);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.card-link:hover {
-  color: var(--tt-emerald-to);
-}
-
-.card-link i {
-  font-size: 0.875rem;
 }
 </style>

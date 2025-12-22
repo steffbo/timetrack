@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { useToast } from 'primevue/usetoast'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -63,6 +64,12 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
   const { isAuthenticated, isAdmin, checkAuth } = useAuth()
+  
+  // Clear all toasts when changing views to prevent stale undo actions
+  if (from.name && to.name !== from.name) {
+    const toast = useToast()
+    toast.removeAllGroups()
+  }
 
   // Always validate token with server if we require auth and have a token
   // This ensures broken/invalid tokens trigger the refresh flow

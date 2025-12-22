@@ -3,29 +3,16 @@
     <div class="card-header">
       <span class="card-icon">📆</span>
       <h4>{{ t('dashboard.monthlyOverview.title') }}</h4>
-      <span class="month-label">{{ monthLabel }}</span>
     </div>
     
     <div class="card-content">
-      <!-- Monthly stats -->
-      <div class="monthly-stats">
-        <div class="stat-item">
-          <span class="stat-value">{{ workingDaysWorked }}</span>
-          <span class="stat-label">{{ t('dashboard.monthlyOverview.daysWorked') }}</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-value">{{ totalWorkingDays }}</span>
-          <span class="stat-label">{{ t('dashboard.monthlyOverview.workingDays') }}</span>
-        </div>
-      </div>
-      
-      <!-- Hours totals -->
-      <div class="hours-totals">
-        <div class="total-hours">
-          <span class="total-value">{{ formatHours(totalHoursWorked) }}</span>
-          <span class="total-separator">/</span>
-          <span class="total-target">{{ formatHours(totalTargetHours) }}</span>
+      <!-- Days progress -->
+      <div class="days-progress">
+        <div class="days-display">
+          <span class="days-worked">{{ workingDaysWorked }}</span>
+          <span class="days-separator">/</span>
+          <span class="days-total">{{ totalWorkingDays }}</span>
+          <span class="days-label">{{ t('dashboard.monthlyOverview.workingDays') }}</span>
         </div>
         
         <!-- Progress bar -->
@@ -33,7 +20,7 @@
           <div 
             class="progress-fill" 
             :class="progressClass"
-            :style="{ width: progressPercentage + '%' }"
+            :style="{ width: daysProgressPercentage + '%' }"
           ></div>
         </div>
       </div>
@@ -41,7 +28,7 @@
       <!-- Overtime display -->
       <div class="overtime-section">
         <div class="overtime-display" :class="overtimeClass">
-          <i :class="overtimeIcon"></i>
+          <i v-if="overtimeSelectedMonth !== 0" :class="overtimeIcon"></i>
           <span class="overtime-value">{{ overtimeText }}</span>
         </div>
         <span class="overtime-label">{{ t('dashboard.monthlyOverview.monthlyOvertime') }}</span>
@@ -68,11 +55,6 @@ const { t } = useI18n()
 const formatDateString = (date: Date): string => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
-
-// Month label (e.g., "December 2025")
-const monthLabel = computed(() => {
-  return props.currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
-})
 
 // Get working day config for a specific day of week
 const getWorkingDayConfig = (dayOfWeek: number) => {
@@ -136,42 +118,16 @@ const workingDaysWorked = computed(() => {
   }).length
 })
 
-// Total hours worked this month
-const totalHoursWorked = computed(() => {
-  const days = getMonthDays()
-  return days.reduce((sum, day) => {
-    const dateStr = formatDateString(day)
-    const summary = getSummaryForDate(dateStr)
-    return sum + (summary?.actualHours || 0)
-  }, 0)
-})
-
-// Total target hours for the month (only working days up to today)
-const totalTargetHours = computed(() => {
-  const days = getMonthDays()
-  return days.reduce((sum, day) => {
-    const config = getWorkingDayConfig(day.getDay())
-    if (!config?.isWorkingDay) return sum
-    
-    // Check for time-off or recurring off-days
-    const dateStr = formatDateString(day)
-    const summary = getSummaryForDate(dateStr)
-    if (summary?.timeOffEntries?.length || summary?.recurringOffDays?.length) return sum
-    
-    return sum + (config.hours || 0)
-  }, 0)
-})
-
-// Progress percentage
-const progressPercentage = computed(() => {
-  if (totalTargetHours.value === 0) return 0
-  return Math.min((totalHoursWorked.value / totalTargetHours.value) * 100, 100)
+// Progress percentage (based on days, not hours)
+const daysProgressPercentage = computed(() => {
+  if (totalWorkingDays.value === 0) return 0
+  return Math.min((workingDaysWorked.value / totalWorkingDays.value) * 100, 100)
 })
 
 // Progress class
 const progressClass = computed(() => {
-  if (progressPercentage.value >= 100) return 'complete'
-  if (progressPercentage.value >= 75) return 'almost'
+  if (daysProgressPercentage.value >= 100) return 'complete'
+  if (daysProgressPercentage.value >= 75) return 'almost'
   return 'partial'
 })
 
@@ -189,8 +145,7 @@ const overtimeIcon = computed(() => {
 })
 
 const overtimeText = computed(() => {
-  const prefix = props.overtimeSelectedMonth >= 0 ? '+' : ''
-  return `${prefix}${formatHours(props.overtimeSelectedMonth)}`
+  return formatHours(Math.abs(props.overtimeSelectedMonth))
 })
 
 // Format hours helper
@@ -227,81 +182,45 @@ const formatHours = (hours: number): string => {
   flex: 1;
 }
 
-.month-label {
-  font-size: 0.75rem;
-  color: var(--tt-text-secondary);
-}
-
 .card-content {
   display: flex;
   flex-direction: column;
   gap: var(--tt-spacing-sm);
 }
 
-/* Monthly stats */
-.monthly-stats {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--tt-spacing-md);
-  padding: var(--tt-spacing-sm);
-  background: var(--tt-bg-light);
-  border-radius: var(--tt-radius-sm);
-}
-
-.stat-item {
+/* Days progress */
+.days-progress {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  gap: var(--tt-spacing-xs);
 }
 
-.stat-item .stat-value {
-  font-size: 1.25rem;
+.days-display {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.days-worked {
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--tt-text-primary);
   line-height: 1;
 }
 
-.stat-item .stat-label {
-  font-size: 0.65rem;
-  color: var(--tt-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: var(--tt-text-tertiary);
-  opacity: 0.3;
-}
-
-/* Hours totals */
-.hours-totals {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tt-spacing-xs);
-}
-
-.total-hours {
-  display: flex;
-  align-items: baseline;
-  gap: var(--tt-spacing-xs);
-}
-
-.total-value {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--tt-text-primary);
-}
-
-.total-separator {
+.days-separator {
+  font-size: 1rem;
   color: var(--tt-text-tertiary);
 }
 
-.total-target {
-  font-size: 0.875rem;
+.days-total {
+  font-size: 1rem;
+  color: var(--tt-text-secondary);
+}
+
+.days-label {
+  margin-left: auto;
+  font-size: 0.75rem;
   color: var(--tt-text-secondary);
 }
 

@@ -83,15 +83,21 @@ const formatDateString = (date: Date): string => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-// Week label (e.g., "Week 52" or "Dec 16-22")
+// Get ISO week number
+const getISOWeekNumber = (date: Date): number => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+}
+
+// Week label showing calendar week (e.g., "KW 52" in German, "Week 52" in English)
 const weekLabel = computed(() => {
   const dates = getWeekDates()
-  const start = dates[0]!
-  const end = dates[6]!
-  const startDay = start.getDate()
-  const endDay = end.getDate()
-  const month = start.toLocaleDateString(undefined, { month: 'short' })
-  return `${month} ${startDay}-${endDay}`
+  const monday = dates[0]!
+  const weekNumber = getISOWeekNumber(monday)
+  return t('dashboard.weeklyOverview.calendarWeek', { week: weekNumber })
 })
 
 // Day labels
@@ -144,19 +150,19 @@ const weekDays = computed(() => {
       if (timeOffType === 'VACATION') {
         statusClass = 'day-vacation'
         icon = '🏝️'
-        tooltip = t('timeOff.types.VACATION')
+        tooltip = t('timeOff.type.VACATION')
       } else if (timeOffType === 'SICK' || timeOffType === 'CHILD_SICK') {
         statusClass = 'day-sick'
         icon = '😷'
-        tooltip = t('timeOff.types.SICK')
+        tooltip = t('timeOff.type.SICK')
       } else if (timeOffType === 'PUBLIC_HOLIDAY') {
         statusClass = 'day-holiday'
         icon = '🎊'
-        tooltip = t('timeOff.types.PUBLIC_HOLIDAY')
+        tooltip = t('timeOff.type.PUBLIC_HOLIDAY')
       } else if (timeOffType === 'PERSONAL') {
         statusClass = 'day-personal'
         icon = '🏠'
-        tooltip = t('timeOff.types.PERSONAL')
+        tooltip = t('timeOff.type.PERSONAL')
       } else {
         statusClass = 'day-off'
         icon = '📴'
@@ -241,12 +247,8 @@ const overtimeClass = computed(() => {
 })
 
 const overtimeText = computed(() => {
-  if (overtime.value > 0) {
-    return `+${formatHours(overtime.value)} ${t('dashboard.weeklyOverview.overtime')}`
-  } else if (overtime.value < 0) {
-    return `${formatHours(overtime.value)} ${t('dashboard.weeklyOverview.undertime')}`
-  }
-  return t('dashboard.weeklyOverview.onTarget')
+  const prefix = overtime.value >= 0 ? '+' : ''
+  return `${prefix}${formatHours(overtime.value)}`
 })
 
 // Format hours helper

@@ -3,21 +3,21 @@
     <div class="card-header">
       <span class="card-icon">📅</span>
       <h4>{{ t('dashboard.todayStatus.title') }}</h4>
+      <!-- Day type badge in header -->
+      <div v-if="dayTypeInfo" class="day-type-badge header-badge" :class="dayTypeInfo.class">
+        {{ dayTypeInfo.label }}
+      </div>
       <span class="today-date">{{ formattedDate }}</span>
     </div>
     
     <div class="card-content">
-      <!-- Day type indicator (time-off, holiday, recurring off-day, etc.) -->
-      <div v-if="dayTypeInfo" class="day-type-badge" :class="dayTypeInfo.class">
-        {{ dayTypeInfo.label }}
-      </div>
-      
       <!-- Hours progress (only for regular working days, not recurring off-days) -->
       <div v-if="showHoursProgress" class="hours-progress">
         <div class="hours-display">
           <span class="hours-worked">{{ formatHours(hoursWorked) }}</span>
           <span class="hours-separator">/</span>
           <span class="hours-target">{{ formatHours(expectedHours) }}</span>
+          <span v-if="workingTimeRange" class="time-range">{{ workingTimeRange }}</span>
         </div>
         <div class="progress-bar">
           <div 
@@ -133,7 +133,7 @@ const isRecurringOffDay = computed(() => {
 // Today's date formatted
 const formattedDate = computed(() => {
   const today = new Date()
-  return today.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+  return today.toLocaleDateString(t('locale'), { weekday: 'short', day: 'numeric', month: 'short' })
 })
 
 // Get today's working day config
@@ -206,6 +206,13 @@ const expectedHours = computed(() => {
   return targetHours
 })
 
+// Working time range (start - end) for display
+const workingTimeRange = computed(() => {
+  if (!todayConfig.value?.startTime || !todayConfig.value?.endTime) return null
+  const formatTime = (time: string) => time.substring(0, 5) // "09:00:00" -> "09:00"
+  return `${formatTime(todayConfig.value.startTime)} - ${formatTime(todayConfig.value.endTime)}`
+})
+
 // Progress percentage
 const progressPercentage = computed(() => {
   if (expectedHours.value === 0) return 0
@@ -256,12 +263,12 @@ const formatHours = (hours: number): string => {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--tt-text-primary);
-  flex: 1;
 }
 
 .today-date {
   font-size: 0.75rem;
   color: var(--tt-text-secondary);
+  margin-left: auto;
 }
 
 .card-content {
@@ -278,6 +285,11 @@ const formatHours = (hours: number): string => {
   border-radius: var(--tt-radius-sm);
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+.day-type-badge.header-badge {
+  padding: 2px var(--tt-spacing-xs);
+  font-size: 0.65rem;
 }
 
 .day-type-badge.type-vacation {
@@ -329,6 +341,12 @@ const formatHours = (hours: number): string => {
 }
 
 .hours-target {
+  color: var(--tt-text-secondary);
+}
+
+.time-range {
+  margin-left: auto;
+  font-size: 0.75rem;
   color: var(--tt-text-secondary);
 }
 

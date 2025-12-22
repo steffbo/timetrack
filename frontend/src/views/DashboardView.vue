@@ -33,11 +33,19 @@
         />
       </div>
 
+      <!-- Tomorrow Preview Card (moves to top on mobile, after Today) -->
+      <div class="tomorrow-card-wrapper">
+        <TomorrowPreviewCard
+          :tomorrow-summary="tomorrowSummary"
+          :working-hours="workingHours"
+        />
+      </div>
+
       <!-- Other Info Cards -->
       <div class="other-cards-wrapper">
-        <!-- Weekly Overview -->
+        <!-- Weekly Overview (always shows current week, independent of calendar month) -->
         <WeeklyOverviewCard
-          :daily-summaries="dailySummaries"
+          :daily-summaries="currentWeekSummaries"
           :working-hours="workingHours"
         />
         
@@ -187,6 +195,7 @@ import MonthlyCalendar from '@/components/dashboard/MonthlyCalendar.vue'
 import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
 import DayEntriesEditor from '@/components/dashboard/DayEntriesEditor.vue'
 import TodayStatusCard from '@/components/dashboard/TodayStatusCard.vue'
+import TomorrowPreviewCard from '@/components/dashboard/TomorrowPreviewCard.vue'
 import WeeklyOverviewCard from '@/components/dashboard/WeeklyOverviewCard.vue'
 import MonthlyOverviewCard from '@/components/dashboard/MonthlyOverviewCard.vue'
 import VacationBalanceCard from '@/components/dashboard/VacationBalanceCard.vue'
@@ -212,6 +221,7 @@ const {
   activeEntry,
   overtimeSelectedMonth,
   todaySummary,
+  tomorrowSummary,
   selectedDate,
   selectedEntries,
   selectedTimeOffEntries,
@@ -334,11 +344,13 @@ onMounted(async () => {
 .dashboard-layout {
   display: grid;
   grid-template-columns: 1fr 400px;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   grid-template-areas:
     "calendar today"
+    "calendar tomorrow"
     "calendar other";
   gap: var(--tt-spacing-xl);
+  row-gap: var(--tt-spacing-md);
   align-items: start;
   max-width: 100%;
 }
@@ -356,12 +368,17 @@ onMounted(async () => {
   grid-area: today;
 }
 
+/* Tomorrow Card Wrapper */
+.tomorrow-card-wrapper {
+  grid-area: tomorrow;
+}
+
 /* Other Cards Wrapper */
 .other-cards-wrapper {
   grid-area: other;
   display: flex;
   flex-direction: column;
-  gap: var(--tt-spacing-lg);
+  gap: var(--tt-spacing-md);
 }
 
 /* Responsive layout */
@@ -373,11 +390,11 @@ onMounted(async () => {
 
 @media (max-width: 1024px) {
   .dashboard-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     grid-template-areas:
-      "today"
-      "calendar"
-      "other";
+      "today tomorrow"
+      "calendar calendar"
+      "other other";
     gap: var(--tt-spacing-lg);
   }
 
@@ -393,6 +410,17 @@ onMounted(async () => {
 
   .dashboard-layout {
     gap: var(--tt-spacing-md);
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "today"
+      "tomorrow"
+      "calendar"
+      "other";
   }
 }
 
