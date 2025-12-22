@@ -200,13 +200,13 @@ import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
 import { TimeEntriesService, TimeOffService } from '@/api/generated'
 import type { TimeEntryResponse, TimeOffResponse, CreateTimeEntryRequest, CreateTimeOffRequest } from '@/api/generated'
 import { formatTime, formatDate, calculateDuration } from '@/utils/dateTimeUtils'
-import { useMultiUndoDelete } from '@/composables/useMultiUndoDelete'
+import { useUndoDelete } from '@/composables/useUndoDelete'
+import { getLocalizedErrorMessage } from '@/utils/errorLocalization'
 
 const { t } = useI18n()
 const toast = useToast()
 
-// Unified multi-undo delete composable
-const { deleteWithUndo } = useMultiUndoDelete()
+const { deleteWithUndo } = useUndoDelete()
 
 interface Props {
   visible: boolean
@@ -275,7 +275,6 @@ const handleDelete = async (entry: TimeEntryResponse) => {
   const dateRange = { startDate: entryDate, endDate: entryDate }
   
   await deleteWithUndo(
-    'time-entry',
     entry,
     async (id) => {
       await TimeEntriesService.deleteTimeEntry(id as number)
@@ -335,7 +334,7 @@ const saveEdit = async () => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error?.body?.message || t('dashboard.selectedDay.saveError'),
+      detail: getLocalizedErrorMessage(error, t, t('dashboard.selectedDay.saveError')),
       life: 5000
     })
   } finally {
@@ -369,7 +368,6 @@ const handleTimeOffSaved = (dateRange?: { startDate: string; endDate: string }) 
 const handleDeleteTimeOff = async (entry: TimeOffResponse) => {
   const dateRange = { startDate: entry.startDate, endDate: entry.endDate }
   await deleteWithUndo(
-    'time-off',
     entry,
     async (id) => {
       await TimeOffService.deleteTimeOff(id as number)

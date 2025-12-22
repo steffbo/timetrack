@@ -105,9 +105,6 @@
       @saved="handleFormSaved"
     />
 
-    <!-- Unified Multi-Undo Toast for deletions -->
-    <MultiUndoDeleteToast />
-
     <!-- Manual Entry Dialog -->
     <Dialog
       v-model:visible="showManualEntryDialog"
@@ -192,7 +189,6 @@ import { useDashboard } from '@/composables/useDashboard'
 import MonthlyCalendar from '@/components/dashboard/MonthlyCalendar.vue'
 import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
 import DayEntriesEditor from '@/components/dashboard/DayEntriesEditor.vue'
-import MultiUndoDeleteToast from '@/components/common/MultiUndoDeleteToast.vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import DatePicker from '@/components/common/DatePicker.vue'

@@ -150,13 +150,13 @@ import Textarea from 'primevue/textarea'
 import DatePicker from '@/components/common/DatePicker.vue'
 import { TimeOffService } from '@/api/generated'
 import type { TimeOffResponse, CreateTimeOffRequest } from '@/api/generated'
-import { useMultiUndoDelete } from '@/composables/useMultiUndoDelete'
+import { useUndoDelete } from '@/composables/useUndoDelete'
+import { getLocalizedErrorMessage } from '@/utils/errorLocalization'
 
 const { t } = useI18n()
 const toast = useToast()
 
-// Unified multi-undo delete composable
-const { deleteWithUndo } = useMultiUndoDelete()
+const { deleteWithUndo } = useUndoDelete()
 
 interface Props {
   visible: boolean
@@ -245,7 +245,6 @@ const handleDelete = async (entry: TimeOffResponse) => {
   const dateRange = { startDate: entry.startDate, endDate: entry.endDate }
   
   await deleteWithUndo(
-    'time-off',
     entry,
     async (id) => {
       await TimeOffService.deleteTimeOff(id as number)
@@ -315,7 +314,7 @@ const saveEdit = async () => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error?.body?.message || t('dashboard.selectedDay.saveError'),
+      detail: getLocalizedErrorMessage(error, t, t('dashboard.selectedDay.saveError')),
       life: 5000
     })
   } finally {

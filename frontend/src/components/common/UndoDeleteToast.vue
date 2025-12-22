@@ -1,13 +1,23 @@
 <template>
-  <Toast :position="position" :group="group">
+  <Toast :position="position">
+    <template #closeicon>
+      <i class="pi pi-times"></i>
+    </template>
     <template #message="slotProps">
       <div class="undo-toast-content">
-        <span class="undo-toast-message" v-html="formatMessage(slotProps.message.summary)"></span>
+        <i class="undo-toast-icon" :class="getIconClass(slotProps.message.severity)"></i>
+        <div class="undo-toast-text">
+          <span class="undo-toast-summary" v-html="formatMessage(slotProps.message.summary || '')"></span>
+          <div v-if="getDetailText(slotProps.message.detail)" class="undo-toast-detail">
+            {{ getDetailText(slotProps.message.detail) }}
+          </div>
+        </div>
         <button
-          class="undo-button"
-          :aria-label="t('timeEntries.undo')"
-          v-tooltip="t('timeEntries.undo')"
-          @click="handleUndo"
+          v-if="getActionData(slotProps.message)?.onAction"
+          class="undo-toast-action"
+          :aria-label="getActionData(slotProps.message)?.label || t('timeEntries.undo')"
+          v-tooltip="getActionData(slotProps.message)?.label || t('timeEntries.undo')"
+          @click="getActionData(slotProps.message)?.onAction?.()"
         >
           <i class="pi pi-undo"></i>
         </button>
@@ -19,26 +29,47 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import Toast from 'primevue/toast'
+import type { ToastMessageOptions } from 'primevue/toast'
 
-interface Props {
-  group: string
-  onUndo: () => void | Promise<void>
-  position?: string
+type UndoToastData = {
+  label?: string
+  onAction?: () => void | Promise<void>
 }
 
-const props = withDefaults(defineProps<Props>(), {
+interface Props {
+  position?: 'top-right' | 'top-left' | 'top-center' | 'bottom-left' | 'bottom-center' | 'bottom-right' | 'center'
+}
+
+const { position } = withDefaults(defineProps<Props>(), {
   position: 'top-right'
 })
+
 const { t } = useI18n()
 
-const handleUndo = async () => {
-  await props.onUndo()
+const getActionData = (message: ToastMessageOptions & { data?: UndoToastData }): UndoToastData | null => {
+  return (message as { data?: UndoToastData })?.data ?? null
+}
+
+const getDetailText = (detail: unknown): string | null => {
+  return typeof detail === 'string' ? detail : null
+}
+
+const getIconClass = (severity?: ToastMessageOptions['severity']): string => {
+  switch (severity) {
+    case 'success':
+      return 'pi pi-check'
+    case 'warn':
+      return 'pi pi-exclamation-triangle'
+    case 'error':
+      return 'pi pi-times-circle'
+    default:
+      return 'pi pi-info-circle'
+  }
 }
 
 // Format message to keep date ranges on the same line
 const formatMessage = (message: string): string => {
   // Match date ranges in format: (DD.MM.YYYY - DD.MM.YYYY) or (DD.MM.YYYY-DD.MM.YYYY)
-  // Also handles various date formats
   const dateRangePattern = /\((\d{1,2}\.\d{1,2}\.\d{4})\s*-\s*(\d{1,2}\.\d{1,2}\.\d{4})\)/g
   return message.replace(dateRangePattern, '<span class="date-range">($1 - $2)</span>')
 }
@@ -52,52 +83,63 @@ const formatMessage = (message: string): string => {
   width: 100%;
 }
 
-.undo-toast-message {
+.undo-toast-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  color: currentColor;
+  flex-shrink: 0;
+}
+
+.undo-toast-text {
   flex: 1;
-  font-size: 0.875rem;
-  line-height: 1.5;
+  min-width: 0;
+}
+
+.undo-toast-summary {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  font-weight: 600;
   color: inherit;
 }
 
-.undo-toast-message :deep(.date-range) {
+.undo-toast-detail {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: inherit;
+  opacity: 0.85;
+}
+
+.undo-toast-summary :deep(.date-range) {
   white-space: nowrap;
 }
 
-.undo-button {
-  background: linear-gradient(135deg, var(--tt-lime-from) 0%, var(--tt-lime-to) 100%);
-  border: 2px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  padding: 0.5rem 0.75rem;
-  height: 2.25rem;
-  min-width: 2.25rem;
+.undo-toast-action {
+  background: transparent;
+  border: 1px solid var(--p-surface-border);
+  border-radius: 6px;
+  padding: 0.375rem 0.5rem;
+  height: 2rem;
+  min-width: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  color: inherit;
   transition: var(--tt-transition);
   flex-shrink: 0;
 }
 
-.undo-button:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  transform: translateY(-2px) scale(1.05);
-  border-color: rgba(255, 255, 255, 0.9);
+.undo-toast-action:hover {
+  background: var(--p-surface-100);
 }
 
-.undo-button:active {
-  transform: translateY(0) scale(1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-.undo-button i {
-  color: white;
-  font-size: 1rem;
+.undo-toast-action i {
+  font-size: 0.85rem;
   line-height: 1;
-  font-weight: 700;
 }
 
-/* Override PrimeVue Toast message padding for better fit */
+/* Align with default toast padding */
 :deep(.p-toast-message-content) {
   padding: 0.75rem 1rem;
 }

@@ -2,6 +2,7 @@ import { getCurrentInstance } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import type { ToastServiceMethods } from 'primevue/toastservice'
+import { getLocalizedErrorMessage } from '@/utils/errorLocalization'
 
 /**
  * Composable for consistent error handling across the application
@@ -70,16 +71,7 @@ export function useErrorHandler(options?: {
     const logError = errorOptions?.logError !== false // Default to true
 
     // Extract error message from various possible error formats
-    let message = defaultMessage
-    if (error?.body?.message) {
-      message = error.body.message
-    } else if (error?.response?.data?.message) {
-      message = error.response.data.message
-    } else if (error?.message) {
-      message = error.message
-    } else if (typeof error === 'string') {
-      message = error
-    }
+    const message = getLocalizedErrorMessage(error, t, defaultMessage)
 
     // Show toast notification if available
     if (toast) {

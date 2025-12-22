@@ -4,7 +4,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { useCache } from '@/composables/useCache'
 import { useConflictWarnings } from '@/composables/useConflictWarnings'
-import { useMultiUndoDelete } from '@/composables/useMultiUndoDelete'
+import { useUndoDelete } from '@/composables/useUndoDelete'
 import { TimeEntriesService, PublicHolidaysService, WorkingHoursService, TimeOffService, type CreateTimeEntryRequest, type CreateTimeOffRequest } from '@/api/generated'
 import type { DailySummaryResponse, PublicHolidayResponse, TimeOffResponse, WorkingHoursResponse, TimeEntryResponse } from '@/api/generated'
 import { TimeOffType } from '@/types/enums'
@@ -18,7 +18,7 @@ export function useDashboard() {
   const { currentUser } = useAuth()
   const { handleError, handleSuccess, handleWarning } = useErrorHandler()
   const { loadWarnings } = useConflictWarnings()
-  const { deleteWithUndo } = useMultiUndoDelete()
+  const { deleteWithUndo } = useUndoDelete()
 
   // State
   const currentMonth = ref<Date>(new Date())
@@ -738,7 +738,6 @@ export function useDashboard() {
     if (payload.entry) {
       // Delete time entry
       await deleteWithUndo(
-        'time-entry',
         payload.entry,
         async (id) => {
           await TimeEntriesService.deleteTimeEntry(id as number)
@@ -771,7 +770,6 @@ export function useDashboard() {
       // Delete time off entry
       const timeOff = payload.timeOffEntry
       await deleteWithUndo(
-        'time-off',
         timeOff,
         async (id) => {
           await TimeOffService.deleteTimeOff(id as number)

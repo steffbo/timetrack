@@ -70,23 +70,3 @@ body {
     max-width: 100%;
   }
 }
-
-/* Multi-Undo Delete Toast - Primary color styling */
-.p-toast .p-toast-message.p-toast-message-info:has(.multi-undo-toast) {
-  background: linear-gradient(135deg, var(--tt-emerald-from) 0%, var(--tt-teal-from) 100%) !important;
-  color: white !important;
-  border: none !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
-  border-radius: var(--tt-radius-md) !important;
-  overflow: hidden;
-}
-
-.p-toast .p-toast-message.p-toast-message-info:has(.multi-undo-toast) .p-toast-message-content {
-  background: transparent !important;
-  padding: 0.75rem 1rem !important;
-}
-
-.p-toast .p-toast-message.p-toast-message-info:has(.multi-undo-toast) .p-toast-message-icon,
-.p-toast .p-toast-message.p-toast-message-info:has(.multi-undo-toast) .p-toast-close-button {
-  display: none !important;
-}

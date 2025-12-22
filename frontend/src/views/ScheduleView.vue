@@ -280,8 +280,6 @@
       </template>
     </Dialog>
 
-    <!-- Toast for undo delete -->
-    <UndoDeleteToast :group="recurringOffDayUndo.undoGroup" :on-undo="undoRecurringOffDayDelete" />
   </div>
 </template>
 
@@ -304,13 +302,11 @@ import DatePicker from '@/components/common/DatePicker.vue'
 import { RecurringOffDaysService, WorkingHoursService } from '@/api/generated'
 import type { WorkingDayConfig, RecurringOffDayResponse, CreateRecurringOffDayRequest, UpdateRecurringOffDayRequest } from '@/api/generated'
 import { useUndoDelete } from '@/composables/useUndoDelete'
-import Toast from 'primevue/toast'
 
 const { t } = useI18n()
 const toast = useToast()
 
-// Undo delete composable
-const recurringOffDayUndo = useUndoDelete<RecurringOffDayResponse>('delete-undo-recurring-offday')
+const { deleteWithUndo } = useUndoDelete()
 
 // ===== Working Hours State =====
 const isLoadingWorkingHours = ref(false)
@@ -537,7 +533,7 @@ const saveOffDay = async () => {
 }
 
 const deleteOffDay = async (offDay: RecurringOffDayResponse) => {
-  await recurringOffDayUndo.deleteWithUndo(
+  await deleteWithUndo(
     offDay,
     async (id) => {
       await RecurringOffDaysService.deleteRecurringOffDay(id as number)
@@ -547,12 +543,7 @@ const deleteOffDay = async (offDay: RecurringOffDayResponse) => {
     },
     (item) => {
       return t('recurringOffDays.deleteSuccess') + (item.description ? `: ${item.description}` : '')
-    }
-  )
-}
-
-const undoRecurringOffDayDelete = async () => {
-  await recurringOffDayUndo.undoDelete(
+    },
     async (item) => {
       const formatDate = (date: any) => {
         if (!date) return undefined
@@ -587,8 +578,8 @@ const undoRecurringOffDayDelete = async () => {
 
       await RecurringOffDaysService.createRecurringOffDay(requestData)
     },
-    async () => {
-      await loadOffDays()
+    {
+      showUndoSuccessToast: true
     }
   )
 }

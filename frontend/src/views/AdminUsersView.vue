@@ -166,8 +166,6 @@
       </form>
     </Dialog>
 
-    <!-- Toast for undo delete -->
-    <UndoDeleteToast :group="userUndo.undoGroup" :on-undo="undoUserDelete" />
   </div>
 </template>
 
@@ -188,13 +186,12 @@ import apiClient from '@/api/client'
 import type { UserResponse, CreateUserRequest, UpdateUserRequest, AuthResponse } from '@/api/generated'
 import { UsersService } from '@/api/generated'
 import { useUndoDelete } from '@/composables/useUndoDelete'
-import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
+import { getLocalizedErrorMessage } from '@/utils/errorLocalization'
 
 const { t } = useI18n()
 const toast = useToast()
 
-// Undo delete composable
-const userUndo = useUndoDelete<UserResponse>('delete-undo-user')
+const { deleteWithUndo } = useUndoDelete()
 
 const isLoading = ref(false)
 const isSaving = ref(false)
@@ -318,7 +315,7 @@ async function handleSave() {
 }
 
 async function deleteUser(user: UserResponse) {
-  await userUndo.deleteWithUndo(
+  await deleteWithUndo(
     user,
     async (id) => {
       await apiClient.delete(`/api/users/${id}`)
@@ -328,12 +325,7 @@ async function deleteUser(user: UserResponse) {
     },
     (item) => {
       return t('users.deleteSuccess') + `: ${item.email}`
-    }
-  )
-}
-
-async function undoUserDelete() {
-  await userUndo.undoDelete(
+    },
     async (item) => {
       // Recreate user with temporary password (user will need to reset password)
       const createRequest: CreateUserRequest = {
@@ -355,8 +347,8 @@ async function undoUserDelete() {
         life: 5000
       })
     },
-    async () => {
-      await loadUsers()
+    {
+      showUndoSuccessToast: true
     }
   )
 }
@@ -399,7 +391,7 @@ async function impersonateUser(user: UserResponse) {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error?.body?.message || t('users.error'),
+      detail: getLocalizedErrorMessage(error, t, t('users.error')),
       life: 5000
     })
   }

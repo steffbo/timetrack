@@ -13,16 +13,18 @@ import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
-import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateTimePicker from '@/components/common/DateTimePicker.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
+import { useUndoDelete } from '@/composables/useUndoDelete'
+import { getLocalizedErrorMessage } from '@/utils/errorLocalization'
 import { TimeEntriesService, WorkingHoursService, TimeOffService, RecurringOffDaysService, PublicHolidaysService, RecurringOffDayWarningsService } from '@/api/generated'
 import type { TimeEntryResponse, ClockInRequest, ClockOutRequest, UpdateTimeEntryRequest, CreateTimeEntryRequest, TimeOffResponse, RecurringOffDayResponse, WorkingHoursResponse, PublicHolidayResponse, RecurringOffDayConflictWarningResponse } from '@/api/generated'
 
 const { t } = useI18n()
 const toast = useToast()
 const { handleError } = useErrorHandler()
+const { deleteWithUndo } = useUndoDelete()
 
 // Use shallowRef for large arrays to improve performance
 const timeEntries = shallowRef<TimeEntryResponse[]>([])
@@ -208,8 +210,6 @@ const cachedWorkingHours = ref<WorkingHoursResponse | null>(null)  // Cache work
 // Store the values when default hours are applied, so they persist when toggling
 const savedStartTime = ref<Date | null>(null)
 const savedEndTime = ref<Date | null>(null)
-// Last deleted entry for undo
-const lastDeletedEntry = ref<TimeEntryResponse | null>(null)
 
 // Date range filter - default to 50-day window (today ±25 days)
 const now = new Date()
@@ -342,7 +342,7 @@ const clockIn = async () => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error.body?.message || t('timeEntries.clockInError'),
+      detail: getLocalizedErrorMessage(error, t, t('timeEntries.clockInError')),
       life: 3000
     })
   }
@@ -374,7 +374,7 @@ const clockOut = async () => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error.body?.message || t('timeEntries.clockOutError'),
+      detail: getLocalizedErrorMessage(error, t, t('timeEntries.clockOutError')),
       life: 3000
     })
   }
@@ -399,7 +399,7 @@ const cancelActiveEntry = async () => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error.body?.message || t('timeEntries.cancelError'),
+      detail: getLocalizedErrorMessage(error, t, t('timeEntries.cancelError')),
       life: 3000
     })
   }
@@ -481,7 +481,7 @@ const applyDefaultWorkingHours = async (selectedDate: Date) => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error.body?.message || t('timeEntries.defaultHoursError'),
+      detail: getLocalizedErrorMessage(error, t, t('timeEntries.defaultHoursError')),
       life: 3000
     })
   }
@@ -565,7 +565,7 @@ const createQuickWorkEntry = async () => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error.body?.message || t('timeEntries.quickEntryError'),
+      detail: getLocalizedErrorMessage(error, t, t('timeEntries.quickEntryError')),
       life: 3000
     })
   } finally {
@@ -610,7 +610,7 @@ const createManualEntry = async () => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error.body?.message || t('timeEntries.createError'),
+      detail: getLocalizedErrorMessage(error, t, t('timeEntries.createError')),
       life: 3000
     })
   }
@@ -663,91 +663,44 @@ const saveTimeEntry = async () => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error.body?.message || t('timeEntries.updateError'),
+      detail: getLocalizedErrorMessage(error, t, t('timeEntries.updateError')),
       life: 3000
     })
   }
 }
 
 const deleteTimeEntry = async (entry: TimeEntryResponse) => {
-  try {
-    // Store the deleted entry for potential undo
-    lastDeletedEntry.value = { ...entry }
-
-    // Delete immediately via API
-    await TimeEntriesService.deleteTimeEntry(entry.id)
-
-    // Reload entries
-    await loadTimeEntries()
-
-    // Format the day for the toast message (short format)
-    const entryDate = new Date(entry.clockIn)
-    const dayString = entryDate.toLocaleDateString(t('locale'), {
-      weekday: 'short',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    })
-
-    // Close any existing delete toast
-    toast.removeGroup('delete-undo')
-
-    // Show compact toast with undo option (stays until dismissed)
-    toast.add({
-      severity: 'info',
-      summary: t('timeEntries.deletedForDay', { day: dayString }),
-      life: 0, // Stays until manually dismissed
-      closable: true,
-      group: 'delete-undo'
-    })
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: t('timeEntries.deleteError'),
-      life: 3000
-    })
-  }
-}
-
-const undoDelete = async () => {
-  if (!lastDeletedEntry.value) return
-
-  try {
-    // Close the delete toast
-    toast.removeGroup('delete-undo')
-
-    // Re-create the entry via API
-    const createRequest: CreateTimeEntryRequest = {
-      entryType: 'WORK' as any,
-      clockIn: lastDeletedEntry.value.clockIn,
-      clockOut: lastDeletedEntry.value.clockOut,
-      breakMinutes: lastDeletedEntry.value.breakMinutes,
-      notes: lastDeletedEntry.value.notes
+  await deleteWithUndo(
+    entry,
+    async (id) => {
+      await TimeEntriesService.deleteTimeEntry(id as number)
+    },
+    async () => {
+      await loadTimeEntries()
+    },
+    (item) => {
+      const typedItem = item as TimeEntryResponse
+      const entryDate = new Date(typedItem.clockIn)
+      const dayString = entryDate.toLocaleDateString(t('locale'), {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      })
+      return t('timeEntries.deletedForDay', { day: dayString })
+    },
+    async (item) => {
+      const typedItem = item as TimeEntryResponse
+      const createRequest: CreateTimeEntryRequest = {
+        entryType: 'WORK' as any,
+        clockIn: typedItem.clockIn,
+        clockOut: typedItem.clockOut,
+        breakMinutes: typedItem.breakMinutes,
+        notes: typedItem.notes
+      }
+      await TimeEntriesService.createTimeEntry(createRequest)
     }
-
-    await TimeEntriesService.createTimeEntry(createRequest)
-
-    // Clear last deleted
-    lastDeletedEntry.value = null
-
-    // Reload entries
-    await loadTimeEntries()
-
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('timeEntries.undoSuccess'),
-      life: 3000
-    })
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: t('timeEntries.undoError'),
-      life: 3000
-    })
-  }
+  )
 }
 
 const formatDateTime = (dateTime: string | undefined) => {
@@ -1304,8 +1257,6 @@ onMounted(() => {
       </template>
     </Dialog>
 
-    <!-- Toast for undo delete -->
-    <UndoDeleteToast group="delete-undo" :on-undo="undoDelete" />
   </div>
 </template>
 

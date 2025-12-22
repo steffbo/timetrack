@@ -91,6 +91,7 @@ import DatePicker from 'primevue/datepicker'
 import { TimeOffService } from '@/api/generated'
 import type { TimeOffResponse } from '@/api/generated'
 import { formatDateISO, parseLocalDate } from '@/utils/dateTimeUtils'
+import { getLocalizedErrorMessage } from '@/utils/errorLocalization'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -255,7 +256,13 @@ const handleSave = async () => {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: error?.body?.message || (isEditMode.value ? t('timeOff.updateError') : (props.selectedDate ? t('dashboard.selectedDay.timeOffSaveError') : t('timeOff.createError'))),
+      detail: getLocalizedErrorMessage(
+        error,
+        t,
+        isEditMode.value
+          ? t('timeOff.updateError')
+          : (props.selectedDate ? t('dashboard.selectedDay.timeOffSaveError') : t('timeOff.createError'))
+      ),
       life: 5000
     })
   } finally {

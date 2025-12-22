@@ -95,6 +95,11 @@
     "edit": "Bearbeiten",
     "close": "Schließen"
   },
+  "errors": {
+    "timeEntryOverlap": "Zeiteintrag überschneidet sich mit bestehendem Eintrag von {start} bis {end}",
+    "clockOutAfterClockIn": "Uhrzeit für das Ausstempeln muss nach der Uhrzeit für das Einstempeln liegen",
+    "activeSessionExists": "Es kann kein manueller Eintrag erstellt werden, solange eine aktive Sitzung existiert. Bitte zuerst ausstempeln."
+  },
   "dashboard": {
     "welcome": "Willkommen, {name}!",
     "loadError": "Fehler beim Laden der Dashboard-Daten",

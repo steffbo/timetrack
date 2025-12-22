@@ -4,15 +4,15 @@
     <main class="app-content">
       <RouterView />
     </main>
-    <Toast />
+    <UndoDeleteToast />
     <ConfirmDialog />
   </div>
 </template>
 
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
+import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
 import AppNavbar from './AppNavbar.vue'
 </script>
 

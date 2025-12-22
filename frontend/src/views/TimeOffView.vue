@@ -12,7 +12,6 @@ import InputNumber from 'primevue/inputnumber'
 import DatePicker from '@/components/common/DatePicker.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
-import UndoDeleteToast from '@/components/common/UndoDeleteToast.vue'
 import { TimeOffService, VacationBalanceService } from '@/api/generated'
 import type { TimeOffResponse, CreateTimeOffRequest, UpdateTimeOffRequest, VacationBalanceResponse, UpdateVacationBalanceRequest } from '@/api/generated'
 import { useAuth } from '@/composables/useAuth'
@@ -29,8 +28,7 @@ const loading = ref(false)
 const dialogVisible = ref(false)
 const timeOffToEdit = ref<TimeOffResponse | null>(null)
 
-// Undo delete composable
-const timeOffUndo = useUndoDelete<TimeOffResponse>('delete-undo-timeoff')
+const { deleteWithUndo } = useUndoDelete()
 
 // Date range filter
 const startDateFilter = ref<string>()
@@ -220,7 +218,7 @@ const handleTimeOffSaved = async () => {
 }
 
 const deleteTimeOff = async (timeOff: TimeOffResponse) => {
-  await timeOffUndo.deleteWithUndo(
+  await deleteWithUndo(
     timeOff,
     async (id) => {
       await TimeOffService.deleteTimeOff(id as number)
@@ -235,12 +233,7 @@ const deleteTimeOff = async (timeOff: TimeOffResponse) => {
       const startStr = startDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
       const endStr = endDate.toLocaleDateString(t('locale'), { day: '2-digit', month: '2-digit', year: 'numeric' })
       return t('timeOff.deleteSuccess') + ` (${startStr} - ${endStr})`
-    }
-  )
-}
-
-const undoTimeOffDelete = async () => {
-  await timeOffUndo.undoDelete(
+    },
     async (item) => {
       const createRequest: CreateTimeOffRequest = {
         timeOffType: item.timeOffType,
@@ -251,9 +244,8 @@ const undoTimeOffDelete = async () => {
       }
       await TimeOffService.createTimeOff(createRequest)
     },
-    async () => {
-      await loadTimeOffs()
-      await loadBalance()
+    {
+      showUndoSuccessToast: true
     }
   )
 }
@@ -503,9 +495,6 @@ onMounted(() => {
       :time-off="timeOffToEdit"
       @saved="handleTimeOffSaved"
     />
-
-    <!-- Toast for undo delete -->
-    <UndoDeleteToast :group="timeOffUndo.undoGroup" :on-undo="undoTimeOffDelete" />
 
     <!-- Edit Vacation Balance Dialog -->
     <Dialog

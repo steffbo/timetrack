@@ -95,6 +95,11 @@
     "edit": "Edit",
     "close": "Close"
   },
+  "errors": {
+    "timeEntryOverlap": "Time entry overlaps with existing entry from {start} to {end}",
+    "clockOutAfterClockIn": "Clock out time must be after clock in time",
+    "activeSessionExists": "Cannot create manual entry while an active session exists. Please clock out first."
+  },
   "dashboard": {
     "welcome": "Welcome, {name}!",
     "loadError": "Error loading dashboard data",
