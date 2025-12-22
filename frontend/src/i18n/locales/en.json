@@ -132,6 +132,40 @@
     "vacationInDays": "in {days} days",
     "overtimeSelectedMonth": "Overtime Selected Month",
     "overtimeAverage": "Average (12 Months)",
+    "vacationBalance": {
+      "title": "Vacation Balance",
+      "daysLeft": "days left",
+      "used": "used",
+      "planned": "planned",
+      "taken": "taken",
+      "total": "total",
+      "noData": "No vacation data",
+      "viewDetails": "View details"
+    },
+    "todayStatus": {
+      "title": "Today",
+      "logged": "logged",
+      "target": "target",
+      "remaining": "{hours} remaining",
+      "overtime": "+{hours} overtime",
+      "complete": "Target reached",
+      "activeSession": "Active session",
+      "nonWorkingDay": "Non-working day"
+    },
+    "weeklyOverview": {
+      "title": "This Week",
+      "planned": "planned",
+      "noEntry": "No entry",
+      "overtime": "overtime",
+      "undertime": "undertime",
+      "onTarget": "On target"
+    },
+    "monthlyOverview": {
+      "title": "This Month",
+      "daysWorked": "days worked",
+      "workingDays": "working days",
+      "monthlyOvertime": "Monthly overtime"
+    },
     "warnings": {
       "title": "Warnings & Alerts",
       "conflictTitle": "Work on Recurring Off-Day",

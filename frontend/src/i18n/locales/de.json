@@ -132,6 +132,40 @@
     "vacationInDays": "in {days} Tagen",
     "overtimeSelectedMonth": "Überstunden Monat",
     "overtimeAverage": "Durchschnitt (12 Monate)",
+    "vacationBalance": {
+      "title": "Urlaubskonto",
+      "daysLeft": "Tage übrig",
+      "used": "genommen",
+      "planned": "geplant",
+      "taken": "genommen",
+      "total": "gesamt",
+      "noData": "Keine Urlaubsdaten",
+      "viewDetails": "Details ansehen"
+    },
+    "todayStatus": {
+      "title": "Heute",
+      "logged": "erfasst",
+      "target": "Soll",
+      "remaining": "{hours} verbleibend",
+      "overtime": "+{hours} Überstunden",
+      "complete": "Ziel erreicht",
+      "activeSession": "Aktive Sitzung",
+      "nonWorkingDay": "Kein Arbeitstag"
+    },
+    "weeklyOverview": {
+      "title": "Diese Woche",
+      "planned": "geplant",
+      "noEntry": "Kein Eintrag",
+      "overtime": "Überstunden",
+      "undertime": "Unterstunden",
+      "onTarget": "Im Soll"
+    },
+    "monthlyOverview": {
+      "title": "Dieser Monat",
+      "daysWorked": "Tage gearbeitet",
+      "workingDays": "Arbeitstage",
+      "monthlyOvertime": "Monatsüberstunden"
+    },
     "warnings": {
       "title": "Warnungen & Hinweise",
       "conflictTitle": "Arbeit an wiederkehrendem freien Tag",

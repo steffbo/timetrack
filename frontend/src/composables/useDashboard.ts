@@ -61,6 +61,12 @@ export function useDashboard() {
     return workingDay?.isWorkingDay || false
   })
 
+  // Get today's summary from the loaded daily summaries
+  const todaySummary = computed(() => {
+    const today = formatDateString(new Date())
+    return dailySummaries.value.find(s => s.date === today) || null
+  })
+
   const nextVacationText = computed(() => {
     if (!nextVacation.value) return t('dashboard.noUpcomingVacation')
 
@@ -960,6 +966,7 @@ export function useDashboard() {
 
     // Computed
     hasTodayWorkingHours,
+    todaySummary,
     nextVacationText,
 
     // Methods

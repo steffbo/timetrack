@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard">
     <div class="dashboard-layout">
-      <!-- Left Side: Calendar -->
+      <!-- Calendar -->
       <div class="calendar-section">
         <MonthlyCalendar
           :current-month="currentMonth"
@@ -17,75 +17,39 @@
         />
       </div>
 
-      <!-- Right Side: Actions & Stats -->
-      <div class="sidebar-section">
-        <!-- Quick Actions & Overview Card -->
-        <div class="actions-stats-card">
-          <div class="action-cards">
-            <!-- Clock In/Out Card -->
-            <div
-              v-if="!activeEntry"
-              class="action-card action-clock-in"
-              :class="{ disabled: !hasTodayWorkingHours }"
-              @click="hasTodayWorkingHours && clockInNow()"
-            >
-              <i class="pi pi-play-circle action-icon"></i>
-              <div class="action-label">{{ t('dashboard.clockInNow') }}</div>
-              <small v-if="!hasTodayWorkingHours" class="action-hint">
-                {{ t('dashboard.noWorkingHoursToday') }}
-              </small>
-            </div>
-            <div v-else class="active-entry-cards">
-              <div class="action-card action-clock-out" @click="clockOutNow">
-                <i class="pi pi-stop-circle action-icon"></i>
-                <div class="action-label">{{ t('dashboard.clockOutNow') }}</div>
-              </div>
-              <div class="action-card action-cancel" @click="cancelEntry">
-                <i class="pi pi-times action-icon"></i>
-                <div class="action-label">{{ t('dashboard.cancelEntry') }}</div>
-              </div>
-            </div>
+      <!-- Today Card (moves to top on mobile via CSS order) -->
+      <div class="today-card-wrapper">
+        <TodayStatusCard
+          :today-summary="todaySummary"
+          :working-hours="workingHours"
+          :active-entry="activeEntry"
+          :has-today-working-hours="hasTodayWorkingHours"
+          @clock-in="clockInNow"
+          @clock-out="clockOutNow"
+          @cancel-entry="cancelEntry"
+          @quick-entry="createQuickWorkEntry"
+          @quick-clock-out="quickClockOutNow"
+        />
+      </div>
 
-            <!-- Quick Clock-Out Card -->
-            <div
-              v-if="!activeEntry"
-              class="action-card action-quick-clock-out"
-              :class="{ disabled: !hasTodayWorkingHours }"
-              @click="hasTodayWorkingHours && quickClockOutNow()"
-            >
-              <i class="pi pi-stopwatch action-icon"></i>
-              <div class="action-label">{{ t('dashboard.quickClockOut') }}</div>
-              <small v-if="!hasTodayWorkingHours" class="action-hint">
-                {{ t('dashboard.noWorkingHoursToday') }}
-              </small>
-            </div>
-
-            <!-- Quick Work Entry Card -->
-            <div
-              class="action-card action-quick-entry"
-              :class="{ disabled: !hasTodayWorkingHours }"
-              @click="hasTodayWorkingHours && createQuickWorkEntry()"
-            >
-              <i class="pi pi-bolt action-icon"></i>
-              <div class="action-label">{{ t('dashboard.quickWorkEntry') }}</div>
-              <small v-if="!hasTodayWorkingHours" class="action-hint">
-                {{ t('dashboard.noWorkingHoursToday') }}
-              </small>
-            </div>
-          </div>
-
-          <!-- Statistics -->
-          <div class="stats-grid">
-            <div class="stat-card stat-vacation">
-              <div class="stat-label">{{ t('dashboard.nextVacation') }}</div>
-              <div class="stat-value">{{ nextVacationText }}</div>
-            </div>
-            <div class="stat-card stat-current">
-              <div class="stat-label">{{ t('dashboard.overtimeSelectedMonth') }}</div>
-              <div class="stat-value">{{ formatOvertime(overtimeSelectedMonth) }}</div>
-            </div>
-          </div>
-        </div>
+      <!-- Other Info Cards -->
+      <div class="other-cards-wrapper">
+        <!-- Weekly Overview -->
+        <WeeklyOverviewCard
+          :daily-summaries="dailySummaries"
+          :working-hours="workingHours"
+        />
+        
+        <!-- Monthly Overview with Overtime -->
+        <MonthlyOverviewCard
+          :current-month="currentMonth"
+          :daily-summaries="dailySummaries"
+          :working-hours="workingHours"
+          :overtime-selected-month="overtimeSelectedMonth"
+        />
+        
+        <!-- Vacation Balance -->
+        <VacationBalanceCard />
       </div>
     </div>
 
@@ -189,6 +153,10 @@ import { useDashboard } from '@/composables/useDashboard'
 import MonthlyCalendar from '@/components/dashboard/MonthlyCalendar.vue'
 import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
 import DayEntriesEditor from '@/components/dashboard/DayEntriesEditor.vue'
+import TodayStatusCard from '@/components/dashboard/TodayStatusCard.vue'
+import WeeklyOverviewCard from '@/components/dashboard/WeeklyOverviewCard.vue'
+import MonthlyOverviewCard from '@/components/dashboard/MonthlyOverviewCard.vue'
+import VacationBalanceCard from '@/components/dashboard/VacationBalanceCard.vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import DatePicker from '@/components/common/DatePicker.vue'
@@ -204,8 +172,8 @@ const {
   dailySummaries,
   workingHours,
   activeEntry,
-  nextVacation,
   overtimeSelectedMonth,
+  todaySummary,
   selectedDate,
   selectedEntries,
   selectedTimeOffEntries,
@@ -218,14 +186,11 @@ const {
   manualEntryBreakMinutes,
   manualEntryNotes,
   hasTodayWorkingHours,
-  nextVacationText,
   loadInitialData,
-  loadDailySummaries,
   handleMonthChange,
   loadActiveEntry,
   loadNextVacation,
   calculateOvertime,
-  formatOvertime,
   clockInNow,
   clockOutNow,
   quickClockOutNow,
@@ -267,69 +232,34 @@ onMounted(async () => {
 .dashboard-layout {
   display: grid;
   grid-template-columns: 1fr 400px;
-  gap: var(--tt-spacing-xl);  /* 32px - aligned to grid */
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "calendar today"
+    "calendar other";
+  gap: var(--tt-spacing-xl);
   align-items: start;
   max-width: 100%;
 }
 
 /* Calendar Section */
 .calendar-section {
+  grid-area: calendar;
   min-height: 600px;
   max-width: 100%;
   overflow-x: auto;
 }
 
-/* Sidebar Section */
-.sidebar-section {
+/* Today Card Wrapper */
+.today-card-wrapper {
+  grid-area: today;
+}
+
+/* Other Cards Wrapper */
+.other-cards-wrapper {
+  grid-area: other;
   display: flex;
   flex-direction: column;
   gap: var(--tt-spacing-lg);
-}
-
-.sidebar-section h3 {
-  margin: 0 0 var(--tt-spacing-md) 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-/* Actions & Stats Combined Card */
-.actions-stats-card {
-  background: var(--p-card-background);
-  border-radius: var(--tt-radius-md);
-  padding: var(--tt-card-padding);
-  display: flex;
-  flex-direction: column;
-  gap: var(--tt-spacing-md);
-}
-
-/* Quick Actions Section */
-.quick-actions-section {
-  background: #f8f9fa;
-  border-radius: var(--tt-radius-md);
-  padding: var(--tt-card-padding);
-}
-
-.action-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--tt-spacing-sm);
-}
-
-.active-entry-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--tt-spacing-sm);
-  grid-column: 1 / -1;
-}
-
-/* Styles for action cards are now in shared CSS */
-
-/* Statistics Section */
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--tt-spacing-sm);
 }
 
 /* Responsive layout */
@@ -342,15 +272,15 @@ onMounted(async () => {
 @media (max-width: 1024px) {
   .dashboard-layout {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "today"
+      "calendar"
+      "other";
     gap: var(--tt-spacing-lg);
   }
 
   .calendar-section {
     min-height: auto;
-  }
-
-  .sidebar-section {
-    order: 2; /* Show sidebar after calendar on mobile */
   }
 }
 
@@ -362,15 +292,6 @@ onMounted(async () => {
   .dashboard-layout {
     gap: var(--tt-spacing-md);
   }
-
-  .quick-actions-section,
-  .stats-section {
-    padding: var(--tt-spacing-md);
-  }
-
-  .sidebar-section h3 {
-    font-size: 1.1rem;
-  }
 }
 
 @media (max-width: 480px) {
@@ -380,24 +301,6 @@ onMounted(async () => {
 
   .dashboard-layout {
     gap: var(--tt-spacing-sm);
-  }
-
-  .quick-actions-section,
-  .stats-section {
-    padding: var(--tt-spacing-sm);
-    border-radius: var(--tt-radius-sm);
-  }
-
-  .action-card {
-    padding: var(--tt-spacing-sm);
-  }
-
-  .stat-card {
-    padding: var(--tt-spacing-sm);
-  }
-
-  .actions-stats-card {
-    padding: var(--tt-spacing-sm);
   }
 }
 
