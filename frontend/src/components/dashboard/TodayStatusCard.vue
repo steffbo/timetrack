@@ -7,26 +7,18 @@
     </div>
     
     <div class="card-content">
-      <!-- Day type indicator (working day, time-off, holiday, etc.) -->
+      <!-- Day type indicator (time-off, holiday, recurring off-day, etc.) -->
       <div v-if="dayTypeInfo" class="day-type-badge" :class="dayTypeInfo.class">
         {{ dayTypeInfo.label }}
       </div>
       
-      <!-- Hours display for working days -->
-      <div v-if="isWorkingDay && !hasFullDayOff" class="hours-display">
-        <div class="hours-row">
-          <div class="hours-item">
-            <span class="hours-value">{{ formatHours(hoursLogged) }}</span>
-            <span class="hours-label">{{ t('dashboard.todayStatus.logged') }}</span>
-          </div>
-          <div class="hours-divider">/</div>
-          <div class="hours-item">
-            <span class="hours-value target">{{ formatHours(targetHours) }}</span>
-            <span class="hours-label">{{ t('dashboard.todayStatus.target') }}</span>
-          </div>
+      <!-- Hours progress (only for regular working days, not recurring off-days) -->
+      <div v-if="showHoursProgress" class="hours-progress">
+        <div class="hours-display">
+          <span class="hours-worked">{{ formatHours(hoursWorked) }}</span>
+          <span class="hours-separator">/</span>
+          <span class="hours-target">{{ formatHours(expectedHours) }}</span>
         </div>
-        
-        <!-- Progress bar -->
         <div class="progress-bar">
           <div 
             class="progress-fill" 
@@ -34,18 +26,6 @@
             :style="{ width: progressPercentage + '%' }"
           ></div>
         </div>
-        
-        <!-- Remaining/Overtime indicator -->
-        <div class="status-indicator" :class="statusClass">
-          <i :class="statusIcon"></i>
-          <span>{{ statusText }}</span>
-        </div>
-      </div>
-      
-      <!-- Schedule info -->
-      <div v-if="isWorkingDay && !hasFullDayOff && scheduleInfo" class="schedule-info">
-        <i class="pi pi-clock"></i>
-        <span>{{ scheduleInfo }}</span>
       </div>
       
       <!-- Active session indicator -->
@@ -59,33 +39,46 @@
       <div class="quick-actions">
         <!-- When not clocked in -->
         <template v-if="!activeEntry">
-          <button 
-            class="action-btn action-clock-in"
-            :class="{ disabled: !hasTodayWorkingHours }"
-            :disabled="!hasTodayWorkingHours"
-            @click="$emit('clock-in')"
-          >
-            <i class="pi pi-play-circle"></i>
-            <span>{{ t('dashboard.clockInNow') }}</span>
-          </button>
-          <button 
-            class="action-btn action-quick-clock-out"
-            :class="{ disabled: !hasTodayWorkingHours }"
-            :disabled="!hasTodayWorkingHours"
-            @click="$emit('quick-clock-out')"
-          >
-            <i class="pi pi-stopwatch"></i>
-            <span>{{ t('dashboard.quickClockOut') }}</span>
-          </button>
-          <button 
-            class="action-btn action-quick-entry"
-            :class="{ disabled: !hasTodayWorkingHours }"
-            :disabled="!hasTodayWorkingHours"
-            @click="$emit('quick-entry')"
-          >
-            <i class="pi pi-bolt"></i>
-            <span>{{ t('dashboard.quickWorkEntry') }}</span>
-          </button>
+          <!-- Show Create Exemption button when it's a recurring off-day -->
+          <template v-if="isRecurringOffDay">
+            <button 
+              class="action-btn action-create-exemption"
+              @click="$emit('create-exemption')"
+            >
+              <i class="pi pi-calendar-plus"></i>
+              <span>{{ t('dashboard.createExemption') }}</span>
+            </button>
+          </template>
+          <!-- Normal buttons when not a recurring off-day -->
+          <template v-else>
+            <button 
+              class="action-btn action-clock-in"
+              :class="{ disabled: !hasTodayWorkingHours }"
+              :disabled="!hasTodayWorkingHours"
+              @click="$emit('clock-in')"
+            >
+              <i class="pi pi-play-circle"></i>
+              <span>{{ t('dashboard.clockInNow') }}</span>
+            </button>
+            <button 
+              class="action-btn action-quick-clock-out"
+              :class="{ disabled: !hasTodayWorkingHours }"
+              :disabled="!hasTodayWorkingHours"
+              @click="$emit('quick-clock-out')"
+            >
+              <i class="pi pi-stopwatch"></i>
+              <span>{{ t('dashboard.quickClockOut') }}</span>
+            </button>
+            <button 
+              class="action-btn action-quick-entry"
+              :class="{ disabled: !hasTodayWorkingHours }"
+              :disabled="!hasTodayWorkingHours"
+              @click="$emit('quick-entry')"
+            >
+              <i class="pi pi-bolt"></i>
+              <span>{{ t('dashboard.quickWorkEntry') }}</span>
+            </button>
+          </template>
         </template>
         <!-- When clocked in -->
         <template v-else>
@@ -127,9 +120,15 @@ defineEmits<{
   'cancel-entry': []
   'quick-entry': []
   'quick-clock-out': []
+  'create-exemption': []
 }>()
 
 const { t } = useI18n()
+
+// Check if today is a recurring off-day
+const isRecurringOffDay = computed(() => {
+  return (props.todaySummary?.recurringOffDays?.length ?? 0) > 0
+})
 
 // Today's date formatted
 const formattedDate = computed(() => {
@@ -147,41 +146,10 @@ const todayConfig = computed(() => {
 
 const isWorkingDay = computed(() => todayConfig.value?.isWorkingDay ?? false)
 
-const targetHours = computed(() => todayConfig.value?.hours ?? 0)
-
-const hoursLogged = computed(() => {
-  if (!props.todaySummary) return 0
-  // Include active session time if there is one
-  if (props.activeEntry?.clockIn) {
-    const clockInTime = new Date(props.activeEntry.clockIn)
-    const now = new Date()
-    const activeHours = (now.getTime() - clockInTime.getTime()) / (1000 * 60 * 60)
-    return (props.todaySummary.actualHours || 0) + activeHours
-  }
-  return props.todaySummary.actualHours || 0
-})
-
-// Check for full day time-off
-const hasFullDayOff = computed(() => {
-  if (!props.todaySummary?.timeOffEntries?.length) return false
-  // Check if there's a full-day time-off entry
-  return props.todaySummary.timeOffEntries.some(entry => {
-    // If hoursPerDay is not set or equals target, it's full day
-    return !entry.hoursPerDay || entry.hoursPerDay >= targetHours.value
-  })
-})
-
 // Day type info (time-off, holiday, recurring off-day)
 const dayTypeInfo = computed(() => {
-  if (!props.todaySummary) {
-    if (!isWorkingDay.value) {
-      return { label: t('dashboard.todayStatus.nonWorkingDay'), class: 'type-off' }
-    }
-    return null
-  }
-  
-  // Check for time-off
-  const timeOff = props.todaySummary.timeOffEntries?.[0]
+  // Check for time-off first
+  const timeOff = props.todaySummary?.timeOffEntries?.[0]
   if (timeOff) {
     const typeLabels: Record<string, { label: string; class: string }> = {
       VACATION: { label: t('timeOff.types.VACATION'), class: 'type-vacation' },
@@ -194,60 +162,16 @@ const dayTypeInfo = computed(() => {
   }
   
   // Check for recurring off-day
-  if (props.todaySummary.recurringOffDays?.length) {
+  if (isRecurringOffDay.value) {
     return { label: t('dashboard.calendar.recurringOffDay'), class: 'type-off' }
   }
   
+  // Check for non-working day (weekend)
   if (!isWorkingDay.value) {
     return { label: t('dashboard.todayStatus.nonWorkingDay'), class: 'type-off' }
   }
   
   return null
-})
-
-// Progress percentage
-const progressPercentage = computed(() => {
-  if (targetHours.value === 0) return 0
-  return Math.min((hoursLogged.value / targetHours.value) * 100, 100)
-})
-
-// Progress bar class
-const progressClass = computed(() => {
-  if (hoursLogged.value >= targetHours.value) return 'complete'
-  if (progressPercentage.value >= 75) return 'almost'
-  return 'partial'
-})
-
-// Status indicator
-const remainingHours = computed(() => targetHours.value - hoursLogged.value)
-
-const statusClass = computed(() => {
-  if (remainingHours.value <= 0) return 'status-complete'
-  return 'status-remaining'
-})
-
-const statusIcon = computed(() => {
-  if (remainingHours.value <= 0) return 'pi pi-check-circle'
-  return 'pi pi-clock'
-})
-
-const statusText = computed(() => {
-  if (remainingHours.value <= 0) {
-    const overtime = Math.abs(remainingHours.value)
-    if (overtime > 0.08) { // More than ~5 minutes
-      return t('dashboard.todayStatus.overtime', { hours: formatHours(overtime) })
-    }
-    return t('dashboard.todayStatus.complete')
-  }
-  return t('dashboard.todayStatus.remaining', { hours: formatHours(remainingHours.value) })
-})
-
-// Schedule info (start - end time)
-const scheduleInfo = computed(() => {
-  if (!todayConfig.value?.startTime || !todayConfig.value?.endTime) return null
-  const start = todayConfig.value.startTime.substring(0, 5) // HH:mm
-  const end = todayConfig.value.endTime.substring(0, 5)
-  return `${start} - ${end}`
 })
 
 // Active session duration
@@ -261,9 +185,49 @@ const activeSessionDuration = computed(() => {
   return `${hours}h ${minutes}m`
 })
 
-// Format hours helper
+// Show hours progress only for regular working days (not recurring off-days, time-off, or non-working days)
+const showHoursProgress = computed(() => {
+  // Don't show for recurring off-days
+  if (isRecurringOffDay.value) return false
+  // Don't show for time-off entries
+  if (props.todaySummary?.timeOffEntries?.length) return false
+  // Only show for working days
+  return isWorkingDay.value
+})
+
+// Hours worked today
+const hoursWorked = computed(() => {
+  return props.todaySummary?.actualHours ?? 0
+})
+
+// Expected hours for today (net hours, break already subtracted)
+const expectedHours = computed(() => {
+  const targetHours = todayConfig.value?.hours ?? 0
+  return targetHours
+})
+
+// Progress percentage
+const progressPercentage = computed(() => {
+  if (expectedHours.value === 0) return 0
+  const percentage = (hoursWorked.value / expectedHours.value) * 100
+  return Math.min(percentage, 100)
+})
+
+// Progress bar class
+const progressClass = computed(() => {
+  const percentage = progressPercentage.value
+  if (percentage >= 100) return 'complete'
+  if (percentage >= 75) return 'good'
+  if (percentage >= 50) return 'moderate'
+  return 'low'
+})
+
+// Format hours for display
 const formatHours = (hours: number): string => {
-  return hours.toFixed(1) + 'h'
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
 }
 </script>
 
@@ -341,110 +305,60 @@ const formatHours = (hours: number): string => {
   color: var(--tt-text-secondary);
 }
 
-/* Hours display */
+/* Hours progress */
+.hours-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tt-spacing-xs);
+}
+
 .hours-display {
   display: flex;
-  flex-direction: column;
-  gap: var(--tt-spacing-xs);
-}
-
-.hours-row {
-  display: flex;
   align-items: baseline;
-  gap: var(--tt-spacing-xs);
+  gap: 4px;
+  font-size: 0.875rem;
 }
 
-.hours-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.hours-value {
-  font-size: 1.5rem;
-  font-weight: 700;
+.hours-worked {
+  font-weight: 600;
   color: var(--tt-text-primary);
-  line-height: 1;
 }
 
-.hours-value.target {
-  font-size: 1rem;
-  font-weight: 500;
+.hours-separator {
   color: var(--tt-text-secondary);
 }
 
-.hours-label {
-  font-size: 0.7rem;
+.hours-target {
   color: var(--tt-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
 }
 
-.hours-divider {
-  font-size: 1rem;
-  color: var(--tt-text-tertiary);
-  margin: 0 var(--tt-spacing-xs);
-}
-
-/* Progress bar */
 .progress-bar {
   height: 6px;
   background: var(--tt-bg-light);
-  border-radius: 3px;
+  border-radius: var(--tt-radius-sm);
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--tt-radius-sm);
   transition: width 0.3s ease;
 }
 
-.progress-fill.partial {
-  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+.progress-fill.low {
+  background: #ef4444;
 }
 
-.progress-fill.almost {
-  background: linear-gradient(90deg, #34d399 0%, #10b981 100%);
+.progress-fill.moderate {
+  background: #f59e0b;
+}
+
+.progress-fill.good {
+  background: #84cc16;
 }
 
 .progress-fill.complete {
-  background: linear-gradient(90deg, var(--tt-emerald-from) 0%, var(--tt-emerald-to) 100%);
-}
-
-/* Status indicator */
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: var(--tt-spacing-xs);
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.status-indicator i {
-  font-size: 0.875rem;
-}
-
-.status-indicator.status-complete {
-  color: var(--tt-emerald-from);
-}
-
-.status-indicator.status-remaining {
-  color: var(--tt-text-secondary);
-}
-
-/* Schedule info */
-.schedule-info {
-  display: flex;
-  align-items: center;
-  gap: var(--tt-spacing-xs);
-  font-size: 0.75rem;
-  color: var(--tt-text-secondary);
-  padding-top: var(--tt-spacing-xs);
-  border-top: 1px solid var(--tt-bg-light);
-}
-
-.schedule-info i {
-  font-size: 0.75rem;
+  background: var(--tt-emerald-from);
 }
 
 /* Active session */
@@ -555,6 +469,18 @@ const formatHours = (hours: number): string => {
 .action-btn.action-quick-clock-out:hover:not(.disabled) {
   background: rgba(239, 68, 68, 0.15);
   border-color: rgba(239, 68, 68, 0.3);
+}
+
+.action-btn.action-create-exemption {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  grid-column: 1 / -1;
+}
+
+.action-btn.action-create-exemption:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .action-btn.action-cancel {

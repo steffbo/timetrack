@@ -23,6 +23,7 @@ export function useDashboard() {
   // State
   const currentMonth = ref<Date>(new Date())
   const dailySummaries = shallowRef<DailySummaryResponse[]>([]) // Large array - use shallowRef for performance
+  const currentWeekSummaries = shallowRef<DailySummaryResponse[]>([]) // Separate summaries for current week (always today's week)
   const workingHours = ref<WorkingHoursResponse | null>(null)
   const loading = ref(false)
   const activeEntry = ref<TimeEntryResponse | null>(null)
@@ -61,10 +62,10 @@ export function useDashboard() {
     return workingDay?.isWorkingDay || false
   })
 
-  // Get today's summary from the loaded daily summaries
+  // Get today's summary from the current week summaries (independent of selected month)
   const todaySummary = computed(() => {
     const today = formatDateString(new Date())
-    return dailySummaries.value.find(s => s.date === today) || null
+    return currentWeekSummaries.value.find(s => s.date === today) || null
   })
 
   const nextVacationText = computed(() => {
@@ -266,6 +267,9 @@ export function useDashboard() {
       if (displaySummaries.length > 0) {
         dailySummaries.value = displaySummaries
       }
+      
+      // Initialize current week summaries (for Today and Weekly cards)
+      await loadCurrentWeekSummaries()
     } catch (error) {
       handleError(error, t('dashboard.loadError'))
     } finally {
@@ -327,6 +331,54 @@ export function useDashboard() {
     currentMonth.value = newMonth
     await loadDailySummaries()
     await calculateOvertime()
+  }
+
+  // Load/refresh current week summaries (for Today and Weekly cards - independent of selected month)
+  const loadCurrentWeekSummaries = async () => {
+    try {
+      const today = new Date()
+      const dayOfWeek = today.getDay()
+      // Get Monday of current week
+      const monday = new Date(today)
+      const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+      monday.setDate(today.getDate() - daysFromMonday)
+      monday.setHours(0, 0, 0, 0)
+      
+      // Get Sunday of current week
+      const sunday = new Date(monday)
+      sunday.setDate(monday.getDate() + 6)
+      
+      const startDateStr = formatDateString(monday)
+      const endDateStr = formatDateString(sunday)
+      
+      // Try cache first (should be populated from initial load)
+      const cachedSummaries = dailySummaryCache.getCachedRange(startDateStr, endDateStr)
+      if (cachedSummaries.length > 0) {
+        currentWeekSummaries.value = cachedSummaries
+        return
+      }
+      
+      // Cache miss - fetch from API
+      const yearsNeeded = new Set([monday.getFullYear(), sunday.getFullYear()])
+      const [summaries, ...holidayResponses] = await Promise.all([
+        TimeEntriesService.getDailySummary(startDateStr, endDateStr),
+        ...Array.from(yearsNeeded).map(y => getPublicHolidaysForYear(y))
+      ])
+      
+      const publicHolidays = holidayResponses.flat() as PublicHolidayResponse[]
+      const summariesWithHolidays = mergePublicHolidays(summaries, publicHolidays)
+      
+      // Update cache
+      summariesWithHolidays.forEach(summary => {
+        if (summary.date) {
+          dailySummaryCache.setCache(summary.date, summary)
+        }
+      })
+      
+      currentWeekSummaries.value = summariesWithHolidays
+    } catch (error) {
+      handleError(error, 'Failed to load current week summaries', { logError: true })
+    }
   }
 
   // Load active time entry
@@ -947,6 +999,7 @@ export function useDashboard() {
     // State
     currentMonth,
     dailySummaries,
+    currentWeekSummaries,
     workingHours,
     loading,
     activeEntry,
@@ -972,6 +1025,7 @@ export function useDashboard() {
     // Methods
     loadInitialData,
     loadDailySummaries,
+    loadCurrentWeekSummaries,
     handleMonthChange,
     loadActiveEntry,
     loadNextVacation,

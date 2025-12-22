@@ -51,9 +51,9 @@ public class RecurringOffDayConflictDetector {
         List<RecurringOffDay> activeRecurringOffDays = recurringOffDayRepository
                 .findActiveByUserIdAndDate(user.getId(), entryDate);
 
-        // Check if any recurring off-day applies to this date
+        // Check if any recurring off-day applies to this date (excluding exempted dates)
         RecurringOffDay conflictingOffDay = activeRecurringOffDays.stream()
-                .filter(offDay -> evaluator.appliesToDate(offDay, entryDate))
+                .filter(offDay -> evaluator.appliesToDateWithExemptions(offDay, entryDate))
                 .findFirst()
                 .orElse(null);
 

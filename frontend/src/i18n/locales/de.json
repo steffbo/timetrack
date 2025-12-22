@@ -111,6 +111,7 @@
     "quickClockOut": "Ausstempeln",
     "cancelEntry": "Abbrechen",
     "quickWorkEntry": "Schnelleintrag",
+    "createExemption": "Ausnahme erstellen",
     "noWorkingHoursToday": "Keine Arbeitszeiten für heute konfiguriert",
     "workStartTimeAfterNow": "Arbeitsbeginn liegt in der Zukunft",
     "clockInSuccess": "Erfolgreich eingestempelt",
@@ -153,7 +154,7 @@
       "nonWorkingDay": "Kein Arbeitstag"
     },
     "weeklyOverview": {
-      "title": "Diese Woche",
+      "title": "Aktuelle Woche",
       "planned": "geplant",
       "noEntry": "Kein Eintrag",
       "overtime": "Überstunden",
@@ -161,7 +162,7 @@
       "onTarget": "Im Soll"
     },
     "monthlyOverview": {
-      "title": "Dieser Monat",
+      "title": "Angezeigter Monat",
       "daysWorked": "Tage gearbeitet",
       "workingDays": "Arbeitstage",
       "monthlyOvertime": "Monatsüberstunden"
@@ -312,7 +313,20 @@
     "updateError": "Fehler beim Aktualisieren des freien Tags",
     "deleteSuccess": "Freier Tag erfolgreich gelöscht",
     "deleteError": "Fehler beim Löschen des freien Tags",
-    "deleteConfirm": "Möchtest du diesen wiederkehrenden freien Tag wirklich löschen?"
+    "deleteConfirm": "Möchtest du diesen wiederkehrenden freien Tag wirklich löschen?",
+    "exemptions": "Ausnahmen",
+    "manageExemptions": "Ausnahmen",
+    "exemptionDate": "Datum",
+    "selectExemptionDate": "Datum für Ausnahme wählen",
+    "exemptionReason": "Grund",
+    "exemptionReasonPlaceholder": "Optionaler Grund",
+    "exemptionInfo": "Erstelle eine Ausnahme für den {date} ({description}), um Zeiterfassung zu aktivieren.",
+    "noExemptions": "Keine Ausnahmen",
+    "exemptionCreated": "Ausnahme erstellt",
+    "exemptionDeleted": "Ausnahme gelöscht",
+    "exemptionCreateError": "Fehler beim Erstellen der Ausnahme",
+    "exemptionDeleteError": "Fehler beim Löschen der Ausnahme",
+    "loadExemptionsError": "Fehler beim Laden der Ausnahmen"
   },
   "timeOff": {
     "title": "Abwesenheiten",
@@ -478,6 +492,7 @@
   "close": "Schließen",
   "edit": "Bearbeiten",
   "delete": "Löschen",
+  "add": "Hinzufügen",
   "confirm": "Bestätigen",
   "yes": "Ja",
   "no": "Nein",

@@ -1,7 +1,8 @@
 package cc.remer.timetrack.usecase.recurringoffday;
 
+import cc.remer.timetrack.adapter.persistence.RecurringOffDayExemptionRepository;
 import cc.remer.timetrack.domain.recurringoffday.RecurringOffDay;
-import cc.remer.timetrack.domain.recurringoffday.RecurrencePattern;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -14,14 +15,19 @@ import java.time.temporal.TemporalAdjusters;
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class RecurringOffDayEvaluator {
+
+    private final RecurringOffDayExemptionRepository exemptionRepository;
 
     /**
      * Check if a recurring off-day applies to a specific date.
+     * This method checks the pattern match but does NOT consider exemptions.
+     * Use {@link #appliesToDateWithExemptions} to also check for exemptions.
      *
      * @param recurringOffDay the recurring off-day rule
      * @param date the date to check
-     * @return true if the rule applies to this date
+     * @return true if the rule's pattern matches this date
      */
     public boolean appliesToDate(RecurringOffDay recurringOffDay, LocalDate date) {
         // Check if rule is active
@@ -97,4 +103,37 @@ public class RecurringOffDayEvaluator {
 
         return occurrenceNumber == weekOfMonth;
     }
+
+    /**
+     * Check if a recurring off-day applies to a specific date, considering exemptions.
+     * Returns false if the date has an exemption (making it a regular working day).
+     *
+     * @param recurringOffDay the recurring off-day rule
+     * @param date the date to check
+     * @return true if the rule applies to this date and is NOT exempted
+     */
+    public boolean appliesToDateWithExemptions(RecurringOffDay recurringOffDay, LocalDate date) {
+        if (!appliesToDate(recurringOffDay, date)) {
+            return false;
+        }
+        
+        // Check if there's an exemption for this date
+        return !isExempted(recurringOffDay, date);
+    }
+
+    /**
+     * Check if a specific date is exempted from a recurring off-day rule.
+     *
+     * @param recurringOffDay the recurring off-day rule
+     * @param date the date to check
+     * @return true if the date is exempted
+     */
+    public boolean isExempted(RecurringOffDay recurringOffDay, LocalDate date) {
+        if (recurringOffDay.getId() == null) {
+            return false;
+        }
+        return exemptionRepository.existsByRecurringOffDayIdAndExemptionDate(
+                recurringOffDay.getId(), date);
+    }
 }
+

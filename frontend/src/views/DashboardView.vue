@@ -29,6 +29,7 @@
           @cancel-entry="cancelEntry"
           @quick-entry="createQuickWorkEntry"
           @quick-clock-out="quickClockOutNow"
+          @create-exemption="openExemptionDialog"
         />
       </div>
 
@@ -142,12 +143,44 @@
         />
       </template>
     </Dialog>
+
+    <!-- Exemption Dialog -->
+    <Dialog
+      v-model:visible="showExemptionDialog"
+      :header="t('dashboard.createExemption')"
+      :modal="true"
+      :style="{ width: '90vw', maxWidth: '400px' }"
+    >
+      <div class="exemption-form">
+        <p class="exemption-info">
+          {{ t('recurringOffDays.exemptionInfo', { date: todayDateString, description: todayRecurringOffDay?.description || '' }) }}
+        </p>
+        <div class="field">
+          <label for="exemptionReason">{{ t('recurringOffDays.exemptionReason') }}</label>
+          <InputText
+            id="exemptionReason"
+            v-model="exemptionReason"
+            :placeholder="t('recurringOffDays.exemptionReasonPlaceholder')"
+            class="w-full"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <Button :label="t('cancel')" severity="secondary" @click="showExemptionDialog = false" />
+        <Button
+          :label="t('dashboard.createExemption')"
+          severity="primary"
+          @click="createExemptionForToday"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'primevue/usetoast'
 import { useAuth } from '@/composables/useAuth'
 import { useDashboard } from '@/composables/useDashboard'
 import MonthlyCalendar from '@/components/dashboard/MonthlyCalendar.vue'
@@ -161,15 +194,20 @@ import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import DatePicker from '@/components/common/DatePicker.vue'
 import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
+import { RecurringOffDayExemptionsService } from '@/api/generated'
+import type { CreateRecurringOffDayExemptionRequest } from '@/api/generated'
 
 const { t } = useI18n()
+const toast = useToast()
 const { currentUser } = useAuth()
 
 // Use dashboard composable for all dashboard logic
 const {
   currentMonth,
   dailySummaries,
+  currentWeekSummaries,
   workingHours,
   activeEntry,
   overtimeSelectedMonth,
@@ -203,8 +241,72 @@ const {
   handleQuickDeleteFromCalendar,
   handleFormSaved,
   onManualEntryDateChange,
-  createManualEntry
+  createManualEntry,
+  loadCurrentWeekSummaries,
+  invalidateCacheAndReload
 } = useDashboard()
+
+// Exemption dialog state
+const showExemptionDialog = ref(false)
+const exemptionReason = ref('')
+
+// Get today's recurring off-day (if any) for creating exemption
+const todayRecurringOffDay = computed(() => {
+  return todaySummary.value?.recurringOffDays?.[0] || null
+})
+
+// Format today's date as YYYY-MM-DD
+const todayDateString = computed(() => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+})
+
+// Handle create exemption button click
+const openExemptionDialog = () => {
+  exemptionReason.value = ''
+  showExemptionDialog.value = true
+}
+
+// Create exemption for today
+const createExemptionForToday = async () => {
+  if (!todayRecurringOffDay.value?.id) return
+  
+  try {
+    const request: CreateRecurringOffDayExemptionRequest = {
+      exemptionDate: todayDateString.value,
+      reason: exemptionReason.value || undefined
+    }
+    
+    await RecurringOffDayExemptionsService.createExemption(
+      todayRecurringOffDay.value.id,
+      request
+    )
+    
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('recurringOffDays.exemptionCreated'),
+      life: 3000
+    })
+    
+    showExemptionDialog.value = false
+    
+    // Reload daily summaries and current week to reflect the change
+    await invalidateCacheAndReload()
+    await loadCurrentWeekSummaries()
+  } catch (error: any) {
+    const errorMessage = error?.body?.message || t('recurringOffDays.exemptionCreateError')
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: errorMessage,
+      life: 3000
+    })
+  }
+}
 
 
 onMounted(async () => {
@@ -322,5 +424,18 @@ onMounted(async () => {
 
 .manual-entry-form .datetime-fields :deep(.p-datepicker) {
   width: 100%;
+}
+
+/* Exemption form */
+.exemption-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tt-spacing-md);
+}
+
+.exemption-form .exemption-info {
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.9rem;
 }
 </style>

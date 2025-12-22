@@ -136,6 +136,16 @@
               {{ data.description || '-' }}
             </template>
           </Column>
+          <Column :header="t('recurringOffDays.exemptions')">
+            <template #body="{ data }">
+              <Button
+                :label="t('recurringOffDays.manageExemptions')"
+                icon="pi pi-calendar-minus"
+                class="p-button-text p-button-sm"
+                @click="openExemptionsDialog(data)"
+              />
+            </template>
+          </Column>
           <Column :header="t('actions')">
             <template #body="{ data }">
               <Button
@@ -280,6 +290,80 @@
       </template>
     </Dialog>
 
+    <!-- Exemptions Dialog -->
+    <Dialog
+      v-model:visible="exemptionsDialogVisible"
+      :header="t('recurringOffDays.exemptions') + (selectedOffDayForExemptions?.description ? ` - ${selectedOffDayForExemptions.description}` : '')"
+      :modal="true"
+      :style="{ width: '90vw', maxWidth: '700px' }"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
+    >
+      <div class="exemptions-content">
+        <!-- Add Exemption Form -->
+        <div class="add-exemption-form">
+          <div class="form-row">
+            <div class="field">
+              <label>{{ t('recurringOffDays.exemptionDate') }}</label>
+              <DatePicker
+                v-model="newExemptionDate"
+                :placeholder="t('recurringOffDays.selectExemptionDate')"
+              />
+            </div>
+            <div class="field flex-grow">
+              <label>{{ t('recurringOffDays.exemptionReason') }}</label>
+              <InputText
+                v-model="newExemptionReason"
+                :placeholder="t('recurringOffDays.exemptionReasonPlaceholder')"
+              />
+            </div>
+            <div class="field-button">
+              <Button
+                :label="t('add')"
+                icon="pi pi-plus"
+                :disabled="!newExemptionDate"
+                @click="addExemption"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Exemptions List -->
+        <div class="exemptions-list">
+          <DataTable
+            :value="exemptions"
+            :loading="isLoadingExemptions"
+            responsive-layout="scroll"
+            size="small"
+          >
+            <Column field="exemptionDate" :header="t('recurringOffDays.exemptionDate')">
+              <template #body="{ data }">
+                {{ formatDisplayDate(data.exemptionDate) }}
+              </template>
+            </Column>
+            <Column field="reason" :header="t('recurringOffDays.exemptionReason')">
+              <template #body="{ data }">
+                {{ data.reason || '-' }}
+              </template>
+            </Column>
+            <Column :header="t('actions')" style="width: 80px">
+              <template #body="{ data }">
+                <Button
+                  icon="pi pi-trash"
+                  class="p-button-text p-button-danger p-button-sm"
+                  @click="deleteExemption(data)"
+                />
+              </template>
+            </Column>
+            <template #empty>
+              <div class="text-center py-4 text-gray-500">
+                {{ t('recurringOffDays.noExemptions') }}
+              </div>
+            </template>
+          </DataTable>
+        </div>
+      </div>
+    </Dialog>
+
   </div>
 </template>
 
@@ -299,8 +383,8 @@ import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import DatePicker from '@/components/common/DatePicker.vue'
-import { RecurringOffDaysService, WorkingHoursService } from '@/api/generated'
-import type { WorkingDayConfig, RecurringOffDayResponse, CreateRecurringOffDayRequest, UpdateRecurringOffDayRequest } from '@/api/generated'
+import { RecurringOffDaysService, RecurringOffDayExemptionsService, WorkingHoursService } from '@/api/generated'
+import type { WorkingDayConfig, RecurringOffDayResponse, CreateRecurringOffDayRequest, UpdateRecurringOffDayRequest, RecurringOffDayExemptionResponse, CreateRecurringOffDayExemptionRequest } from '@/api/generated'
 import { useUndoDelete } from '@/composables/useUndoDelete'
 
 const { t } = useI18n()
@@ -399,6 +483,14 @@ const currentOffDay = ref<Partial<CreateRecurringOffDayRequest | UpdateRecurring
   weekInterval: 4,
   isActive: true
 })
+
+// ===== Exemptions State =====
+const exemptionsDialogVisible = ref(false)
+const selectedOffDayForExemptions = ref<RecurringOffDayResponse | null>(null)
+const exemptions = ref<RecurringOffDayExemptionResponse[]>([])
+const isLoadingExemptions = ref(false)
+const newExemptionDate = ref<string | null>(null)
+const newExemptionReason = ref('')
 
 const weekdayOptions = [
   { label: t('weekday.monday'), value: 1 },
@@ -584,6 +676,112 @@ const deleteOffDay = async (offDay: RecurringOffDayResponse) => {
   )
 }
 
+// ===== Exemptions Functions =====
+const openExemptionsDialog = async (offDay: RecurringOffDayResponse) => {
+  selectedOffDayForExemptions.value = offDay
+  newExemptionDate.value = null
+  newExemptionReason.value = ''
+  exemptionsDialogVisible.value = true
+  await loadExemptions()
+}
+
+const loadExemptions = async () => {
+  if (!selectedOffDayForExemptions.value?.id) return
+  
+  isLoadingExemptions.value = true
+  try {
+    const response = await RecurringOffDayExemptionsService.getExemptions(
+      selectedOffDayForExemptions.value.id
+    )
+    exemptions.value = response
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: t('recurringOffDays.loadExemptionsError'),
+      life: 3000
+    })
+    exemptions.value = []
+  } finally {
+    isLoadingExemptions.value = false
+  }
+}
+
+const addExemption = async () => {
+  if (!selectedOffDayForExemptions.value?.id || !newExemptionDate.value) return
+  
+  try {
+    // Format date properly - DatePicker returns Date object, API expects YYYY-MM-DD string
+    const formatDate = (date: any) => {
+      if (!date) return undefined
+      if (typeof date === 'string') return date
+      if (date instanceof Date) {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+      return date
+    }
+    
+    const request: CreateRecurringOffDayExemptionRequest = {
+      exemptionDate: formatDate(newExemptionDate.value),
+      reason: newExemptionReason.value || undefined
+    }
+    
+    await RecurringOffDayExemptionsService.createExemption(
+      selectedOffDayForExemptions.value.id,
+      request
+    )
+    
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('recurringOffDays.exemptionCreated'),
+      life: 3000
+    })
+    
+    newExemptionDate.value = null
+    newExemptionReason.value = ''
+    await loadExemptions()
+  } catch (error: any) {
+    const errorMessage = error?.body?.message || t('recurringOffDays.exemptionCreateError')
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: errorMessage,
+      life: 3000
+    })
+  }
+}
+
+const deleteExemption = async (exemption: RecurringOffDayExemptionResponse) => {
+  if (!selectedOffDayForExemptions.value?.id) return
+  
+  try {
+    await RecurringOffDayExemptionsService.deleteExemption(
+      selectedOffDayForExemptions.value.id,
+      exemption.id
+    )
+    
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('recurringOffDays.exemptionDeleted'),
+      life: 3000
+    })
+    
+    await loadExemptions()
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('error'),
+      detail: t('recurringOffDays.exemptionDeleteError'),
+      life: 3000
+    })
+  }
+}
+
 const getWeekdayLabel = (weekday: number) => {
   const option = weekdayOptions.find(w => w.value === weekday)
   return option ? option.label : ''
@@ -724,6 +922,63 @@ onMounted(async () => {
 
   .weekly-sum-header {
     font-size: 0.9rem;
+  }
+}
+
+/* Exemptions dialog styles */
+.exemptions-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.add-exemption-form {
+  padding: 1rem;
+  background: var(--tt-color-00-bg);
+  border-radius: 8px;
+  border: 1px solid var(--tt-color-10-border);
+}
+
+.add-exemption-form .form-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.add-exemption-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.add-exemption-form .field.flex-grow {
+  flex: 1;
+}
+
+.add-exemption-form .field-button {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 1px; /* Align with input border */
+}
+
+.add-exemption-form label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--tt-color-30-primary);
+}
+
+@media (max-width: 640px) {
+  .add-exemption-form .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .add-exemption-form .field-button {
+    margin-top: 0.5rem;
+  }
+  
+  .add-exemption-form .field-button .p-button {
+    width: 100%;
   }
 }
 </style>

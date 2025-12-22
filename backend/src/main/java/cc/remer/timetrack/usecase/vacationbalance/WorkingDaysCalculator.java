@@ -185,9 +185,10 @@ public class WorkingDaysCalculator {
 
         // Check if it's a recurring off-day (only if checkRecurringOffDays is true)
         // When calculating sick/personal days, we skip this check so they take precedence
+        // Also checks exemptions - if a date is exempted, the recurring off-day doesn't apply
         if (checkRecurringOffDays) {
             for (RecurringOffDay rod : recurringOffDays) {
-                if (recurringOffDayEvaluator.appliesToDate(rod, date)) {
+                if (recurringOffDayEvaluator.appliesToDateWithExemptions(rod, date)) {
                     return false;
                 }
             }

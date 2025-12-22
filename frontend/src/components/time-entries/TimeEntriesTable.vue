@@ -180,8 +180,8 @@ const getExpectedHoursForEntry = (entry: TimeEntryResponse, workingHours: Workin
     return 0
   }
 
-  const breakHours = (dayWorkingHours.breakMinutes || 0) / 60.0
-  return Math.max(0, (dayWorkingHours.hours || 0) - breakHours)
+  // Hours field already contains net hours (break subtracted when saved)
+  return dayWorkingHours.hours || 0
 }
 
 const getHoursDifference = (entry: TimeEntryResponse): string => {

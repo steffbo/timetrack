@@ -506,6 +506,105 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /api/recurring-off-days/{id}/exemptions:
+    get:
+      tags:
+        - Recurring Off-Day Exemptions
+      summary: Get exemptions for a recurring off-day
+      description: Get all exemptions for a specific recurring off-day rule
+      operationId: getExemptions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Recurring off-day ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Exemptions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecurringOffDayExemptionResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    post:
+      tags:
+        - Recurring Off-Day Exemptions
+      summary: Create exemption for a recurring off-day
+      description: Create an exemption that makes a specific date a regular working day instead of an off-day
+      operationId: createExemption
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Recurring off-day ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecurringOffDayExemptionRequest'
+      responses:
+        '201':
+          description: Exemption created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringOffDayExemptionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: Exemption already exists for this date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/recurring-off-days/{recurringOffDayId}/exemptions/{exemptionId}:
+    delete:
+      tags:
+        - Recurring Off-Day Exemptions
+      summary: Delete exemption
+      description: Delete an exemption, making the date an off-day again
+      operationId: deleteExemption
+      parameters:
+        - name: recurringOffDayId
+          in: path
+          required: true
+          description: Recurring off-day ID
+          schema:
+            type: integer
+            format: int64
+        - name: exemptionId
+          in: path
+          required: true
+          description: Exemption ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Exemption deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
   /api/recurring-off-day-warnings:
     get:
       tags:
@@ -1529,6 +1628,48 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    RecurringOffDayExemptionResponse:
+      type: object
+      required:
+        - id
+        - recurringOffDayId
+        - exemptionDate
+      properties:
+        id:
+          type: integer
+          format: int64
+        recurringOffDayId:
+          type: integer
+          format: int64
+          description: ID of the recurring off-day rule this exemption belongs to
+        exemptionDate:
+          type: string
+          format: date
+          description: The date that is exempted (becomes a regular working day)
+          example: "2025-01-17"
+        reason:
+          type: string
+          description: Optional reason for the exemption
+          example: "Customer meeting requires presence"
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateRecurringOffDayExemptionRequest:
+      type: object
+      required:
+        - exemptionDate
+      properties:
+        exemptionDate:
+          type: string
+          format: date
+          description: The date to exempt from the recurring off-day pattern
+          example: "2025-01-17"
+        reason:
+          type: string
+          description: Optional reason for the exemption
+          example: "Customer meeting requires presence"
 
     TimeOffResponse:
       type: object

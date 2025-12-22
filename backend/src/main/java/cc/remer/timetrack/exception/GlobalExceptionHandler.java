@@ -1,6 +1,7 @@
 package cc.remer.timetrack.exception;
 
 import cc.remer.timetrack.api.model.ErrorResponse;
+import cc.remer.timetrack.usecase.recurringoffday.CreateRecurringOffDayExemption.ExemptionAlreadyExistsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -84,6 +85,13 @@ public class GlobalExceptionHandler {
         log.warn("Illegal argument: {}", ex.getMessage());
         ErrorResponse error = createErrorResponse("INVALID_ARGUMENT", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(ExemptionAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleExemptionAlreadyExistsException(ExemptionAlreadyExistsException ex) {
+        log.warn("Exemption already exists: {}", ex.getMessage());
+        ErrorResponse error = createErrorResponse("EXEMPTION_ALREADY_EXISTS", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(Exception.class)

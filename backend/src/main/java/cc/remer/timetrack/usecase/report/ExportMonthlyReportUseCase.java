@@ -253,13 +253,10 @@ public class ExportMonthlyReportUseCase {
         short weekdayValue = (short) dayOfWeek.getValue();
         WorkingHours workingHours = workingHoursMap.get(weekdayValue);
 
+        // Hours field already contains net hours (break subtracted when saved)
         Double expectedHours = 0.0;
         if (workingHours != null && workingHours.getIsWorkingDay() && workingHours.getHours() != null) {
-            double hours = workingHours.getHours().doubleValue();
-            // Subtract break minutes (convert to hours)
-            Integer breakMinutes = workingHours.getBreakMinutes() != null ? workingHours.getBreakMinutes() : 0;
-            double breakHours = breakMinutes / 60.0;
-            expectedHours = Math.max(0.0, hours - breakHours);
+            expectedHours = workingHours.getHours().doubleValue();
         }
 
         // Get time-off for this date
@@ -363,7 +360,7 @@ public class ExportMonthlyReportUseCase {
     }
 
     /**
-     * Build a set of dates that match recurring off-day patterns.
+     * Build a set of dates that match recurring off-day patterns (excluding exempted dates).
      */
     private Set<LocalDate> buildRecurringOffDayDates(List<RecurringOffDay> recurringOffDays, LocalDate startDate, LocalDate endDate) {
         Set<LocalDate> dates = new HashSet<>();
@@ -372,7 +369,7 @@ public class ExportMonthlyReportUseCase {
         while (!currentDate.isAfter(endDate)) {
             final LocalDate dateToCheck = currentDate;
             boolean isRecurringOffDay = recurringOffDays.stream()
-                    .anyMatch(rod -> recurringOffDayEvaluator.appliesToDate(rod, dateToCheck));
+                    .anyMatch(rod -> recurringOffDayEvaluator.appliesToDateWithExemptions(rod, dateToCheck));
             if (isRecurringOffDay) {
                 dates.add(currentDate);
             }

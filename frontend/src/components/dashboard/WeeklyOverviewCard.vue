@@ -124,6 +124,7 @@ const weekDays = computed(() => {
     const isPast = date < today
     const isFuture = date > today
     const isWorkingDay = config?.isWorkingDay ?? false
+    // Hours field already contains net hours (break subtracted when saved)
     const targetHours = config?.hours ?? 0
     const actualHours = summary?.actualHours ?? 0
     

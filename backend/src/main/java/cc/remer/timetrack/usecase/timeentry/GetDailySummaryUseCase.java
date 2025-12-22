@@ -128,7 +128,7 @@ public class GetDailySummaryUseCase {
 
     /**
      * Get expected hours for a specific date based on working hours configuration.
-     * Expected hours = configured hours - break minutes (converted to hours).
+     * The hours field already contains net working hours (break already subtracted when saved).
      */
     private double getExpectedHoursForDate(LocalDate date, Map<Short, WorkingHours> workingHoursPerWeekday) {
         // DayOfWeek: MONDAY=1, TUESDAY=2, ..., SUNDAY=7
@@ -144,11 +144,8 @@ public class GetDailySummaryUseCase {
             return 0.0;
         }
 
-        // Subtract break minutes (convert to hours)
-        Integer breakMinutes = workingHours.getBreakMinutes() != null ? workingHours.getBreakMinutes() : 0;
-        double breakHours = breakMinutes / 60.0;
-        
-        return Math.max(0.0, hours.doubleValue() - breakHours);
+        // Hours field already contains net hours (break subtracted when saved)
+        return hours.doubleValue();
     }
 
     /**
@@ -191,12 +188,12 @@ public class GetDailySummaryUseCase {
     }
 
     /**
-     * Find recurring off-days that apply to a specific date.
+     * Find recurring off-days that apply to a specific date (excluding exempted dates).
      */
     private List<RecurringOffDay> findRecurringOffDaysForDate(
             List<RecurringOffDay> recurringOffDays, LocalDate date) {
         return recurringOffDays.stream()
-                .filter(rod -> recurringOffDayEvaluator.appliesToDate(rod, date))
+                .filter(rod -> recurringOffDayEvaluator.appliesToDateWithExemptions(rod, date))
                 .collect(Collectors.toList());
     }
 }
