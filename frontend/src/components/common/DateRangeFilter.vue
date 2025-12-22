@@ -28,6 +28,7 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import DatePicker from '@/components/common/DatePicker.vue'
 import { isValidDateString } from '@/types/enums'
+import { formatDateISO } from '@/utils/dateTimeUtils'
 
 const { t } = useI18n()
 
@@ -58,8 +59,8 @@ interface Emits {
 
 const emit = defineEmits<Emits>()
 
-const internalStartDate = ref(props.startDate)
-const internalEndDate = ref(props.endDate)
+const internalStartDate = ref<string | Date | undefined>(props.startDate)
+const internalEndDate = ref<string | Date | undefined>(props.endDate)
 
 watch(() => props.startDate, (newVal) => {
   internalStartDate.value = newVal
@@ -70,8 +71,17 @@ watch(() => props.endDate, (newVal) => {
 })
 
 const handleFilter = () => {
-  emit('update:startDate', internalStartDate.value)
-  emit('update:endDate', internalEndDate.value)
+  const normalizeDate = (value: string | Date | undefined): string | undefined => {
+    if (!value) return undefined
+    if (typeof value === 'string') return value
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return formatDateISO(value)
+    }
+    return undefined
+  }
+
+  emit('update:startDate', normalizeDate(internalStartDate.value))
+  emit('update:endDate', normalizeDate(internalEndDate.value))
   emit('filter')
 }
 </script>

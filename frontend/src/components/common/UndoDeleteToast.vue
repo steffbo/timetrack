@@ -7,7 +7,15 @@
       <div class="undo-toast-content">
         <i class="undo-toast-icon" :class="getIconClass(slotProps.message.severity)"></i>
         <div class="undo-toast-text">
-          <span class="undo-toast-summary" v-html="formatMessage(slotProps.message.summary || '')"></span>
+          <span class="undo-toast-summary">
+            <template
+              v-for="(part, index) in formatMessageParts(slotProps.message.summary || '')"
+              :key="index"
+            >
+              <span v-if="part.isDateRange" class="date-range">{{ part.text }}</span>
+              <span v-else>{{ part.text }}</span>
+            </template>
+          </span>
           <div v-if="getDetailText(slotProps.message.detail)" class="undo-toast-detail">
             {{ getDetailText(slotProps.message.detail) }}
           </div>
@@ -67,11 +75,33 @@ const getIconClass = (severity?: ToastMessageOptions['severity']): string => {
   }
 }
 
+type MessagePart = {
+  text: string
+  isDateRange: boolean
+}
+
 // Format message to keep date ranges on the same line
-const formatMessage = (message: string): string => {
+const formatMessageParts = (message: string): MessagePart[] => {
   // Match date ranges in format: (DD.MM.YYYY - DD.MM.YYYY) or (DD.MM.YYYY-DD.MM.YYYY)
   const dateRangePattern = /\((\d{1,2}\.\d{1,2}\.\d{4})\s*-\s*(\d{1,2}\.\d{1,2}\.\d{4})\)/g
-  return message.replace(dateRangePattern, '<span class="date-range">($1 - $2)</span>')
+  const parts: MessagePart[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = dateRangePattern.exec(message)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ text: message.slice(lastIndex, match.index), isDateRange: false })
+    }
+
+    parts.push({ text: `(${match[1]} - ${match[2]})`, isDateRange: true })
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < message.length) {
+    parts.push({ text: message.slice(lastIndex), isDateRange: false })
+  }
+
+  return parts
 }
 </script>
 

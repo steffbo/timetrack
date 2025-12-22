@@ -1,4 +1,5 @@
 import { ref, type Ref } from 'vue'
+import { formatDateISO } from '@/utils/dateTimeUtils'
 
 /**
  * Generic cache composable for storing and retrieving cached data
@@ -92,7 +93,7 @@ export function useCache<T>() {
     const end = new Date(endDate)
 
     while (currentDate <= end) {
-      const dateStr = currentDate.toISOString().split('T')[0]
+      const dateStr = formatDateISO(currentDate)
       const cached = cache.value.get(dateStr)
       if (cached) {
         result.push(cached)

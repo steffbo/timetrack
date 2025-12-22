@@ -148,7 +148,17 @@
     :dismissable="false"
   >
     <div v-if="hoveredDay !== null" class="day-details">
-      <div class="day-details-content" v-html="formatDayDetailsHtml(hoveredDay)"></div>
+      <div class="day-details-content">
+        <div
+          v-for="row in getDayDetails(hoveredDay)"
+          :key="row.key"
+          class="detail-row"
+        >
+          <span v-if="row.emoji" class="detail-emoji">{{ row.emoji }}</span>
+          <strong v-if="row.strong" class="detail-text">{{ row.text }}</strong>
+          <span v-else class="detail-text">{{ row.text }}</span>
+        </div>
+      </div>
     </div>
   </Popover>
 
@@ -159,7 +169,17 @@
     @hide="handleOverlayHide"
   >
     <div v-if="stickyDay !== null" class="day-details day-details-sticky">
-      <div class="day-details-content" v-html="formatDayDetailsHtml(stickyDay)"></div>
+      <div class="day-details-content">
+        <div
+          v-for="row in getDayDetails(stickyDay)"
+          :key="row.key"
+          class="detail-row"
+        >
+          <span v-if="row.emoji" class="detail-emoji">{{ row.emoji }}</span>
+          <strong v-if="row.strong" class="detail-text">{{ row.text }}</strong>
+          <span v-else class="detail-text">{{ row.text }}</span>
+        </div>
+      </div>
 
       <!-- Action buttons for sticky panel -->
       <div class="day-details-actions">
@@ -938,8 +958,15 @@ const exportMonthlyPdf = async () => {
   }
 }
 
-// Format day details as HTML for the overlay
-const formatDayDetailsHtml = (day: number | string): string => {
+// Build day details for the overlay
+type DayDetailRow = {
+  key: string
+  emoji?: string
+  text: string
+  strong?: boolean
+}
+
+const getDayDetails = (day: number | string): DayDetailRow[] => {
   // Check if this is an adjacent day
   let summary: DailySummaryResponse | undefined
   let dateStr: string
@@ -961,7 +988,7 @@ const formatDayDetailsHtml = (day: number | string): string => {
     if (monthData) {
       dateStr = `${monthData.year}-${String(monthData.month + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
     } else {
-      return `<p>${t('dashboard.calendar.noEntries')}</p>`
+      return [{ key: `empty-${day}`, text: t('dashboard.calendar.noEntries') }]
     }
   } else {
     // Current month day
@@ -970,12 +997,19 @@ const formatDayDetailsHtml = (day: number | string): string => {
     dateStr = `${currentYear.value}-${String(currentMonthIndex.value + 1).padStart(2, '0')}-${String(actualDay).padStart(2, '0')}`
   }
 
-  if (!summary) return `<p>${t('dashboard.calendar.noEntries')}</p>`
+  if (!summary) {
+    return [{ key: `empty-${dateStr}`, text: t('dashboard.calendar.noEntries') }]
+  }
 
-  const parts: string[] = []
+  const rows: DayDetailRow[] = []
 
   // Date
-  parts.push(`<div class="detail-row"><strong>📅 ${dateStr}</strong></div>`)
+  rows.push({
+    key: `date-${dateStr}`,
+    emoji: '📅',
+    text: dateStr,
+    strong: true
+  })
 
   // Get emoji for time off type
   const getTimeOffEmoji = (timeOffType: string): string => {
@@ -992,13 +1026,18 @@ const formatDayDetailsHtml = (day: number | string): string => {
   // Time off - show first for PTO days
   const hasPTOEntries = summary.timeOffEntries && summary.timeOffEntries.length > 0
   if (hasPTOEntries) {
-    summary.timeOffEntries!.forEach(timeOff => {
+    summary.timeOffEntries!.forEach((timeOff, index) => {
       const typeLabel = t(`timeOff.type.${timeOff.timeOffType}`)
       const emoji = getTimeOffEmoji(timeOff.timeOffType)
 
       // For public holidays, show the holiday name (stored in notes)
       if (timeOff.timeOffType === 'PUBLIC_HOLIDAY' && timeOff.notes) {
-        parts.push(`<div class="detail-row">${emoji} <strong>${timeOff.notes}</strong></div>`)
+        rows.push({
+          key: `timeoff-${timeOff.id ?? 'none'}-${index}-holiday`,
+          emoji,
+          text: timeOff.notes,
+          strong: true
+        })
       } else {
         // For vacation on Dec 24 or 31, add "half-day" indication
         let label = typeLabel
@@ -1018,16 +1057,26 @@ const formatDayDetailsHtml = (day: number | string): string => {
             label = `${typeLabel} (${t('timeOff.halfDay')})`
           }
         }
-        parts.push(`<div class="detail-row">${emoji} <strong>${label}</strong></div>`)
+        rows.push({
+          key: `timeoff-${timeOff.id ?? 'none'}-${index}`,
+          emoji,
+          text: label,
+          strong: true
+        })
       }
     })
   }
 
   // Recurring off-days
   if (summary.recurringOffDays && summary.recurringOffDays.length > 0) {
-    summary.recurringOffDays.forEach(offDay => {
+    summary.recurringOffDays.forEach((offDay, index) => {
       const description = offDay.description || t('dashboard.calendar.recurringOffDay')
-      parts.push(`<div class="detail-row">📴 <strong>${description}</strong></div>`)
+      rows.push({
+        key: `recurring-${offDay.id ?? 'none'}-${index}`,
+        emoji: '📴',
+        text: description,
+        strong: true
+      })
     })
   }
 
@@ -1056,7 +1105,11 @@ const formatDayDetailsHtml = (day: number | string): string => {
     // Show planned times first for comparison
     if (workingDayConfig?.isWorkingDay && workingDayConfig.startTime && workingDayConfig.endTime) {
       const plannedHours = workingDayConfig.hours || 0
-      parts.push(`<div class="detail-row">⏲️ ${workingDayConfig.startTime} - ${workingDayConfig.endTime} (${formatDuration(plannedHours)})</div>`)
+      rows.push({
+        key: `planned-${dateStr}`,
+        emoji: '⏲️',
+        text: `${workingDayConfig.startTime} - ${workingDayConfig.endTime} (${formatDuration(plannedHours)})`
+      })
     }
 
     // Calculate actual start and end times from all entries
@@ -1076,11 +1129,15 @@ const formatDayDetailsHtml = (day: number | string): string => {
         bookEmoji = getBookEmoji(actualStart, actualEnd, workingDayConfig.startTime, workingDayConfig.endTime)
       }
 
-      parts.push(`<div class="detail-row">${bookEmoji} ${actualStart} - ${actualEnd} (${formatDuration(summary.actualHours)})</div>`)
+      rows.push({
+        key: `actual-${dateStr}`,
+        emoji: bookEmoji,
+        text: `${actualStart} - ${actualEnd} (${formatDuration(summary.actualHours)})`
+      })
     }
   }
 
-  return parts.join('')
+  return rows
 }
 
 // Helper to get summary for a day (works with both current and adjacent months)
@@ -1527,10 +1584,18 @@ const handleQuickDeleteClick = (day: number | string) => {
 
 .detail-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   padding: var(--tt-spacing-xs) 0;  /* 8px 0 - aligned to grid */
   line-height: 1.5;
+}
+
+.detail-emoji {
+  flex-shrink: 0;
+}
+
+.detail-text {
+  flex: 1;
 }
 
 .detail-row:first-child {

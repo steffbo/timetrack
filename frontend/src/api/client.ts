@@ -10,7 +10,6 @@ const apiClient: AxiosInstance = axios.create({
 
 // Store for access token (will be set by useAuth composable)
 let accessToken: string | null = null
-let isRefreshing = false
 let refreshPromise: Promise<void> | null = null
 
 export function setAccessToken(token: string | null) {
@@ -44,37 +43,25 @@ apiClient.interceptors.response.use(
                          originalRequest.url?.includes('/api/auth/refresh') ||
                          originalRequest.url?.includes('/api/auth/logout')
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest && !isRefreshing) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       originalRequest._retry = true
 
-      // If refresh is already in progress, wait for it
-      if (refreshPromise) {
-        try {
-          await refreshPromise
-          // Retry original request with new token
-          return apiClient(originalRequest)
-        } catch {
-          // Refresh failed, clear tokens and redirect
-          clearTokensAndRedirect()
-          return Promise.reject(error)
-        }
-      }
-
-      // Start refresh process
-      isRefreshing = true
-      refreshPromise = (async () => {
-        try {
-          // Import dynamically to avoid circular dependency
-          const { useAuth } = await import('@/composables/useAuth')
-          const { refreshAccessToken } = useAuth()
-          await refreshAccessToken()
-        } finally {
-          isRefreshing = false
-          refreshPromise = null
-        }
-      })()
-
       try {
+        // If refresh is already in progress, wait for it
+        if (!refreshPromise) {
+          // Start refresh process
+          refreshPromise = (async () => {
+            try {
+              // Import dynamically to avoid circular dependency
+              const { useAuth } = await import('@/composables/useAuth')
+              const { refreshAccessToken } = useAuth()
+              await refreshAccessToken()
+            } finally {
+              refreshPromise = null
+            }
+          })()
+        }
+
         await refreshPromise
         // Retry original request with new token
         return apiClient(originalRequest)
