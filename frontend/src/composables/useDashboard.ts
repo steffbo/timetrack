@@ -47,7 +47,10 @@ export function useDashboard() {
 
   // Caches
   const dailySummaryCache = useCache<DailySummaryResponse>()
-  const publicHolidaysCache = ref<Map<number, PublicHolidayResponse[]>>(new Map())
+  // Cache for all public holidays (fetched once)
+  const allPublicHolidaysCache = ref<Map<number, PublicHolidayResponse[]> | null>(null)
+  // Promise to prevent race condition when fetching holidays
+  let publicHolidaysFetchPromise: Promise<Map<number, PublicHolidayResponse[]>> | null = null
 
   // Computed
   const hasTodayWorkingHours = computed(() => {
@@ -74,15 +77,48 @@ export function useDashboard() {
     return t('dashboard.vacationInDays', { days: diffDays })
   })
 
+  // Helper: Fetch and parse all public holidays (called once)
+  const fetchAllPublicHolidays = async (): Promise<Map<number, PublicHolidayResponse[]>> => {
+    const response = await PublicHolidaysService.getPublicHolidays()
+    
+    // Parse the response and organize by year
+    const holidaysByYear = new Map<number, PublicHolidayResponse[]>()
+    
+    if (response.holidaysByYearAndState) {
+      for (const [yearStr, stateHolidays] of Object.entries(response.holidaysByYearAndState)) {
+        const yearNum = parseInt(yearStr)
+        const yearHolidays: PublicHolidayResponse[] = []
+        
+        // Get holidays from BERLIN state (or first available state)
+        // We use BERLIN as the default since the user is likely in Berlin
+        const stateKey = 'BERLIN' in stateHolidays ? 'BERLIN' : Object.keys(stateHolidays)[0]
+        if (stateKey && stateHolidays[stateKey]) {
+          yearHolidays.push(...stateHolidays[stateKey])
+        }
+        
+        holidaysByYear.set(yearNum, yearHolidays)
+      }
+    }
+    
+    return holidaysByYear
+  }
+
   // Helper: Get public holidays for a specific year
   const getPublicHolidaysForYear = async (year: number): Promise<PublicHolidayResponse[]> => {
-    if (publicHolidaysCache.value.has(year)) {
-      return publicHolidaysCache.value.get(year)!
+    // Return from cache if available
+    if (allPublicHolidaysCache.value) {
+      return allPublicHolidaysCache.value.get(year) || []
     }
-
-    const holidays = await PublicHolidaysService.getPublicHolidays(year)
-    publicHolidaysCache.value.set(year, holidays)
-    return holidays
+    
+    // If a fetch is already in progress, wait for it
+    if (!publicHolidaysFetchPromise) {
+      publicHolidaysFetchPromise = fetchAllPublicHolidays()
+    }
+    
+    const holidaysByYear = await publicHolidaysFetchPromise
+    allPublicHolidaysCache.value = holidaysByYear
+    
+    return holidaysByYear.get(year) || []
   }
 
   // Helper: Format date string
@@ -92,25 +128,49 @@ export function useDashboard() {
 
   // Helper: Merge public holidays into summaries
   const mergePublicHolidays = (summaries: DailySummaryResponse[], holidays: PublicHolidayResponse[]): DailySummaryResponse[] => {
-    return summaries.map(summary => {
-      const holiday = holidays.find(h => h.date === summary.date)
-      if (holiday && holiday.date) {
-          const holidayTimeOff: TimeOffResponse = {
-            id: 0,
-            userId: currentUser.value?.id || 0,
-            startDate: holiday.date,
-            endDate: holiday.date,
-            timeOffType: TimeOffType.PUBLIC_HOLIDAY as any, // API expects string literal
-            notes: holiday.name,
-            days: 1 // Public holidays are always 1 day
-          }
-        return {
-          ...summary,
-          timeOffEntries: [holidayTimeOff, ...(summary.timeOffEntries || [])]
-        }
+    // Create a map of existing summaries by date
+    const summaryMap = new Map<string, DailySummaryResponse>()
+    summaries.forEach(summary => {
+      if (summary.date) {
+        summaryMap.set(summary.date, summary)
       }
-      return summary
     })
+
+    // Add public holidays to existing summaries or create new ones
+    holidays.forEach(holiday => {
+      if (!holiday.date) return
+
+      const holidayTimeOff: TimeOffResponse = {
+        id: 0,
+        userId: currentUser.value?.id || 0,
+        startDate: holiday.date,
+        endDate: holiday.date,
+        timeOffType: TimeOffType.PUBLIC_HOLIDAY as any, // API expects string literal
+        notes: holiday.name,
+        days: 1 // Public holidays are always 1 day
+      }
+
+      const existingSummary = summaryMap.get(holiday.date)
+      if (existingSummary) {
+        // Add to existing summary
+        summaryMap.set(holiday.date, {
+          ...existingSummary,
+          timeOffEntries: [holidayTimeOff, ...(existingSummary.timeOffEntries || [])]
+        })
+      } else {
+        // Create a new summary for this public holiday
+        summaryMap.set(holiday.date, {
+          date: holiday.date,
+          entries: [],
+          timeOffEntries: [holidayTimeOff],
+          recurringOffDays: [],
+          actualHours: 0,
+          expectedHours: 0
+        })
+      }
+    })
+
+    return Array.from(summaryMap.values())
   }
 
   // Helper: Calculate calendar date range for display

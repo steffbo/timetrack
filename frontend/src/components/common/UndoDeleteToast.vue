@@ -24,7 +24,7 @@
           v-if="getActionData(slotProps.message)?.onAction"
           class="undo-toast-action"
           :aria-label="getActionData(slotProps.message)?.label || t('timeEntries.undo')"
-          v-tooltip="getActionData(slotProps.message)?.label || t('timeEntries.undo')"
+          v-tooltip="{ value: getActionData(slotProps.message)?.label || t('timeEntries.undo'), pt: { text: { style: 'white-space: nowrap' } } }"
           @click="getActionData(slotProps.message)?.onAction?.()"
         >
           <i class="pi pi-undo"></i>

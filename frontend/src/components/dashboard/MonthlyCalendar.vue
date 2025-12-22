@@ -664,7 +664,7 @@ const getAdjacentDayEmojis = (day: number, type: 'prev' | 'next'): string[] => {
 }
 
 // Handle adjacent day click
-const handleAdjacentDayClick = (day: number, type: 'prev' | 'next', event: MouseEvent) => {
+const handleAdjacentDayClick = async (day: number, type: 'prev' | 'next', event: MouseEvent) => {
   // Clear any pending hover timeout
   if (hoverTimeout) {
     clearTimeout(hoverTimeout)
@@ -691,14 +691,41 @@ const handleAdjacentDayClick = (day: number, type: 'prev' | 'next', event: Mouse
   // Show sticky panel for adjacent day
   const key = `${type}-${day}`
   const targetElement = dayRefs.value.get(key as any)
+  
   if (targetElement) {
-    stickyDay.value = null // Clear previous sticky
-    setTimeout(async () => {
-      stickyDay.value = key as any
-      stickyPanelTarget.value = targetElement
+    // If clicking the same day that is already sticky, toggle off
+    if (key === stickyDay.value) {
+      if (stickyPopoverRef.value) {
+        stickyPopoverRef.value.hide()
+      }
+      stickyPanelVisible.value = false
+      stickyDay.value = null
+      stickyPanelTarget.value = null
+    } else {
+      // Hide the previous sticky panel if it exists
+      if (stickyDay.value !== null && stickyPopoverRef.value) {
+        stickyPopoverRef.value.hide()
+        stickyPanelVisible.value = false
+      }
+
+      // First hide any existing panel
+      if (stickyPopoverRef.value) {
+        stickyPopoverRef.value.hide()
+      }
+      
+      // Wait for hide to complete, then show
       await nextTick()
-      stickyPanelVisible.value = true
-    }, 50)
+      setTimeout(() => {
+        stickyDay.value = key as any
+        stickyPanelTarget.value = targetElement
+        
+        // Use imperative API to show popover with target
+        if (stickyPopoverRef.value) {
+          stickyPopoverRef.value.show(event, targetElement)
+          stickyPanelVisible.value = true
+        }
+      }, 100)
+    }
   }
 }
 
@@ -720,9 +747,10 @@ const handleAdjacentDayHover = (day: number, type: 'prev' | 'next', event: Mouse
   hoverTimeout = setTimeout(async () => {
     hoveredDay.value = key as any
     const targetElement = dayRefs.value.get(key as any)
-    if (targetElement) {
+    if (targetElement && hoverPopoverRef.value) {
       hoverPanelTarget.value = targetElement
       await nextTick()
+      hoverPopoverRef.value.show(event, targetElement)
       hoverPanelVisible.value = true
     }
   }, 100)
@@ -1579,15 +1607,15 @@ const handleQuickDeleteClick = (day: number | string) => {
 }
 
 .day-details-content {
-  font-size: 1rem;  /* 16px - aligned to grid */
+  font-size: 0.875rem;  /* 14px - compact display */
 }
 
 .detail-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: var(--tt-spacing-xs) 0;  /* 8px 0 - aligned to grid */
-  line-height: 1.5;
+  gap: 0.375rem;
+  padding: 0.125rem 0;  /* 2px - minimal */
+  line-height: 1.3;
 }
 
 .detail-emoji {
@@ -1599,10 +1627,10 @@ const handleQuickDeleteClick = (day: number | string) => {
 }
 
 .detail-row:first-child {
-  font-size: 1.05rem;
+  font-size: 0.9375rem;  /* 15px */
   font-weight: 600;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.375rem;
   border-bottom: 1px solid var(--p-surface-border);
   color: var(--p-primary-color);
 }
@@ -1610,9 +1638,9 @@ const handleQuickDeleteClick = (day: number | string) => {
 .day-details-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
   border-top: 1px solid var(--p-surface-border);
 }
 
