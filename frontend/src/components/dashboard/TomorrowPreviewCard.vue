@@ -1,5 +1,5 @@
 <template>
-  <div class="info-card tomorrow-preview-card">
+  <div class="info-card tomorrow-preview-card" :class="{ 'compact-off': isOffDay }">
     <div class="card-header">
       <span class="card-icon">🔮</span>
       <h4>{{ t('dashboard.tomorrowPreview.title') }}</h4>
@@ -10,9 +10,10 @@
       <span class="tomorrow-date">{{ formattedDate }}</span>
     </div>
     
-    <div class="card-content">
+    <!-- Hide card-content entirely for PTO days -->
+    <div v-if="!hasTimeOff" class="card-content">
       <!-- Working hours info for regular working days -->
-      <div v-if="isWorkingDay && !hasTimeOff && !hasRecurringOff" class="work-schedule">
+      <div v-if="isWorkingDay && !hasRecurringOff" class="work-schedule">
         <div class="schedule-row">
           <span class="schedule-icon">🕐</span>
           <span class="schedule-times">{{ workingTimeRange }}</span>
@@ -79,6 +80,11 @@ const timeOffType = computed(() => {
 // Check for recurring off-day
 const hasRecurringOff = computed(() => {
   return (props.tomorrowSummary?.recurringOffDays?.length ?? 0) > 0
+})
+
+// Check if it's any kind of off-day (for compact styling)
+const isOffDay = computed(() => {
+  return hasTimeOff.value || hasRecurringOff.value || !isWorkingDay.value
 })
 
 // Day type info (time-off, holiday, recurring off-day)
@@ -162,6 +168,10 @@ const formatHours = (hours: number): string => {
   display: flex;
   flex-direction: column;
   gap: var(--tt-spacing-sm);
+}
+
+.info-card.compact-off {
+  padding: var(--tt-spacing-sm) var(--tt-spacing-md);
 }
 
 .card-header {

@@ -1,5 +1,5 @@
 <template>
-  <div class="info-card today-status-card">
+  <div class="info-card today-status-card" :class="{ 'compact-off': isOffDay }">
     <div class="card-header">
       <span class="card-icon">📅</span>
       <h4>{{ t('dashboard.todayStatus.title') }}</h4>
@@ -10,7 +10,8 @@
       <span class="today-date">{{ formattedDate }}</span>
     </div>
     
-    <div class="card-content">
+    <!-- Hide card-content entirely for PTO days -->
+    <div v-if="!hasTimeOff" class="card-content">
       <!-- Hours progress (only for regular working days, not recurring off-days) -->
       <div v-if="showHoursProgress" class="hours-progress">
         <div class="hours-display">
@@ -128,6 +129,16 @@ const { t } = useI18n()
 // Check if today is a recurring off-day
 const isRecurringOffDay = computed(() => {
   return (props.todaySummary?.recurringOffDays?.length ?? 0) > 0
+})
+
+// Check if today has time-off (vacation, sick, etc.)
+const hasTimeOff = computed(() => {
+  return (props.todaySummary?.timeOffEntries?.length ?? 0) > 0
+})
+
+// Check if it's any kind of off-day (for compact styling)
+const isOffDay = computed(() => {
+  return hasTimeOff.value || isRecurringOffDay.value
 })
 
 // Today's date formatted
@@ -248,6 +259,10 @@ const formatHours = (hours: number): string => {
   gap: var(--tt-spacing-sm);
 }
 
+.info-card.compact-off {
+  padding: var(--tt-spacing-sm) var(--tt-spacing-md);
+}
+
 .card-header {
   display: flex;
   align-items: center;
@@ -280,7 +295,6 @@ const formatHours = (hours: number): string => {
 /* Day type badge */
 .day-type-badge {
   display: inline-flex;
-  align-self: flex-start;
   padding: var(--tt-spacing-xs) var(--tt-spacing-sm);
   border-radius: var(--tt-radius-sm);
   font-size: 0.75rem;
