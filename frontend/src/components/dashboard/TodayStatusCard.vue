@@ -167,6 +167,7 @@ const dayTypeInfo = computed(() => {
       SICK: { label: t('timeOff.type.SICK'), class: 'type-sick' },
       CHILD_SICK: { label: t('timeOff.type.CHILD_SICK'), class: 'type-sick' },
       PERSONAL: { label: t('timeOff.type.PERSONAL'), class: 'type-personal' },
+      EDUCATION: { label: t('timeOff.type.EDUCATION'), class: 'type-education' },
       PUBLIC_HOLIDAY: { label: t('timeOff.type.PUBLIC_HOLIDAY'), class: 'type-holiday' }
     }
     return typeLabels[timeOff.timeOffType || ''] || null
@@ -319,6 +320,11 @@ const formatHours = (hours: number): string => {
 .day-type-badge.type-personal {
   background: rgba(139, 92, 246, 0.15);
   color: #8b5cf6;
+}
+
+.day-type-badge.type-education {
+  background: rgba(99, 102, 241, 0.15);
+  color: #6366f1;
 }
 
 .day-type-badge.type-holiday {

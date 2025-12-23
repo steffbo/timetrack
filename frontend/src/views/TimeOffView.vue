@@ -255,6 +255,7 @@ const timeOffTypeOptions = [
   { label: t('timeOff.type.SICK'), value: 'SICK' },
   { label: t('timeOff.type.CHILD_SICK'), value: 'CHILD_SICK' },
   { label: t('timeOff.type.PERSONAL'), value: 'PERSONAL' },
+  { label: t('timeOff.type.EDUCATION'), value: 'EDUCATION' },
   { label: t('timeOff.type.PUBLIC_HOLIDAY'), value: 'PUBLIC_HOLIDAY' }
 ]
 

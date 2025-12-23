@@ -63,6 +63,7 @@
   --tt-row-bg-vacation: rgba(16, 185, 129, 0.12); /* Emerald from palette */
   --tt-row-bg-sick: rgba(249, 115, 22, 0.12); /* Coral from palette */
   --tt-row-bg-personal: rgba(34, 211, 238, 0.12); /* Cyan from palette */
+  --tt-row-bg-education: rgba(99, 102, 241, 0.12); /* Indigo for education */
   --tt-row-bg-recurring-off: rgba(20, 184, 166, 0.12); /* Teal from palette */
   --tt-row-bg-weekend: rgba(100, 116, 139, 0.12); /* Slate from palette */
 

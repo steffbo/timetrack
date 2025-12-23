@@ -5,5 +5,6 @@ public enum TimeOffType {
   SICK,
   CHILD_SICK,
   PERSONAL,
-  PUBLIC_HOLIDAY
+  PUBLIC_HOLIDAY,
+  EDUCATION
 }

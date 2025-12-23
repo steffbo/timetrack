@@ -125,6 +125,7 @@ const timeOffTypeOptions = [
   { label: t('timeOff.type.SICK'), value: 'SICK', icon: 'pi pi-heart-fill' },
   { label: t('timeOff.type.CHILD_SICK'), value: 'CHILD_SICK', icon: 'pi pi-users' },
   { label: t('timeOff.type.PERSONAL'), value: 'PERSONAL', icon: 'pi pi-home' },
+  { label: t('timeOff.type.EDUCATION'), value: 'EDUCATION', icon: 'pi pi-book' },
   { label: t('timeOff.type.PUBLIC_HOLIDAY'), value: 'PUBLIC_HOLIDAY', icon: 'pi pi-calendar' }
 ]
 

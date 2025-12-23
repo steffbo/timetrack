@@ -14,6 +14,7 @@ export enum DayTypePrecedence {
   SICK = 3,              // Medical - overrides recurring
   CHILD_SICK = 3,        // Child sick - same priority as SICK
   PERSONAL = 4,          // Personal - overrides recurring
+  EDUCATION = 4,         // Education/Training - same priority as PERSONAL
   RECURRING_OFF_DAY = 5, // Scheduled off-days
   VACATION = 6,          // Planned vacation
   WORK = 7,              // Actual work entries
@@ -37,6 +38,7 @@ export function getPrecedence(type: string): number {
     'CHILD_SICK': DayTypePrecedence.CHILD_SICK,
     'SICK_LEAVE': DayTypePrecedence.SICK, // Alias
     'PERSONAL': DayTypePrecedence.PERSONAL,
+    'EDUCATION': DayTypePrecedence.EDUCATION,
     'RECURRING_OFF': DayTypePrecedence.RECURRING_OFF_DAY, // Alias
     'RECURRING_OFF_DAY': DayTypePrecedence.RECURRING_OFF_DAY,
     'VACATION': DayTypePrecedence.VACATION,
@@ -117,6 +119,16 @@ export function resolvePrimaryDayType(
       const p = getPrecedence('PERSONAL')
       if (p < currentPrecedence) {
         primaryType = 'PERSONAL'
+        currentPrecedence = p
+      }
+    }
+
+    // Check education/training leave
+    const education = summary.timeOffEntries.find((e: any) => e.timeOffType === 'EDUCATION')
+    if (education) {
+      const p = getPrecedence('EDUCATION')
+      if (p < currentPrecedence) {
+        primaryType = 'EDUCATION'
         currentPrecedence = p
       }
     }

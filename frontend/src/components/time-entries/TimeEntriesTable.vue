@@ -231,6 +231,8 @@ const getTypeEmoji = (typeEntry: TypeEntry): string => {
         return '👩‍👧'
       case 'PERSONAL':
         return '🏠'
+      case 'EDUCATION':
+        return '📚'
       case 'PUBLIC_HOLIDAY':
         return '🎊'
       default:
@@ -281,6 +283,8 @@ const getRowBackgroundClass = (entry: DisplayEntry): string => {
           return 'row-bg-sick'
         case 'PERSONAL':
           return 'row-bg-personal'
+        case 'EDUCATION':
+          return 'row-bg-education'
         default:
           return ''
       }

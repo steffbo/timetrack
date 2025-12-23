@@ -163,6 +163,10 @@ const weekDays = computed(() => {
         statusClass = 'day-personal'
         icon = '🏠'
         tooltip = t('timeOff.type.PERSONAL')
+      } else if (timeOffType === 'EDUCATION') {
+        statusClass = 'day-education'
+        icon = '📚'
+        tooltip = t('timeOff.type.EDUCATION')
       } else {
         statusClass = 'day-off'
         icon = '📴'
@@ -366,6 +370,10 @@ const formatHours = (hours: number): string => {
 
 .day-indicator.day-personal {
   background: rgba(139, 92, 246, 0.1);
+}
+
+.day-indicator.day-education {
+  background: rgba(99, 102, 241, 0.1);
 }
 
 .day-indicator.day-today {

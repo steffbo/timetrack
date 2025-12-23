@@ -390,6 +390,7 @@ public class ExportMonthlyReportUseCase {
                 case CHILD_SICK -> DayType.SICK;
                 case VACATION -> DayType.VACATION;
                 case PUBLIC_HOLIDAY -> DayType.PUBLIC_HOLIDAY;
+                case EDUCATION -> DayType.REGULAR; // Education days are regular work days with notes
                 default -> DayType.REGULAR;
             };
         }

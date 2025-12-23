@@ -92,6 +92,10 @@
   background-color: var(--tt-row-bg-personal) !important;
 }
 
+.row-bg-education {
+  background-color: var(--tt-row-bg-education) !important;
+}
+
 .row-bg-recurring-off {
   background-color: var(--tt-row-bg-recurring-off) !important;
 }

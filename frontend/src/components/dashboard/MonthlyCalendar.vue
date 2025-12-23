@@ -497,6 +497,7 @@ const getDayEmojis = (day: number): string[] => {
     const hasSick = summary.timeOffEntries.some(e => e.timeOffType === 'SICK')
     const hasChildSick = summary.timeOffEntries.some(e => e.timeOffType === 'CHILD_SICK')
     const hasPersonal = summary.timeOffEntries.some(e => e.timeOffType === 'PERSONAL')
+    const hasEducation = summary.timeOffEntries.some(e => e.timeOffType === 'EDUCATION')
     const hasVacation = summary.timeOffEntries.some(e => e.timeOffType === 'VACATION')
     const hasPublicHoliday = summary.timeOffEntries.some(e => e.timeOffType === 'PUBLIC_HOLIDAY')
 
@@ -504,6 +505,7 @@ const getDayEmojis = (day: number): string[] => {
     if (hasSick) emojis.push('😵‍💫')
     if (hasChildSick) emojis.push('👩‍👧')
     if (hasPersonal) emojis.push('🏠')
+    if (hasEducation) emojis.push('📚')
 
     // For vacation, show regular emoji (half-day indication is in tooltip)
     if (hasVacation) {
@@ -579,6 +581,7 @@ const getAdjacentDayStyle = (day: number, type: 'prev' | 'next') => {
     'VACATION': 'var(--p-cyan-50)',
     'SICK_LEAVE': 'var(--p-red-50)',
     'PERSONAL': 'var(--p-blue-100)',
+    'EDUCATION': 'var(--p-indigo-50)',
     'PUBLIC_HOLIDAY': 'var(--p-orange-50)',
     'TIME_OFF': 'var(--p-amber-50)',
     'RECURRING_OFF': 'var(--p-indigo-100)',
@@ -641,6 +644,7 @@ const getAdjacentDayEmojis = (day: number, type: 'prev' | 'next'): string[] => {
     const hasSick = summary.timeOffEntries.some(e => e.timeOffType === 'SICK')
     const hasChildSick = summary.timeOffEntries.some(e => e.timeOffType === 'CHILD_SICK')
     const hasPersonal = summary.timeOffEntries.some(e => e.timeOffType === 'PERSONAL')
+    const hasEducation = summary.timeOffEntries.some(e => e.timeOffType === 'EDUCATION')
     const hasVacation = summary.timeOffEntries.some(e => e.timeOffType === 'VACATION')
     const hasPublicHoliday = summary.timeOffEntries.some(e => e.timeOffType === 'PUBLIC_HOLIDAY')
 
@@ -648,6 +652,7 @@ const getAdjacentDayEmojis = (day: number, type: 'prev' | 'next'): string[] => {
     if (hasSick) emojis.push('😵‍💫')
     if (hasChildSick) emojis.push('👩‍👧')
     if (hasPersonal) emojis.push('🏠')
+    if (hasEducation) emojis.push('📚')
 
     // For vacation, show regular emoji (half-day indication is in tooltip)
     if (hasVacation) {
@@ -1046,7 +1051,8 @@ const getDayDetails = (day: number | string): DayDetailRow[] => {
       'SICK': '😵‍💫',
       'CHILD_SICK': '👩‍👧',
       'PUBLIC_HOLIDAY': '🎊',
-      'PERSONAL': '🏠'
+      'PERSONAL': '🏠',
+      'EDUCATION': '📚'
     }
     return emojiMap[timeOffType] || '📅'
   }

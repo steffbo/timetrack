@@ -367,6 +367,7 @@ public class MonthlyReportPdfGenerator {
             case CHILD_SICK -> "Kind krank";
             case VACATION -> "Urlaub";
             case PUBLIC_HOLIDAY -> "Feiertag";
+            case EDUCATION -> "Fortbildung";
             default -> timeOffType.name();
         };
     }

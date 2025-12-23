@@ -36,6 +36,12 @@ public enum DayTypePrecedence {
     PERSONAL(4),
 
     /**
+     * Priority 4: Education/Training time off.
+     * Education days override recurring off-days, similar to personal days.
+     */
+    EDUCATION(4),
+
+    /**
      * Priority 5: Recurring off-day (e.g., every 2nd Monday).
      * Regularly scheduled off-days that repeat on a pattern.
      */

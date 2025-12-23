@@ -1699,7 +1699,7 @@ components:
           example: "2025-07-15"
         timeOffType:
           type: string
-          enum: [VACATION, SICK, CHILD_SICK, PERSONAL, PUBLIC_HOLIDAY]
+          enum: [VACATION, SICK, CHILD_SICK, PERSONAL, PUBLIC_HOLIDAY, EDUCATION]
           description: Type of time-off
         days:
           type: number
@@ -1740,7 +1740,7 @@ components:
           example: "2025-07-15"
         timeOffType:
           type: string
-          enum: [VACATION, SICK, CHILD_SICK, PERSONAL, PUBLIC_HOLIDAY]
+          enum: [VACATION, SICK, CHILD_SICK, PERSONAL, PUBLIC_HOLIDAY, EDUCATION]
           description: Type of time-off
         hoursPerDay:
           type: number
@@ -1765,7 +1765,7 @@ components:
           description: Last day of time-off (inclusive)
         timeOffType:
           type: string
-          enum: [VACATION, SICK, CHILD_SICK, PERSONAL, PUBLIC_HOLIDAY]
+          enum: [VACATION, SICK, CHILD_SICK, PERSONAL, PUBLIC_HOLIDAY, EDUCATION]
           description: Type of time-off
         hoursPerDay:
           type: number
