@@ -152,11 +152,11 @@ const dayTypeInfo = computed(() => {
   const timeOff = props.todaySummary?.timeOffEntries?.[0]
   if (timeOff) {
     const typeLabels: Record<string, { label: string; class: string }> = {
-      VACATION: { label: t('timeOff.types.VACATION'), class: 'type-vacation' },
-      SICK: { label: t('timeOff.types.SICK'), class: 'type-sick' },
-      CHILD_SICK: { label: t('timeOff.types.CHILD_SICK'), class: 'type-sick' },
-      PERSONAL: { label: t('timeOff.types.PERSONAL'), class: 'type-personal' },
-      PUBLIC_HOLIDAY: { label: t('timeOff.types.PUBLIC_HOLIDAY'), class: 'type-holiday' }
+      VACATION: { label: t('timeOff.type.VACATION'), class: 'type-vacation' },
+      SICK: { label: t('timeOff.type.SICK'), class: 'type-sick' },
+      CHILD_SICK: { label: t('timeOff.type.CHILD_SICK'), class: 'type-sick' },
+      PERSONAL: { label: t('timeOff.type.PERSONAL'), class: 'type-personal' },
+      PUBLIC_HOLIDAY: { label: t('timeOff.type.PUBLIC_HOLIDAY'), class: 'type-holiday' }
     }
     return typeLabels[timeOff.timeOffType || ''] || null
   }
