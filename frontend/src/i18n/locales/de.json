@@ -336,6 +336,7 @@
   "timeOff": {
     "title": "Abwesenheiten",
     "entries": "Abwesenheitseinträge",
+    "byType": "Abwesenheiten nach Typ",
     "statistics": "Abwesenheitsstatistik",
     "yearSelection": {
       "title": "Jahr auswählen",

@@ -336,6 +336,7 @@
   "timeOff": {
     "title": "Time Off",
     "entries": "Time Off Entries",
+    "byType": "Time Off by Type",
     "statistics": "Time Off Statistics",
     "yearSelection": {
       "title": "Year Selection",

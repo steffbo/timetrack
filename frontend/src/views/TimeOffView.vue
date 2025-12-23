@@ -6,14 +6,11 @@ import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
-import Tag from 'primevue/tag'
 import Message from 'primevue/message'
 import InputNumber from 'primevue/inputnumber'
-import DatePicker from '@/components/common/DatePicker.vue'
-import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import TimeOffQuickForm from '@/components/dashboard/TimeOffQuickForm.vue'
 import { TimeOffService, VacationBalanceService } from '@/api/generated'
-import type { TimeOffResponse, CreateTimeOffRequest, UpdateTimeOffRequest, VacationBalanceResponse, UpdateVacationBalanceRequest } from '@/api/generated'
+import type { TimeOffResponse, CreateTimeOffRequest, VacationBalanceResponse, UpdateVacationBalanceRequest } from '@/api/generated'
 import { useAuth } from '@/composables/useAuth'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { useUndoDelete } from '@/composables/useUndoDelete'
@@ -30,16 +27,14 @@ const timeOffToEdit = ref<TimeOffResponse | null>(null)
 
 const { deleteWithUndo } = useUndoDelete()
 
-// Date range filter
-const startDateFilter = ref<string>()
-const endDateFilter = ref<string>()
+// Year selection (replaces date range filter)
+const selectedYear = ref(new Date().getFullYear())
+const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i - 2)
 
 // Vacation balance
 const balance = ref<VacationBalanceResponse | null>(null)
 const balanceLoading = ref(false)
 const editBalanceDialogVisible = ref(false)
-const selectedYear = ref(new Date().getFullYear())
-const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i - 2)
 
 const editBalanceForm = ref<UpdateVacationBalanceRequest>({
   userId: currentUser.value?.id || 0,
@@ -49,9 +44,32 @@ const editBalanceForm = ref<UpdateVacationBalanceRequest>({
   adjustmentDays: 0.0
 })
 
-// Sick days statistics
-const sickDaysCount = ref(0)
-const childSickDaysCount = ref(0)
+// Time-off type statistics (calculated from loaded data)
+const timeOffByType = computed(() => {
+  const yearStart = new Date(selectedYear.value, 0, 1)
+  const yearEnd = new Date(selectedYear.value, 11, 31)
+  
+  const types = {
+    VACATION: 0,
+    SICK: 0,
+    CHILD_SICK: 0,
+    PERSONAL: 0,
+    EDUCATION: 0,
+    PUBLIC_HOLIDAY: 0
+  }
+  
+  timeOffs.value.forEach(entry => {
+    const entryDate = new Date(entry.startDate)
+    if (entryDate >= yearStart && entryDate <= yearEnd) {
+      const type = entry.timeOffType as keyof typeof types
+      if (type in types) {
+        types[type] += entry.days
+      }
+    }
+  })
+  
+  return types
+})
 
 
 const remainingDays = computed(() => {
@@ -62,6 +80,18 @@ const remainingDays = computed(() => {
 const totalAvailableDays = computed(() => {
   if (!balance.value) return 0
   return balance.value.annualAllowanceDays + balance.value.carriedOverDays + balance.value.adjustmentDays
+})
+
+// Progress bar percentages
+const usedPercentage = computed(() => {
+  if (!balance.value || totalAvailableDays.value === 0) return 0
+  return Math.min((balance.value.usedDays / totalAvailableDays.value) * 100, 100)
+})
+
+const plannedPercentage = computed(() => {
+  if (!balance.value || totalAvailableDays.value === 0) return 0
+  const futurePlanned = balance.value.plannedDays - balance.value.usedDays
+  return Math.min((futurePlanned / totalAvailableDays.value) * 100, 100 - usedPercentage.value)
 })
 
 const loadBalance = async () => {
@@ -77,50 +107,6 @@ const loadBalance = async () => {
     }
   } finally {
     balanceLoading.value = false
-  }
-}
-
-const calculateSickDays = (entries: TimeOffResponse[]) => {
-  try {
-    // Filter for entries in the selected year
-    const yearStart = new Date(selectedYear.value, 0, 1)
-    const yearEnd = new Date(selectedYear.value, 11, 31)
-
-    const sickEntries = entries.filter(entry => {
-      const entryDate = new Date(entry.startDate)
-      return entry.timeOffType === 'SICK' &&
-             entryDate >= yearStart &&
-             entryDate <= yearEnd
-    })
-
-    // Use the 'days' field which counts working days
-    const total = sickEntries.reduce((sum, entry) => sum + entry.days, 0)
-    sickDaysCount.value = total
-  } catch (error) {
-    handleError(error, 'Failed to calculate sick days', { logError: true })
-    sickDaysCount.value = 0
-  }
-}
-
-const calculateChildSickDays = (entries: TimeOffResponse[]) => {
-  try {
-    // Filter for entries in the selected year
-    const yearStart = new Date(selectedYear.value, 0, 1)
-    const yearEnd = new Date(selectedYear.value, 11, 31)
-
-    const childSickEntries = entries.filter(entry => {
-      const entryDate = new Date(entry.startDate)
-      return entry.timeOffType === 'CHILD_SICK' &&
-             entryDate >= yearStart &&
-             entryDate <= yearEnd
-    })
-
-    // Use the 'days' field which counts working days
-    const total = childSickEntries.reduce((sum, entry) => sum + entry.days, 0)
-    childSickDaysCount.value = total
-  } catch (error) {
-    handleError(error, 'Failed to calculate child sick days', { logError: true })
-    childSickDaysCount.value = 0
   }
 }
 
@@ -160,12 +146,7 @@ const saveBalance = async () => {
 
 const selectYear = async (year: number) => {
   selectedYear.value = year
-
-  // Update date filters to cover entire selected year
-  startDateFilter.value = `${selectedYear.value}-01-01`
-  endDateFilter.value = `${selectedYear.value}-12-31`
-
-  // Reload all data
+  // Reload all data for the selected year
   await loadBalance()
   await loadTimeOffs()
 }
@@ -173,28 +154,12 @@ const selectYear = async (year: number) => {
 const loadTimeOffs = async () => {
   loading.value = true
   try {
-    // Convert Date objects to strings if needed
-    const formatDateForApi = (date: any) => {
-      if (!date) return undefined
-      if (typeof date === 'string') return date
-      if (date instanceof Date) {
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const day = String(date.getDate()).padStart(2, '0')
-        return `${year}-${month}-${day}`
-      }
-      return undefined
-    }
-
-    const startDate = formatDateForApi(startDateFilter.value)
-    const endDate = formatDateForApi(endDateFilter.value)
+    // Load entries for the selected year
+    const startDate = `${selectedYear.value}-01-01`
+    const endDate = `${selectedYear.value}-12-31`
 
     const response = await TimeOffService.getTimeOffEntries(startDate, endDate)
     timeOffs.value = response
-
-    // Calculate sick days from the loaded data (no additional API calls)
-    calculateSickDays(response)
-    calculateChildSickDays(response)
   } catch (error: any) {
     handleError(error, t('timeOff.loadError'))
   } finally {
@@ -264,13 +229,15 @@ const getTypeLabel = (type: string) => {
   return option ? option.label : type
 }
 
-const getTypeSeverity = (type: string) => {
+const getTypeEmoji = (type: string) => {
   switch (type) {
-    case 'VACATION': return 'info'
-    case 'SICK': return 'danger'
-    case 'PERSONAL': return 'warning'
-    case 'PUBLIC_HOLIDAY': return 'success'
-    default: return 'secondary'
+    case 'VACATION': return '🏝️'
+    case 'SICK': return '😵‍💫'
+    case 'CHILD_SICK': return '👶'
+    case 'PERSONAL': return '🏠'
+    case 'EDUCATION': return '📚'
+    case 'PUBLIC_HOLIDAY': return '🎊'
+    default: return '📅'
   }
 }
 
@@ -283,20 +250,6 @@ const formatDisplayDate = (dateStr: string) => {
 }
 
 onMounted(() => {
-  // Default filter: entire current year
-  const now = new Date()
-  const yearStart = new Date(now.getFullYear(), 0, 1)
-  const yearEnd = new Date(now.getFullYear(), 11, 31)
-
-  const formatDate = (date: Date) => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
-  startDateFilter.value = formatDate(yearStart)
-  endDateFilter.value = formatDate(yearEnd)
   loadBalance()
   loadTimeOffs()
 })
@@ -306,136 +259,126 @@ onMounted(() => {
   <div class="time-off-view">
     <h1 class="page-title">{{ t('timeOff.title') }}</h1>
 
-    <!-- Statistics Container with Year Selection -->
-    <div class="stats-layout">
-      <!-- Year Selection Card -->
-      <div class="year-selection-card">
-        <div class="year-selection-content">
-          <div class="year-selection-info">
-            <h3>{{ t('timeOff.yearSelection.title') }}</h3>
-            <p class="year-selection-hint">{{ t('timeOff.yearSelection.hint') }}</p>
-          </div>
-          <div class="year-buttons">
-            <button
-              v-for="year in years"
-              :key="year"
-              :class="['year-btn', { active: selectedYear === year }]"
-              @click="selectYear(year)"
-            >
-              {{ year }}
-            </button>
-          </div>
-          <Button
-            v-if="balance"
-            :label="t('edit')"
-            icon="pi pi-pencil"
-            severity="secondary"
-            outlined
-            size="large"
-            @click="openEditBalanceDialog"
-            class="edit-balance-button"
-          />
-        </div>
+    <!-- Year Filter -->
+    <div class="filter-card">
+      <label class="filter-label">{{ t('publicHolidays.year') }}</label>
+      <div class="filter-buttons">
+        <button
+          v-for="year in years"
+          :key="year"
+          :class="['filter-btn', { active: selectedYear === year }]"
+          @click="selectYear(year)"
+        >
+          {{ year }}
+        </button>
       </div>
+    </div>
 
-      <!-- Statistics Cards -->
-      <div class="stats-container">
-        <div v-if="balanceLoading" class="flex justify-content-center align-items-center" style="height: 100%;">
-          <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+    <!-- Vacation Balance Summary with Progress Bar -->
+    <div v-if="balance" class="vacation-summary">
+      <div class="vacation-header">
+        <div class="vacation-main">
+          <span class="vacation-icon">🏝️</span>
+          <span class="vacation-value">{{ remainingDays.toFixed(1) }}</span>
+          <span class="vacation-label">{{ t('vacationBalance.leftForPlanning') }}</span>
         </div>
-
-        <div v-else-if="balance" class="stats-grid">
-          <!-- Vacation Cards -->
-          <div class="stat-card">
-            <div class="stat-label">{{ t('vacationBalance.annualAllowanceDays') }}</div>
-            <div class="stat-value">{{ balance.annualAllowanceDays.toFixed(1) }}</div>
-            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-          </div>
-
-          <div class="stat-card stat-planned">
-            <div class="stat-label">{{ t('vacationBalance.plannedDays') }}</div>
-            <div class="stat-value">{{ balance.plannedDays.toFixed(1) }}</div>
-            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-          </div>
-
-          <div class="stat-card stat-used">
-            <div class="stat-label">{{ t('vacationBalance.usedDays') }}</div>
-            <div class="stat-value">{{ balance.usedDays.toFixed(1) }}</div>
-            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-          </div>
-
-          <div class="stat-card stat-remaining">
-            <div class="stat-label">{{ t('vacationBalance.leftForPlanning') }}</div>
-            <div class="stat-value">{{ remainingDays.toFixed(1) }}</div>
-            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-label">{{ t('vacationBalance.carriedOverDays') }}</div>
-            <div class="stat-value">{{ balance.carriedOverDays.toFixed(1) }}</div>
-            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-label">{{ t('vacationBalance.adjustmentDays') }}</div>
-            <div class="stat-value">{{ balance.adjustmentDays.toFixed(1) }}</div>
-            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-          </div>
-
-          <!-- Sick Days Card -->
-          <div class="stat-card stat-sick">
-            <div class="stat-label">{{ t('timeOff.sickDaysThisYear') }}</div>
-            <div class="stat-value">{{ sickDaysCount.toFixed(1) }}</div>
-            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-          </div>
-
-          <!-- Child Sick Days Card -->
-          <div class="stat-card stat-sick">
-            <div class="stat-label">{{ t('timeOff.childSickDaysThisYear') }}</div>
-            <div class="stat-value">{{ childSickDaysCount.toFixed(1) }}</div>
-            <div class="stat-unit">{{ t('vacationBalance.days') }}</div>
-          </div>
+        <button 
+          class="vacation-edit-btn" 
+          @click="openEditBalanceDialog"
+          :title="t('vacationBalance.edit')"
+        >
+          <i class="pi pi-cog"></i>
+        </button>
+      </div>
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div 
+            class="progress-used" 
+            :style="{ width: usedPercentage + '%' }"
+          ></div>
+          <div 
+            class="progress-planned" 
+            :style="{ width: plannedPercentage + '%', left: usedPercentage + '%' }"
+          ></div>
         </div>
-
-        <div v-else class="text-center py-3 text-gray-500">
-          <i class="pi pi-info-circle text-2xl mb-2" />
-          <p class="text-sm">{{ t('vacationBalance.noData') }}</p>
+        <div class="progress-labels">
+          <span>{{ balance.usedDays.toFixed(1) }} {{ t('vacationBalance.usedDays') }}</span>
+          <span>{{ balance.plannedDays.toFixed(1) }} {{ t('vacationBalance.plannedDays') }}</span>
+          <span>{{ totalAvailableDays.toFixed(1) }} {{ t('dashboard.vacationBalance.total') }}</span>
         </div>
       </div>
     </div>
 
-    <!-- Time Off Entries -->
-    <div class="entries-container">
-      <div class="entries-header">
-        <h3>{{ t('timeOff.entries') }}</h3>
+    <!-- Time Off by Type -->
+    <div class="type-section">
+      <h3 class="section-title">{{ t('timeOff.byType') }}</h3>
+      <div v-if="loading" class="loading-state">
+        <i class="pi pi-spin pi-spinner"></i>
+      </div>
+      <div v-else class="type-grid">
+        <div class="type-card type-vacation">
+          <span class="type-emoji">🏝️</span>
+          <span class="type-label">{{ t('timeOff.type.VACATION') }}</span>
+          <span class="type-value">{{ timeOffByType.VACATION.toFixed(1) }}</span>
+        </div>
+        <div class="type-card type-sick">
+          <span class="type-emoji">😵‍💫</span>
+          <span class="type-label">{{ t('timeOff.type.SICK') }}</span>
+          <span class="type-value">{{ timeOffByType.SICK.toFixed(1) }}</span>
+        </div>
+        <div class="type-card type-child-sick">
+          <span class="type-emoji">👶</span>
+          <span class="type-label">{{ t('timeOff.type.CHILD_SICK') }}</span>
+          <span class="type-value">{{ timeOffByType.CHILD_SICK.toFixed(1) }}</span>
+        </div>
+        <div class="type-card type-personal">
+          <span class="type-emoji">🏠</span>
+          <span class="type-label">{{ t('timeOff.type.PERSONAL') }}</span>
+          <span class="type-value">{{ timeOffByType.PERSONAL.toFixed(1) }}</span>
+        </div>
+        <div class="type-card type-education">
+          <span class="type-emoji">📚</span>
+          <span class="type-label">{{ t('timeOff.type.EDUCATION') }}</span>
+          <span class="type-value">{{ timeOffByType.EDUCATION.toFixed(1) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time Off Entries List -->
+    <div class="entries-section">
+      <div class="section-header">
+        <h3 class="section-title">{{ t('timeOff.entries') }}</h3>
         <Button
           :label="t('timeOff.create')"
           icon="pi pi-plus"
+          size="small"
           @click="openCreateDialog"
         />
       </div>
 
-      <div class="filters">
-        <DateRangeFilter
-          v-model:start-date="startDateFilter"
-          v-model:end-date="endDateFilter"
-          @filter="loadTimeOffs"
-        />
+      <div v-if="loading" class="loading-state">
+        <i class="pi pi-spin pi-spinner"></i>
+      </div>
+
+      <div v-else-if="timeOffs.length === 0" class="empty-state">
+        {{ t('timeOff.noData') }}
       </div>
 
       <DataTable
+        v-else
         :value="timeOffs"
         :loading="loading"
         striped-rows
         responsive-layout="scroll"
         sort-field="startDate"
         :sort-order="-1"
+        class="time-off-table"
       >
         <Column field="timeOffType" :header="t('timeOff.type.label')">
           <template #body="{ data }">
-            <Tag :severity="getTypeSeverity(data.timeOffType)">
-              {{ getTypeLabel(data.timeOffType) }}
-            </Tag>
+            <span class="type-badge" :class="'type-' + data.timeOffType.toLowerCase().replace('_', '-')">
+              {{ getTypeEmoji(data.timeOffType) }} {{ getTypeLabel(data.timeOffType) }}
+            </span>
           </template>
         </Column>
         <Column field="startDate" :header="t('timeOff.startDate')" sortable>
@@ -453,11 +396,6 @@ onMounted(() => {
             {{ typeof data.days === 'number' ? data.days.toFixed(1) : data.days }}
           </template>
         </Column>
-        <Column field="hoursPerDay" :header="t('timeOff.hoursPerDay')">
-          <template #body="{ data }">
-            {{ data.hoursPerDay ? data.hoursPerDay.toFixed(1) + 'h' : '-' }}
-          </template>
-        </Column>
         <Column field="notes" :header="t('timeOff.notes')">
           <template #body="{ data }">
             {{ data.notes || '-' }}
@@ -465,18 +403,19 @@ onMounted(() => {
         </Column>
         <Column :header="t('actions')">
           <template #body="{ data }">
-            <div class="flex gap-2">
+            <div class="action-buttons">
               <Button
                 icon="pi pi-pencil"
                 text
                 rounded
-                severity="info"
+                size="small"
                 @click="openEditDialog(data)"
               />
               <Button
                 icon="pi pi-trash"
                 text
                 rounded
+                size="small"
                 severity="danger"
                 @click="deleteTimeOff(data)"
               />
@@ -484,10 +423,6 @@ onMounted(() => {
           </template>
         </Column>
       </DataTable>
-
-      <div v-if="timeOffs.length === 0 && !loading" class="text-center py-4 text-gray-500">
-        {{ t('timeOff.noData') }}
-      </div>
     </div>
 
     <!-- Create/Edit Dialog -->
@@ -500,7 +435,7 @@ onMounted(() => {
     <!-- Edit Vacation Balance Dialog -->
     <Dialog
       v-model:visible="editBalanceDialogVisible"
-      :header="t('vacationBalance.edit')"
+      :header="t('vacationBalance.edit') + ' ' + selectedYear"
       :modal="true"
       :style="{ width: '90vw', maxWidth: '550px' }"
       :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
@@ -567,300 +502,469 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Using shared layout, form, and stat-card styles */
 .time-off-view {
   padding: var(--tt-view-padding);
 }
 
-/* Main Statistics Layout - 6 columns: 2 for year selection, 4 for stats */
-.stats-layout {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-auto-rows: minmax(120px, auto);
-  gap: var(--tt-spacing-sm);
-  margin-bottom: var(--tt-spacing-lg);
+.page-title {
+  margin: 0 0 1rem 0;
 }
 
-/* Year Selection Card - Takes 2 columns, 2 rows high */
-.year-selection-card {
-  grid-column: span 2;
-  grid-row: span 2;
-  background: linear-gradient(135deg, var(--tt-cyan-from) 0%, var(--tt-cyan-to) 100%);
-  border-radius: var(--tt-radius-sm);
-  padding: var(--tt-spacing-md);
-  box-shadow: var(--tt-shadow-sm);
+/* Year Filter - inline compact */
+.filter-card {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.year-selection-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--tt-spacing-sm);
-}
-
-.year-selection-info h3 {
-  margin: 0 0 var(--tt-spacing-xs) 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: white;
-}
-
-.year-selection-hint {
-  margin: 0 0 var(--tt-spacing-sm) 0;
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.95);
-  line-height: 1.4;
-}
-
-.year-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.year-btn {
-  padding: 0.625rem 1.25rem;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-surface-border);
   border-radius: 0.5rem;
-  color: white;
-  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.filter-label {
   font-weight: 600;
+  color: var(--p-text-color);
+  font-size: 0.8125rem;
+}
+
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.filter-btn {
+  padding: 0.375rem 0.75rem;
+  background: var(--p-surface-50);
+  border: 1px solid var(--p-surface-border);
+  border-radius: 0.375rem;
+  color: var(--p-text-color);
+  font-size: 0.8125rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.year-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.6);
-  transform: translateY(-1px);
+.filter-btn:hover {
+  background: var(--p-surface-100);
+  border-color: var(--p-primary-color);
 }
 
-.year-btn.active {
-  background: white;
-  border-color: white;
-  color: var(--tt-cyan-to);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-}
-
-.edit-balance-button {
-  width: 100%;
-  margin-top: var(--tt-spacing-xs);
-  background: white;
-  border: none;
-  color: var(--tt-cyan-to);
+.filter-btn.active {
+  background: var(--p-primary-color);
+  border-color: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
   font-weight: 600;
 }
 
-.edit-balance-button:hover {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--tt-cyan-to);
+/* Vacation Summary with Progress Bar */
+.vacation-summary {
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-surface-border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
 }
 
-/* Statistics Container - Spans remaining 4 columns, 2 rows */
-.stats-container {
-  grid-column: span 4;
-  grid-row: span 2;
+.vacation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.vacation-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.vacation-icon {
+  font-size: 1.25rem;
+}
+
+.vacation-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--tt-emerald-from);
+  line-height: 1;
+}
+
+.vacation-label {
+  font-size: 0.8125rem;
+  color: var(--tt-text-secondary);
+}
+
+.vacation-edit-btn {
+  background: transparent;
+  border: none;
+  color: var(--tt-text-secondary);
+  cursor: pointer;
+  padding: 0.375rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.vacation-edit-btn:hover {
+  background: var(--p-surface-100);
+  color: var(--p-primary-color);
+}
+
+/* Progress bar - matching VacationBalanceCard */
+.progress-container {
   display: flex;
   flex-direction: column;
+  gap: 0.375rem;
 }
 
-.stats-grid {
+.progress-bar {
+  position: relative;
+  height: 8px;
+  background: var(--tt-bg-light);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-used {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--tt-emerald-from) 0%, var(--tt-emerald-to) 100%);
+  border-radius: 4px 0 0 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-planned {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(16, 185, 129, 0.3);
+  transition: width 0.3s ease, left 0.3s ease;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  color: var(--tt-text-secondary);
+}
+
+/* Type Section */
+.type-section {
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-surface-border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  margin: 0 0 0.625rem 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--tt-text-primary);
+}
+
+/* Type breakdown grid */
+.type-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: var(--tt-spacing-sm);
-  flex: 1;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
 }
 
-/* Override stat card sizing to be more compact */
-.stat-card {
-  padding: 0.5rem 0.75rem;
-  min-height: 0;
+.type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0.375rem;
+  border-radius: 0.375rem;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.stat-label {
-  font-size: 0.75rem;
-  margin-bottom: 0.25rem;
+.type-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--tt-shadow-sm);
 }
 
-.stat-value {
-  font-size: 1.5rem;
+.type-emoji {
+  font-size: 1.25rem;
+  margin-bottom: 0.125rem;
+}
+
+.type-label {
+  font-size: 0.6875rem;
+  color: var(--tt-text-secondary);
+  text-align: center;
   margin-bottom: 0.125rem;
   line-height: 1.2;
 }
 
-.stat-unit {
-  font-size: 0.875rem;
-  color: #9ca3af;
-  font-weight: 500;
+.type-value {
+  font-size: 1rem;
+  font-weight: 700;
 }
 
-/* Entries Container - matches dashboard pattern */
-.entries-container {
-  background: white;
-  border-radius: var(--tt-radius-md);
-  padding: var(--tt-card-padding);
-  box-shadow: var(--tt-shadow-sm);
+/* Type card color variants */
+.type-card.type-vacation {
+  background: var(--tt-row-bg-vacation);
+}
+.type-card.type-vacation .type-value {
+  color: var(--tt-emerald-to);
 }
 
-.entries-header {
+.type-card.type-sick {
+  background: var(--tt-row-bg-sick);
+}
+.type-card.type-sick .type-value {
+  color: var(--tt-coral-to);
+}
+
+.type-card.type-child-sick {
+  background: var(--tt-row-bg-sick);
+}
+.type-card.type-child-sick .type-value {
+  color: var(--tt-coral-to);
+}
+
+.type-card.type-personal {
+  background: var(--tt-row-bg-personal);
+}
+.type-card.type-personal .type-value {
+  color: var(--tt-cyan-to);
+}
+
+.type-card.type-education {
+  background: var(--tt-row-bg-education);
+}
+.type-card.type-education .type-value {
+  color: #6366f1;
+}
+
+/* Entries Section */
+.entries-section {
+  background: var(--p-surface-0);
+  border: 1px solid var(--p-surface-border);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--tt-spacing-lg);
+  margin-bottom: 0.625rem;
 }
 
-.entries-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1f2937;
+/* Table styling */
+.time-off-table {
+  font-size: 0.875rem;
 }
 
-/* Time-off specific stat colors - 60-30-10 Rule Applied */
-
-/* 60% - Most cards: Light backgrounds with subtle accents (neutral) */
-.stat-card {
-  background: white;
-  border-left: 4px solid var(--tt-slate-to);
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
-.stat-card .stat-label {
-  color: var(--tt-color-30-tertiary);
+.type-badge.type-vacation {
+  background: var(--tt-row-bg-vacation);
+  color: var(--tt-emerald-to);
 }
 
-.stat-card .stat-value {
-  color: var(--tt-color-30-primary);
-}
-
-.stat-card .stat-unit {
-  color: var(--tt-color-30-tertiary);
-}
-
-/* 30% - Secondary emphasis cards: Subtle colored backgrounds */
-.stat-card.stat-planned {
-  background: rgba(20, 184, 166, 0.08);
-  border-left: 4px solid var(--tt-teal-to);
-}
-
-.stat-card.stat-planned .stat-value {
-  color: var(--tt-teal-to);
-}
-
-.stat-card.stat-used {
-  background: rgba(249, 115, 22, 0.08);
-  border-left: 4px solid var(--tt-coral-to);
-}
-
-.stat-card.stat-used .stat-value {
+.type-badge.type-sick {
+  background: var(--tt-row-bg-sick);
   color: var(--tt-coral-to);
 }
 
-.stat-card.stat-sick {
-  background: rgba(249, 115, 22, 0.08);
-  border-left: 4px solid var(--tt-coral-to);
-}
-
-.stat-card.stat-sick .stat-value {
+.type-badge.type-child-sick {
+  background: var(--tt-row-bg-sick);
   color: var(--tt-coral-to);
 }
 
-/* 10% - Accent card: Bold gradient for the most important metric */
-.stat-card.stat-remaining {
-  background: linear-gradient(135deg, var(--tt-lime-from) 0%, var(--tt-lime-to) 100%);
-  border-left: none;
+.type-badge.type-personal {
+  background: var(--tt-row-bg-personal);
+  color: var(--tt-cyan-to);
 }
 
-.stat-card.stat-remaining .stat-label,
-.stat-card.stat-remaining .stat-value,
-.stat-card.stat-remaining .stat-unit {
-  color: white;
+.type-badge.type-education {
+  background: var(--tt-row-bg-education);
+  color: #6366f1;
 }
 
-.year-select {
-  min-width: 120px;
+.type-badge.type-public-holiday {
+  background: var(--tt-row-bg-public-holiday);
+  color: var(--tt-yellow-to);
 }
 
-.filters {
-  margin-bottom: var(--tt-spacing-md);
+.action-buttons {
+  display: flex;
+  gap: 0.125rem;
 }
 
+/* Empty and loading states */
+.loading-state,
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+  color: var(--tt-text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Dialog styles */
 .field small {
   display: block;
   margin-top: 0.25rem;
   color: #6c757d;
 }
 
-/* Responsive adjustments */
-@media (max-width: 1200px) {
-  .stats-layout {
-    grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr);
-    grid-auto-rows: auto;
-  }
-
-  .year-selection-card,
-  .stats-container {
-    grid-column: auto;
-    grid-row: auto;
-  }
-
-  .stats-grid {
+/* Responsive */
+@media (max-width: 1024px) {
+  .type-grid {
     grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 992px) {
-  .stats-layout {
-    grid-template-columns: minmax(220px, 1fr) minmax(0, 1.6fr);
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
   .time-off-view {
-    padding: var(--tt-view-padding-mobile);
+    padding: 0.75rem;
   }
 
-  .stats-layout {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
+  .page-title {
+    font-size: 1.375rem;
+    margin-bottom: 0.75rem;
   }
 
-  .year-selection-card {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .stats-container {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: auto;
-  }
-
-  .entries-header {
+  .filter-card {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--tt-spacing-sm);
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .vacation-summary {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .vacation-value {
+    font-size: 1.5rem;
+  }
+
+  .type-section {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .type-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.375rem;
+  }
+
+  .type-card {
+    padding: 0.375rem 0.25rem;
+  }
+
+  .type-emoji {
+    font-size: 1.125rem;
+  }
+
+  .type-value {
+    font-size: 0.875rem;
+  }
+
+  .entries-section {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
   }
 }
 
 @media (max-width: 480px) {
   .time-off-view {
-    padding: var(--tt-view-padding-xs);
+    padding: 0.5rem;
   }
 
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .page-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .filter-card {
+    padding: 0.5rem;
+  }
+
+  .filter-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .vacation-summary {
+    padding: 0.5rem;
+  }
+
+  .vacation-icon {
+    font-size: 1rem;
+  }
+
+  .vacation-value {
+    font-size: 1.375rem;
+  }
+
+  .vacation-label {
+    font-size: 0.75rem;
+  }
+
+  .progress-labels {
+    font-size: 0.625rem;
+  }
+
+  .type-section {
+    padding: 0.5rem;
+  }
+
+  .section-title {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .type-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.25rem;
+  }
+
+  .type-card {
+    padding: 0.375rem 0.25rem;
+  }
+
+  .type-emoji {
+    font-size: 1rem;
+  }
+
+  .type-label {
+    font-size: 0.625rem;
+  }
+
+  .type-value {
+    font-size: 0.8125rem;
+  }
+
+  .entries-section {
+    padding: 0.5rem;
+  }
+
+  .loading-state,
+  .empty-state {
+    padding: 1rem;
   }
 }
 </style>
