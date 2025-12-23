@@ -249,6 +249,11 @@ const formatDisplayDate = (dateStr: string) => {
   return `${day}.${month}.${year}`
 }
 
+// Format days: show whole number if x.0, otherwise one decimal
+const formatDays = (value: number) => {
+  return value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)
+}
+
 onMounted(() => {
   loadBalance()
   loadTimeOffs()
@@ -279,7 +284,7 @@ onMounted(() => {
       <div class="vacation-header">
         <div class="vacation-main">
           <span class="vacation-icon">🏝️</span>
-          <span class="vacation-value">{{ remainingDays.toFixed(1) }}</span>
+          <span class="vacation-value">{{ formatDays(remainingDays) }}</span>
           <span class="vacation-label">{{ t('vacationBalance.leftForPlanning') }}</span>
         </div>
         <button 
@@ -302,9 +307,9 @@ onMounted(() => {
           ></div>
         </div>
         <div class="progress-labels">
-          <span>{{ balance.usedDays.toFixed(1) }} {{ t('vacationBalance.usedDays') }}</span>
-          <span>{{ balance.plannedDays.toFixed(1) }} {{ t('vacationBalance.plannedDays') }}</span>
-          <span>{{ totalAvailableDays.toFixed(1) }} {{ t('dashboard.vacationBalance.total') }}</span>
+          <span>{{ formatDays(balance.usedDays) }} {{ t('vacationBalance.usedDays') }}</span>
+          <span>{{ formatDays(balance.plannedDays) }} {{ t('vacationBalance.plannedDays') }}</span>
+          <span>{{ formatDays(totalAvailableDays) }} {{ t('dashboard.vacationBalance.total') }}</span>
         </div>
       </div>
     </div>
@@ -319,27 +324,27 @@ onMounted(() => {
         <div class="type-card type-vacation">
           <span class="type-emoji">🏝️</span>
           <span class="type-label">{{ t('timeOff.type.VACATION') }}</span>
-          <span class="type-value">{{ timeOffByType.VACATION.toFixed(1) }}</span>
+          <span class="type-value">{{ formatDays(timeOffByType.VACATION) }}</span>
         </div>
         <div class="type-card type-sick">
           <span class="type-emoji">😵‍💫</span>
           <span class="type-label">{{ t('timeOff.type.SICK') }}</span>
-          <span class="type-value">{{ timeOffByType.SICK.toFixed(1) }}</span>
+          <span class="type-value">{{ formatDays(timeOffByType.SICK) }}</span>
         </div>
         <div class="type-card type-child-sick">
           <span class="type-emoji">👶</span>
           <span class="type-label">{{ t('timeOff.type.CHILD_SICK') }}</span>
-          <span class="type-value">{{ timeOffByType.CHILD_SICK.toFixed(1) }}</span>
+          <span class="type-value">{{ formatDays(timeOffByType.CHILD_SICK) }}</span>
         </div>
         <div class="type-card type-personal">
           <span class="type-emoji">🏠</span>
           <span class="type-label">{{ t('timeOff.type.PERSONAL') }}</span>
-          <span class="type-value">{{ timeOffByType.PERSONAL.toFixed(1) }}</span>
+          <span class="type-value">{{ formatDays(timeOffByType.PERSONAL) }}</span>
         </div>
         <div class="type-card type-education">
           <span class="type-emoji">📚</span>
           <span class="type-label">{{ t('timeOff.type.EDUCATION') }}</span>
-          <span class="type-value">{{ timeOffByType.EDUCATION.toFixed(1) }}</span>
+          <span class="type-value">{{ formatDays(timeOffByType.EDUCATION) }}</span>
         </div>
       </div>
     </div>
@@ -393,7 +398,7 @@ onMounted(() => {
         </Column>
         <Column field="days" :header="t('timeOff.days')">
           <template #body="{ data }">
-            {{ typeof data.days === 'number' ? data.days.toFixed(1) : data.days }}
+            {{ typeof data.days === 'number' ? formatDays(data.days) : data.days }}
           </template>
         </Column>
         <Column field="notes" :header="t('timeOff.notes')">
