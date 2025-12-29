@@ -47,6 +47,7 @@ public class TimeOffMapper {
 
         response.setHoursPerDay(entity.getHoursPerDay() != null ? entity.getHoursPerDay().doubleValue() : null);
         response.setNotes(entity.getNotes());
+        response.setConfirmed(entity.getConfirmed());
         response.setCreatedAt(MapperUtils.toOffsetDateTime(entity.getCreatedAt()));
         response.setUpdatedAt(MapperUtils.toOffsetDateTime(entity.getUpdatedAt()));
         return response;
@@ -61,6 +62,7 @@ public class TimeOffMapper {
         entity.setTimeOffType(TimeOffType.valueOf(request.getTimeOffType().getValue()));
         entity.setHoursPerDay(request.getHoursPerDay() != null ? BigDecimal.valueOf(request.getHoursPerDay()) : null);
         entity.setNotes(request.getNotes());
+        entity.setConfirmed(request.getConfirmed() != null ? request.getConfirmed() : false);
     }
 
     /**
@@ -81,6 +83,9 @@ public class TimeOffMapper {
         }
         if (request.getNotes() != null) {
             entity.setNotes(request.getNotes());
+        }
+        if (request.getConfirmed() != null) {
+            entity.setConfirmed(request.getConfirmed());
         }
     }
 }

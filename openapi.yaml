@@ -1714,6 +1714,10 @@ components:
         notes:
           type: string
           description: Optional notes about this time-off
+        confirmed:
+          type: boolean
+          description: Whether this time-off has been confirmed by the employer
+          default: false
         createdAt:
           type: string
           format: date-time
@@ -1751,6 +1755,10 @@ components:
           type: string
           description: Optional notes about this time-off
           example: "Summer vacation"
+        confirmed:
+          type: boolean
+          description: Whether this time-off has been confirmed by the employer
+          default: false
 
     UpdateTimeOffRequest:
       type: object
@@ -1774,6 +1782,9 @@ components:
         notes:
           type: string
           description: Optional notes about this time-off
+        confirmed:
+          type: boolean
+          description: Whether this time-off has been confirmed by the employer
 
     VacationBalanceResponse:
       type: object

@@ -60,6 +60,19 @@
           :placeholder="t('timeOff.notesPlaceholder')"
         />
       </div>
+
+      <div class="field-checkbox">
+        <label for="confirmed" class="field-label">
+          <input 
+            type="checkbox" 
+            id="confirmed" 
+            v-model="formData.confirmed"
+            class="checkbox-input"
+          />
+          <span>{{ t('timeOff.confirmed') }}</span>
+        </label>
+        <small>{{ t('timeOff.confirmedHint') }}</small>
+      </div>
     </div>
 
     <template #footer>
@@ -134,7 +147,8 @@ const isEditMode = computed(() => !!props.timeOff)
 const formData = ref({
   timeOffType: 'VACATION' as any,
   hoursPerDay: undefined as number | undefined,
-  notes: ''
+  notes: '',
+  confirmed: false
 })
 
 // Initialize form with selected date or existing time-off
@@ -149,7 +163,8 @@ const initializeForm = () => {
     formData.value = {
       timeOffType: props.timeOff.timeOffType,
       hoursPerDay: props.timeOff.hoursPerDay,
-      notes: props.timeOff.notes || ''
+      notes: props.timeOff.notes || '',
+      confirmed: props.timeOff.confirmed || false
     }
   } else if (props.selectedDate) {
     // Create mode with selected date
@@ -160,7 +175,8 @@ const initializeForm = () => {
     formData.value = {
       timeOffType: 'VACATION',
       hoursPerDay: undefined,
-      notes: ''
+      notes: '',
+      confirmed: false
     }
   } else {
     // Create mode without selected date
@@ -170,7 +186,8 @@ const initializeForm = () => {
     formData.value = {
       timeOffType: 'VACATION',
       hoursPerDay: undefined,
-      notes: ''
+      notes: '',
+      confirmed: false
     }
   }
 }
@@ -226,7 +243,8 @@ const handleSave = async () => {
       startDate: formatDateISO(dateRange.value[0]),
       endDate: formatDateISO(dateRange.value[1]),
       hoursPerDay: formData.value.hoursPerDay,
-      notes: formData.value.notes || undefined
+      notes: formData.value.notes || undefined,
+      confirmed: formData.value.confirmed
     }
 
     if (isEditMode.value && props.timeOff?.id) {
@@ -294,13 +312,13 @@ const handleSave = async () => {
 
 .type-buttons {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
 }
 
 @media (max-width: 640px) {
   .type-buttons {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -308,20 +326,20 @@ const handleSave = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
+  gap: 0.25rem;
+  padding: 0.5rem 0.375rem;
   background: var(--p-surface-50);
   border: 2px solid var(--p-surface-border);
-  border-radius: 0.5rem;
+  border-radius: 0.375rem;
   color: var(--p-text-color);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .type-btn i {
-  font-size: 1.5rem;
+  font-size: 1.125rem;
   color: var(--p-text-muted-color);
   transition: color 0.2s;
 }
@@ -345,4 +363,35 @@ const handleSave = async () => {
 .type-btn.active i {
   color: var(--p-primary-contrast-color);
 }
+
+.field-checkbox {
+  margin-bottom: 1.25rem;
+}
+
+.field-checkbox .field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+  font-size: 0.875rem;
+  cursor: pointer;
+  margin-bottom: 0.25rem;
+}
+
+.checkbox-input {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: var(--p-primary-color);
+}
+
+.field-checkbox small {
+  display: block;
+  margin-left: 2rem;
+  margin-top: 0.25rem;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
 </style>

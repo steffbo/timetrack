@@ -63,6 +63,14 @@ public class TimeOff {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    /**
+     * Whether this time-off has been confirmed by the employer.
+     * Default is false (unconfirmed).
+     */
+    @Column(name = "confirmed", nullable = false)
+    @Builder.Default
+    private Boolean confirmed = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

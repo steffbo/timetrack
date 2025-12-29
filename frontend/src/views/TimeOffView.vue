@@ -205,7 +205,8 @@ const deleteTimeOff = async (timeOff: TimeOffResponse) => {
         startDate: item.startDate,
         endDate: item.endDate,
         hoursPerDay: item.hoursPerDay,
-        notes: item.notes
+        notes: item.notes,
+        confirmed: item.confirmed
       }
       await TimeOffService.createTimeOff(createRequest)
     },
@@ -404,6 +405,13 @@ onMounted(() => {
         <Column field="notes" :header="t('timeOff.notes')">
           <template #body="{ data }">
             {{ data.notes || '-' }}
+          </template>
+        </Column>
+        <Column field="confirmed" :header="t('timeOff.confirmed')">
+          <template #body="{ data }">
+            <span :class="['status-badge', data.confirmed ? 'status-confirmed' : 'status-unconfirmed']">
+              {{ data.confirmed ? '✓ ' + t('timeOff.confirmedStatus') : '⏳ ' + t('timeOff.unconfirmedStatus') }}
+            </span>
           </template>
         </Column>
         <Column :header="t('actions')">
@@ -810,6 +818,25 @@ onMounted(() => {
 .action-buttons {
   display: flex;
   gap: 0.125rem;
+}
+
+/* Status badges */
+.status-badge {
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.status-confirmed {
+  background: var(--tt-row-bg-vacation);
+  color: var(--tt-emerald-to);
+}
+
+.status-unconfirmed {
+  background: var(--p-surface-100);
+  color: var(--p-text-muted-color);
 }
 
 /* Empty and loading states */
