@@ -3,11 +3,13 @@ package cc.remer.timetrack.config;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Web MVC configuration for serving the Vue.js SPA.
@@ -23,10 +25,22 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        CacheControl immutableCache = CacheControl.maxAge(365, TimeUnit.DAYS)
+                .cachePublic()
+                .immutable();
+        CacheControl noCache = CacheControl.noCache().mustRevalidate();
+
+        registry.addResourceHandler("/assets/**")
+                .addResourceLocations("file:/app/static/assets/", "classpath:/static/assets/")
+                .setCacheControl(immutableCache)
+                .resourceChain(true)
+                .addResolver(new PathResourceResolver());
+
         // Serve static resources from both classpath:/static/ and file:/app/static/
         // This allows the app to work both in development (classpath) and production (external directory)
         registry.addResourceHandler("/**")
                 .addResourceLocations("file:/app/static/", "classpath:/static/")
+                .setCacheControl(noCache)
                 .resourceChain(true)
                 .addResolver(new PathResourceResolver() {
                     @Override
