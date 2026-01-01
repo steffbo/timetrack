@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -29,6 +30,7 @@ public class VacationBalanceService {
     private final TimeOffRepository timeOffRepository;
     private final UserRepository userRepository;
     private final WorkingDaysCalculator workingDaysCalculator;
+    private final Clock clock;
 
     private static final BigDecimal DEFAULT_ANNUAL_ALLOWANCE_DAYS = new BigDecimal("30.0");
 
@@ -50,7 +52,7 @@ public class VacationBalanceService {
         // Get all VACATION time-off entries for the year
         LocalDate yearStart = LocalDate.of(year, 1, 1);
         LocalDate yearEnd = LocalDate.of(year, 12, 31);
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
 
         List<TimeOff> vacationEntries = timeOffRepository.findByUserIdAndTypeAndYear(
                 userId, TimeOffType.VACATION, yearStart, yearEnd);

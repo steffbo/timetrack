@@ -1,8 +1,16 @@
 package cc.remer.timetrack.usecase.vacationbalance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.time.LocalDate;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import cc.remer.timetrack.adapter.persistence.RepositoryTestBase;
-import cc.remer.timetrack.adapter.persistence.UserRepository;
-import cc.remer.timetrack.adapter.persistence.VacationBalanceRepository;
 import cc.remer.timetrack.api.model.CreateTimeOffRequest;
 import cc.remer.timetrack.api.model.TimeOffResponse;
 import cc.remer.timetrack.api.model.UpdateVacationBalanceRequest;
@@ -10,20 +18,8 @@ import cc.remer.timetrack.api.model.VacationBalanceResponse;
 import cc.remer.timetrack.domain.user.GermanState;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
-import cc.remer.timetrack.domain.vacationbalance.VacationBalance;
 import cc.remer.timetrack.usecase.timeoff.CreateTimeOff;
 import cc.remer.timetrack.usecase.timeoff.DeleteTimeOff;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.Year;
-
-import static org.assertj.core.api.Assertions.*;
 
 /**
  * Integration tests for vacation balance use cases.
@@ -60,7 +56,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
     @DisplayName("Should get vacation balance for current year")
     void shouldGetVacationBalanceForCurrentYear() {
         // Arrange
-        int currentYear = Year.now().getValue();
+        int currentYear = 2025;
         createVacationBalance(testUser, currentYear, 30.0, 5.0, 2.0, 0.0);
 
         // Create vacation time-off entries
@@ -346,7 +342,8 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Act
         createTimeOff.execute(testUser.getId(), request);
 
-        // Assert - Vacation balance should be created with default 30 days and 5 working days used
+        // Assert - Vacation balance should be created with default 30 days and 5
+        // working days used
         VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
         assertThat(balance).isNotNull();
         assertThat(balance.getAnnualAllowanceDays()).isEqualTo(30.0);
@@ -384,7 +381,8 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
 
         // Create vacation around New Year (includes Jan 1, 2025 = public holiday)
         // Dec 30, 2024 - Jan 2, 2025 = 4 calendar days
-        // But Dec 30 is 2024, so only count Jan 2 = 1 working day (Jan 1 is holiday, weekends excluded)
+        // But Dec 30 is 2024, so only count Jan 2 = 1 working day (Jan 1 is holiday,
+        // weekends excluded)
         CreateTimeOffRequest request = new CreateTimeOffRequest();
         request.setStartDate(LocalDate.of(2025, 1, 1)); // Wednesday (New Year - holiday)
         request.setEndDate(LocalDate.of(2025, 1, 3)); // Friday
@@ -393,7 +391,8 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Act
         createTimeOff.execute(testUser.getId(), request);
 
-        // Assert - Jan 1 (holiday) should not be counted, only Jan 2-3 (Thu-Fri) = 2 working days
+        // Assert - Jan 1 (holiday) should not be counted, only Jan 2-3 (Thu-Fri) = 2
+        // working days
         VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
         assertThat(balance.getUsedDays()).isEqualTo(2.0); // 2 working days (Jan 2-3)
         assertThat(balance.getRemainingDays()).isEqualTo(28.0); // 30 - 2 = 28
@@ -412,8 +411,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
                 2, // Every 2 weeks
                 LocalDate.of(2025, 1, 6),
                 LocalDate.of(2025, 1, 1),
-                "Recurring Monday off"
-        );
+                "Recurring Monday off");
 
         // Create vacation Jan 6-9, 2025 (Mon-Thu)
         // Jan 6 is a recurring off-day, so should only count Jan 7-9 = 3 working days
@@ -425,7 +423,8 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Act
         createTimeOff.execute(testUser.getId(), request);
 
-        // Assert - Jan 6 should not be counted (recurring off-day), only Jan 7-9 = 3 working days
+        // Assert - Jan 6 should not be counted (recurring off-day), only Jan 7-9 = 3
+        // working days
         VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
         assertThat(balance.getUsedDays()).isEqualTo(3.0); // 3 working days (Jan 7-9)
         assertThat(balance.getRemainingDays()).isEqualTo(27.0); // 30 - 3 = 27
@@ -444,7 +443,8 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
         createTimeOff.execute(testUser.getId(), vacationRequest);
 
-        // Create a sick day within the vacation period: Jan 9-10, 2025 (Thu-Fri = 2 working days)
+        // Create a sick day within the vacation period: Jan 9-10, 2025 (Thu-Fri = 2
+        // working days)
         CreateTimeOffRequest sickRequest = new CreateTimeOffRequest();
         sickRequest.setStartDate(LocalDate.of(2025, 1, 9)); // Thursday
         sickRequest.setEndDate(LocalDate.of(2025, 1, 10)); // Friday
@@ -472,7 +472,8 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         vacationRequest.setTimeOffType(CreateTimeOffRequest.TimeOffTypeEnum.VACATION);
         createTimeOff.execute(testUser.getId(), vacationRequest);
 
-        // Create personal days within the vacation period: Feb 10-12, 2025 (Mon-Wed = 3 working days)
+        // Create personal days within the vacation period: Feb 10-12, 2025 (Mon-Wed = 3
+        // working days)
         CreateTimeOffRequest personalRequest = new CreateTimeOffRequest();
         personalRequest.setStartDate(LocalDate.of(2025, 2, 10)); // Monday
         personalRequest.setEndDate(LocalDate.of(2025, 2, 12)); // Wednesday
@@ -482,7 +483,8 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Act
         VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
 
-        // Assert - Only 12 working days should be counted as vacation (15 - 3 personal days)
+        // Assert - Only 12 working days should be counted as vacation (15 - 3 personal
+        // days)
         assertThat(balance.getUsedDays()).isEqualTo(12.0); // 15 - 3 personal days = 12 vacation days
         assertThat(balance.getRemainingDays()).isEqualTo(18.0); // 30 - 12 = 18
     }
@@ -500,8 +502,7 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
                 1, // Every week
                 LocalDate.of(2025, 2, 5),
                 LocalDate.of(2025, 2, 1),
-                "Wednesday off"
-        );
+                "Wednesday off");
 
         // Create a 3-week vacation: Feb 3-21, 2025
         // Total calendar days: 19 days
@@ -536,15 +537,15 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Arrange - Create vacation balance for 2025
         createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
 
-        // Create a recurring off-day for only Dec 22 (Monday) - use 5-week interval to avoid Dec 29
+        // Create a recurring off-day for only Dec 22 (Monday) - use 5-week interval to
+        // avoid Dec 29
         createRecurringOffDay(
                 testUser,
                 1, // Monday
                 5, // Every 5 weeks (so Dec 29 won't match)
                 LocalDate.of(2025, 12, 22),
                 LocalDate.of(2025, 12, 1),
-                "Recurring Monday off"
-        );
+                "Recurring Monday off");
 
         // Create vacation from Dec 21-31, 2025
         // Dec 21 (Sun) - weekend
@@ -568,8 +569,10 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         // Act
         VacationBalanceResponse balance = getVacationBalance.execute(testUser.getId(), 2025);
 
-        // Assert - Should be 5 working days (excluding weekends, recurring off-day, and Christmas holidays)
-        // Since this vacation is in the future, it shows up in plannedDays, not usedDays
+        // Assert - Should be 5 working days (excluding weekends, recurring off-day, and
+        // Christmas holidays)
+        // Since this vacation is in the future, it shows up in plannedDays, not
+        // usedDays
         assertThat(balance.getPlannedDays()).isEqualTo(5.0);
         assertThat(balance.getUsedDays()).isEqualTo(0.0); // Not yet taken (future vacation)
         assertThat(balance.getRemainingDays()).isEqualTo(25.0); // 30 - 5 planned = 25
@@ -586,7 +589,8 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
 
         createVacationBalance(testUser, 2025, 30.0, 0.0, 0.0, 0.0);
 
-        // Dec 23 (Tue) = 1.0, Dec 24 (Wed) = 0.5, Dec 25-26 = holidays, Dec 27 (Sat) = weekend
+        // Dec 23 (Tue) = 1.0, Dec 24 (Wed) = 0.5, Dec 25-26 = holidays, Dec 27 (Sat) =
+        // weekend
         // Expected: 1.5 working days
         CreateTimeOffRequest vacationRequest = new CreateTimeOffRequest();
         vacationRequest.setStartDate(LocalDate.of(2025, 12, 23));
@@ -890,7 +894,8 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
         request.setAnnualAllowanceDays(35.0);
 
         // Act - Admin updating another user's balance
-        VacationBalanceResponse response = updateVacationBalance.execute(adminUser.getId(), adminUser.getRole(), request);
+        VacationBalanceResponse response = updateVacationBalance.execute(adminUser.getId(), adminUser.getRole(),
+                request);
 
         // Assert - Should succeed
         assertThat(response).isNotNull();
@@ -899,4 +904,3 @@ class VacationBalanceIntegrationTest extends RepositoryTestBase {
     }
 
 }
-

@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
+import java.time.Year;
 import java.math.BigDecimal;
 
 /**
@@ -23,6 +25,7 @@ public class GetVacationBalance {
     private final UserRepository userRepository;
     private final VacationBalanceMapper mapper;
     private final VacationBalanceService vacationBalanceService;
+    private final Clock clock;
 
     private static final BigDecimal DEFAULT_ANNUAL_ALLOWANCE_DAYS = new BigDecimal("30.0");
 
@@ -35,7 +38,7 @@ public class GetVacationBalance {
      * @return the vacation balance response
      */
     public VacationBalanceResponse execute(Long userId, Integer year) {
-        int targetYear = year != null ? year : java.time.Year.now().getValue();
+        int targetYear = year != null ? year : Year.now(clock).getValue();
         log.info("Getting vacation balance for user ID: {} and year: {}", userId, targetYear);
 
         // Get or create balance
