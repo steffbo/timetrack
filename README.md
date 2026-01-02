@@ -78,6 +78,10 @@ DB_PASSWORD=timetrack
 
 # Server
 SERVER_PORT=8080
+MANAGEMENT_PORT=7080  # Management endpoints (localhost only)
+
+# API Documentation (disable in production)
+SPRINGDOC_ENABLED=true  # Set to false in production
 
 # JWT (change in production!)
 JWT_SECRET=your-secret-key-change-this-in-production-must-be-at-least-256-bits-long-for-HS256
@@ -97,7 +101,11 @@ The API will be available at:
 - **API Base:** http://localhost:8080/api
 - **Swagger UI:** http://localhost:8080/api/swagger-ui.html
 - **API Docs:** http://localhost:8080/api/v1/api-docs
-- **Health Check:** http://localhost:8080/api/actuator/health
+
+Management endpoints (localhost only):
+- **Health Check:** http://localhost:7080/actuator/health
+- **Metrics:** http://localhost:7080/actuator/metrics
+- **Info:** http://localhost:7080/actuator/info
 
 To view logs:
 

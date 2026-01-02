@@ -42,9 +42,10 @@ server:
 springdoc:
   api-docs:
     path: /api-docs
+    enabled: ${SPRINGDOC_ENABLED:true}
   swagger-ui:
     path: /swagger-ui.html
-    enabled: true
+    enabled: ${SPRINGDOC_ENABLED:true}
 
 # Application specific configuration
 app:
@@ -52,9 +53,6 @@ app:
     secret: ${JWT_SECRET:your-secret-key-change-this-in-production-min-256-bits}
     expiration: 86400000  # 24 hours in milliseconds
     refresh-expiration: 604800000  # 7 days in milliseconds
-
-  security:
-    allowed-origins: "*"
 
 logging:
   level:
@@ -65,14 +63,21 @@ logging:
     org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR
 
 management:
+  server:
+    port: ${MANAGEMENT_PORT:7080}
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
       base-path: /actuator
   endpoint:
     health:
-      show-details: when-authorized
+      show-details: always  # No auth needed since it's localhost-only
   health:
     defaults:
       enabled: true
+  metrics:
+    enable:
+      jvm: true
+      process: true
+      system: true
