@@ -86,7 +86,7 @@ SPRINGDOC_ENABLED=true  # Set to false in production
 # JWT (change in production!)
 JWT_SECRET=your-secret-key-change-this-in-production-must-be-at-least-256-bits-long-for-HS256
 JWT_EXPIRATION=86400000
-JWT_REFRESH_EXPIRATION=604800000
+JWT_REFRESH_EXPIRATION=15552000000
 ```
 
 ### 3. Run with Docker Compose (Recommended)

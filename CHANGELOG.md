@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Authentication Session Duration**: Extended refresh token lifetime from 7 days to 180 days (approximately 6 months)
+  - Updated backend default JWT refresh expiration configuration
+  - Updated documented `JWT_REFRESH_EXPIRATION` environment value in README
+
 - **Dashboard: Calendar Refresh Timezone Issues**: Fixed multiple timezone-related bugs in calendar data refresh
   - **Multi-day time-off deletion**: Deleting a vacation spanning multiple days now correctly refreshes all affected calendar days
     - Previously only refreshed the currently selected day due to missing date range propagation

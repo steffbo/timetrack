@@ -28,7 +28,7 @@ public class JwtProperties {
 
     /**
      * Refresh token expiration time in milliseconds.
-     * Default: 604800000 (7 days)
+     * Default: 15552000000 (180 days, approx. 6 months)
      */
-    private Long refreshExpiration = 604800000L;
+    private Long refreshExpiration = 15552000000L;
 }
