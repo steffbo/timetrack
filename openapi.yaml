@@ -106,6 +106,68 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
+  /api/auth/invite/{token}:
+    get:
+      tags:
+        - Authentication
+      summary: Get invite info
+      description: Get user info pre-filled from invite token (public)
+      operationId: getInviteInfo
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invite info retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteInfoResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '410':
+          description: Invite token expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register with invite token
+      description: Complete registration using an invite token (public)
+      operationId: registerWithInvite
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterWithInviteRequest'
+      responses:
+        '200':
+          description: Registration successful, tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '410':
+          description: Invite token expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/users:
     get:
       tags:
@@ -296,6 +358,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/users/{id}/invite:
+    post:
+      tags:
+        - Users
+      summary: Generate invite link for user
+      description: Generate or regenerate an invite/password-reset link for a user (Admin only)
+      operationId: generateInviteToken
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Invite link generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteTokenResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           $ref: '#/components/responses/NotFoundError'
 
@@ -1198,6 +1288,14 @@ components:
           description: Whether half-day holidays (Dec 24 & 31) are enabled for this user
           default: false
           example: false
+        pending:
+          type: boolean
+          description: True if user has no password set yet (awaiting invite completion)
+          example: false
+        inviteUrl:
+          type: string
+          description: Invite URL (only present when user is created without password)
+          example: http://localhost:5173/register/abc123
         createdAt:
           type: string
           format: date-time
@@ -1209,7 +1307,6 @@ components:
       type: object
       required:
         - email
-        - password
         - firstName
         - lastName
         - role
@@ -1294,6 +1391,64 @@ components:
           type: boolean
           description: Whether half-day holidays (Dec 24 & 31) are enabled for this user
           example: false
+
+    InviteTokenResponse:
+      type: object
+      required:
+        - inviteUrl
+        - expiresAt
+      properties:
+        inviteUrl:
+          type: string
+          description: Full URL for the invite/password-reset link
+          example: http://localhost:5173/register/abc123
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the invite token expires
+
+    InviteInfoResponse:
+      type: object
+      required:
+        - email
+        - firstName
+        - lastName
+        - isPasswordReset
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        isPasswordReset:
+          type: boolean
+          description: True if the user already has a password (password reset flow)
+
+    RegisterWithInviteRequest:
+      type: object
+      required:
+        - token
+        - password
+        - firstName
+        - lastName
+      properties:
+        token:
+          type: string
+          description: Invite token from the URL
+        password:
+          type: string
+          format: password
+          minLength: 6
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
 
     ErrorResponse:
       type: object

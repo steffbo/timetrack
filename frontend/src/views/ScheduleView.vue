@@ -5,75 +5,47 @@
     <!-- Working Hours Section -->
     <Card class="section-card">
       <template #title>
-        <div class="card-title-row">
-          <span>{{ t('workingHours.title') }}</span>
-          <div class="weekly-sum-header">
-            <strong>{{ t('workingHours.weeklySum') }}:</strong>
-            <span>{{ weeklySum.toFixed(2) }} {{ t('workingHours.hours') }}</span>
-          </div>
-        </div>
+        {{ t('workingHours.title') }}
       </template>
       <template #content>
-        <DataTable
-          :value="sortedWorkingDays"
-          :loading="isLoadingWorkingHours"
-          responsive-layout="scroll"
-          class="working-hours-table"
-        >
-          <Column field="weekday" header="Tag" class="col-weekday">
+        <DataTable :value="workingDays" :loading="isLoadingWorkingHours">
+          <Column field="weekday" header="Tag">
             <template #body="{ data }">
               {{ getWeekdayName(data.weekday) }}
             </template>
           </Column>
 
-          <Column field="isWorkingDay" :header="t('workingHours.isWorkingDay')" class="col-active">
+          <Column field="isWorkingDay" :header="t('workingHours.isWorkingDay')">
             <template #body="{ data }">
-              <Checkbox v-model="data.isWorkingDay" :binary="true" @change="handleFieldChange(data)" />
+              <Checkbox v-model="data.isWorkingDay" :binary="true" />
             </template>
           </Column>
 
-          <Column field="startTime" :header="t('workingHours.startTime')" class="col-time">
+          <Column field="startTime" :header="t('workingHours.startTime')">
             <template #body="{ data }">
               <InputText
                 v-model="data.startTime"
                 type="time"
                 :disabled="!data.isWorkingDay"
-                @change="handleFieldChange(data)"
+                @change="handleTimeChange(data)"
                 fluid
-                class="time-input"
               />
             </template>
           </Column>
 
-          <Column field="endTime" :header="t('workingHours.endTime')" class="col-time">
+          <Column field="endTime" :header="t('workingHours.endTime')">
             <template #body="{ data }">
               <InputText
                 v-model="data.endTime"
                 type="time"
                 :disabled="!data.isWorkingDay"
-                @change="handleFieldChange(data)"
+                @change="handleTimeChange(data)"
                 fluid
-                class="time-input"
               />
             </template>
           </Column>
 
-          <Column field="breakMinutes" :header="t('workingHours.breakMinutes')" class="col-break">
-            <template #body="{ data }">
-              <InputNumber
-                v-model="data.breakMinutes"
-                :min="0"
-                :max="480"
-                :disabled="!data.isWorkingDay"
-                suffix=" min"
-                showButtons
-                @update:model-value="handleFieldChange(data)"
-                class="compact-input-number"
-              />
-            </template>
-          </Column>
-
-          <Column field="hours" :header="t('workingHours.hours')" class="col-hours">
+          <Column field="hours" :header="t('workingHours.hours')">
             <template #body="{ data }">
               <InputNumber
                 v-model="data.hours"
@@ -81,12 +53,24 @@
                 :max="24"
                 :disabled="!data.isWorkingDay || hasTimeValues(data)"
                 showButtons
-                @update:model-value="handleFieldChange(data)"
-                class="compact-input-number"
+                fluid
               />
             </template>
           </Column>
         </DataTable>
+
+        <div class="weekly-sum">
+          <strong>{{ t('workingHours.weeklySum') }}:</strong>
+          <span>{{ weeklySum.toFixed(2) }} {{ t('workingHours.hours') }}</span>
+        </div>
+
+        <div class="button-group">
+          <Button
+            :label="t('workingHours.save')"
+            :loading="isSavingWorkingHours"
+            @click="handleSaveWorkingHours"
+          />
+        </div>
       </template>
     </Card>
 
@@ -136,16 +120,6 @@
               {{ data.description || '-' }}
             </template>
           </Column>
-          <Column :header="t('recurringOffDays.exemptions')">
-            <template #body="{ data }">
-              <Button
-                :label="t('recurringOffDays.manageExemptions')"
-                icon="pi pi-calendar-minus"
-                class="p-button-text p-button-sm"
-                @click="openExemptionsDialog(data)"
-              />
-            </template>
-          </Column>
           <Column :header="t('actions')">
             <template #body="{ data }">
               <Button
@@ -156,7 +130,7 @@
               <Button
                 icon="pi pi-trash"
                 class="p-button-text p-button-danger p-button-sm"
-                @click="deleteOffDay(data)"
+                @click="confirmDelete(data)"
               />
             </template>
           </Column>
@@ -173,8 +147,7 @@
       v-model:visible="dialogVisible"
       :header="editMode ? t('recurringOffDays.edit') : t('recurringOffDays.create')"
       :modal="true"
-      :style="{ width: '90vw', maxWidth: '600px' }"
-      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
+      :style="{ width: '600px' }"
     >
       <div class="p-fluid">
         <div class="field">
@@ -290,80 +263,32 @@
       </template>
     </Dialog>
 
-    <!-- Exemptions Dialog -->
+    <!-- Delete Confirmation Dialog -->
     <Dialog
-      v-model:visible="exemptionsDialogVisible"
-      :header="t('recurringOffDays.exemptions') + (selectedOffDayForExemptions?.description ? ` - ${selectedOffDayForExemptions.description}` : '')"
+      v-model:visible="deleteDialogVisible"
+      :header="t('confirm')"
       :modal="true"
-      :style="{ width: '90vw', maxWidth: '700px' }"
-      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
+      :style="{ width: '450px' }"
     >
-      <div class="exemptions-content">
-        <!-- Add Exemption Form -->
-        <div class="add-exemption-form">
-          <div class="form-row">
-            <div class="field">
-              <label>{{ t('recurringOffDays.exemptionDate') }}</label>
-              <DatePicker
-                v-model="newExemptionDate"
-                :placeholder="t('recurringOffDays.selectExemptionDate')"
-              />
-            </div>
-            <div class="field flex-grow">
-              <label>{{ t('recurringOffDays.exemptionReason') }}</label>
-              <InputText
-                v-model="newExemptionReason"
-                :placeholder="t('recurringOffDays.exemptionReasonPlaceholder')"
-              />
-            </div>
-            <div class="field-button">
-              <Button
-                :label="t('add')"
-                icon="pi pi-plus"
-                :disabled="!newExemptionDate"
-                @click="addExemption"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Exemptions List -->
-        <div class="exemptions-list">
-          <DataTable
-            :value="exemptions"
-            :loading="isLoadingExemptions"
-            responsive-layout="scroll"
-            size="small"
-          >
-            <Column field="exemptionDate" :header="t('recurringOffDays.exemptionDate')">
-              <template #body="{ data }">
-                {{ formatDisplayDate(data.exemptionDate) }}
-              </template>
-            </Column>
-            <Column field="reason" :header="t('recurringOffDays.exemptionReason')">
-              <template #body="{ data }">
-                {{ data.reason || '-' }}
-              </template>
-            </Column>
-            <Column :header="t('actions')" style="width: 80px">
-              <template #body="{ data }">
-                <Button
-                  icon="pi pi-trash"
-                  class="p-button-text p-button-danger p-button-sm"
-                  @click="deleteExemption(data)"
-                />
-              </template>
-            </Column>
-            <template #empty>
-              <div class="text-center py-4 text-gray-500">
-                {{ t('recurringOffDays.noExemptions') }}
-              </div>
-            </template>
-          </DataTable>
-        </div>
+      <div class="flex align-items-center">
+        <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
+        <span>{{ t('recurringOffDays.deleteConfirm') }}</span>
       </div>
+      <template #footer>
+        <Button
+          :label="t('no')"
+          icon="pi pi-times"
+          class="p-button-text"
+          @click="deleteDialogVisible = false"
+        />
+        <Button
+          :label="t('yes')"
+          icon="pi pi-check"
+          class="p-button-danger"
+          @click="deleteOffDay"
+        />
+      </template>
     </Dialog>
-
   </div>
 </template>
 
@@ -383,27 +308,22 @@ import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import Tag from 'primevue/tag'
 import DatePicker from '@/components/common/DatePicker.vue'
-import { RecurringOffDaysService, RecurringOffDayExemptionsService, WorkingHoursService } from '@/api/generated'
-import type { WorkingDayConfig, RecurringOffDayResponse, CreateRecurringOffDayRequest, UpdateRecurringOffDayRequest, RecurringOffDayExemptionResponse, CreateRecurringOffDayExemptionRequest } from '@/api/generated'
-import { useUndoDelete } from '@/composables/useUndoDelete'
+import apiClient from '@/api/client'
+import { RecurringOffDaysService } from '@/api/generated'
+import type { WorkingDayConfig, RecurringOffDayResponse, CreateRecurringOffDayRequest, UpdateRecurringOffDayRequest } from '@/api/generated'
 
 const { t } = useI18n()
 const toast = useToast()
 
-const { deleteWithUndo } = useUndoDelete()
-
 // ===== Working Hours State =====
 const isLoadingWorkingHours = ref(false)
+const isSavingWorkingHours = ref(false)
 const workingDays = ref<WorkingDayConfig[]>([])
-const sortedWorkingDays = computed(() =>
-  [...workingDays.value].sort((a, b) => (a.weekday || 0) - (b.weekday || 0))
-)
 
 // Map weekday number (1-7) to day name
 const weekdayMap = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 
 // Calculate weekly sum of working hours
-// Backend already returns net hours (hours minus break)
 const weeklySum = computed(() => {
   return workingDays.value
     .filter(day => day.isWorkingDay)
@@ -418,18 +338,31 @@ function hasTimeValues(data: WorkingDayConfig): boolean {
   return !!(data.startTime && data.endTime)
 }
 
-function hasPartialTimeValues(data: WorkingDayConfig): boolean {
-  const hasStart = !!data.startTime
-  const hasEnd = !!data.endTime
-  return (hasStart && !hasEnd) || (!hasStart && hasEnd)
+function handleTimeChange(data: WorkingDayConfig) {
+  // Calculate hours from start and end time if both are set
+  if (data.startTime && data.endTime) {
+    const start = parseTime(data.startTime)
+    const end = parseTime(data.endTime)
+
+    if (start && end && end > start) {
+      const diffMinutes = (end - start) / (1000 * 60)
+      data.hours = Math.round((diffMinutes / 60) * 100) / 100
+    }
+  }
+}
+
+function parseTime(timeStr: string): number | null {
+  if (!timeStr) return null
+  const [hours, minutes] = timeStr.split(':').map(Number)
+  if (isNaN(hours) || isNaN(minutes) || hours === undefined || minutes === undefined) return null
+  return new Date(1970, 0, 1, hours, minutes).getTime()
 }
 
 async function loadWorkingHours() {
   isLoadingWorkingHours.value = true
   try {
-    const response = await WorkingHoursService.getWorkingHours()
-    // Backend returns net hours (hours minus break) - use as-is
-    workingDays.value = [...response.workingDays].sort((a, b) => (a.weekday || 0) - (b.weekday || 0))
+    const response = await apiClient.get(`/api/working-hours`)
+    workingDays.value = response.data.workingDays
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -441,34 +374,27 @@ async function loadWorkingHours() {
   }
 }
 
-// Auto-save on field change
-async function handleFieldChange(data: WorkingDayConfig) {
-  if (data.isWorkingDay && hasPartialTimeValues(data)) {
-    return
-  }
-
+async function handleSaveWorkingHours() {
+  isSavingWorkingHours.value = true
   try {
-    // Save single day to backend
-    const updated = await WorkingHoursService.updateWorkingDay(data.weekday, {
-      weekday: data.weekday,
-      hours: data.hours,
-      isWorkingDay: data.isWorkingDay,
-      startTime: data.startTime,
-      endTime: data.endTime,
-      breakMinutes: data.breakMinutes
-    })
+    await apiClient.put(
+      `/api/working-hours`,
+      { workingDays: workingDays.value }
+    )
 
-    // Backend returns net hours - update local state with backend response
-    const index = workingDays.value.findIndex(d => d.weekday === data.weekday)
-    if (index !== -1) {
-      workingDays.value[index] = updated
-    }
+    toast.add({
+      severity: 'success',
+      summary: t('workingHours.saveSuccess'),
+      life: 3000
+    })
   } catch (error) {
     toast.add({
       severity: 'error',
       summary: t('workingHours.saveError'),
       life: 3000
     })
+  } finally {
+    isSavingWorkingHours.value = false
   }
 }
 
@@ -476,6 +402,7 @@ async function handleFieldChange(data: WorkingDayConfig) {
 const offDays = ref<RecurringOffDayResponse[]>([])
 const isLoadingOffDays = ref(false)
 const dialogVisible = ref(false)
+const deleteDialogVisible = ref(false)
 const editMode = ref(false)
 const currentOffDay = ref<Partial<CreateRecurringOffDayRequest | UpdateRecurringOffDayRequest>>({
   recurrencePattern: 'EVERY_NTH_WEEK',
@@ -483,14 +410,7 @@ const currentOffDay = ref<Partial<CreateRecurringOffDayRequest | UpdateRecurring
   weekInterval: 4,
   isActive: true
 })
-
-// ===== Exemptions State =====
-const exemptionsDialogVisible = ref(false)
-const selectedOffDayForExemptions = ref<RecurringOffDayResponse | null>(null)
-const exemptions = ref<RecurringOffDayExemptionResponse[]>([])
-const isLoadingExemptions = ref(false)
-const newExemptionDate = ref<string | null>(null)
-const newExemptionReason = ref('')
+const offDayToDelete = ref<RecurringOffDayResponse | null>(null)
 
 const weekdayOptions = [
   { label: t('weekday.monday'), value: 1 },
@@ -624,159 +544,29 @@ const saveOffDay = async () => {
   }
 }
 
-const deleteOffDay = async (offDay: RecurringOffDayResponse) => {
-  await deleteWithUndo(
-    offDay,
-    async (id) => {
-      await RecurringOffDaysService.deleteRecurringOffDay(id as number)
-    },
-    async () => {
-      await loadOffDays()
-    },
-    (item) => {
-      return t('recurringOffDays.deleteSuccess') + (item.description ? `: ${item.description}` : '')
-    },
-    async (item) => {
-      const formatDate = (date: any) => {
-        if (!date) return undefined
-        if (typeof date === 'string') return date
-        if (date instanceof Date) {
-          const year = date.getFullYear()
-          const month = String(date.getMonth() + 1).padStart(2, '0')
-          const day = String(date.getDate()).padStart(2, '0')
-          return `${year}-${month}-${day}`
-        }
-        return date
-      }
-
-      const requestData: CreateRecurringOffDayRequest = {
-        recurrencePattern: item.recurrencePattern,
-        weekday: item.weekday,
-        startDate: item.startDate,
-        weekInterval: item.weekInterval,
-        referenceDate: formatDate(item.referenceDate),
-        weekOfMonth: item.weekOfMonth,
-        endDate: formatDate(item.endDate),
-        description: item.description
-      }
-
-      // Clean up fields based on pattern type
-      if (requestData.recurrencePattern === 'EVERY_NTH_WEEK') {
-        delete (requestData as any).weekOfMonth
-      } else if (requestData.recurrencePattern === 'NTH_WEEKDAY_OF_MONTH') {
-        delete (requestData as any).weekInterval
-        delete (requestData as any).referenceDate
-      }
-
-      await RecurringOffDaysService.createRecurringOffDay(requestData)
-    },
-    {
-      showUndoSuccessToast: true
-    }
-  )
+const confirmDelete = (offDay: RecurringOffDayResponse) => {
+  offDayToDelete.value = offDay
+  deleteDialogVisible.value = true
 }
 
-// ===== Exemptions Functions =====
-const openExemptionsDialog = async (offDay: RecurringOffDayResponse) => {
-  selectedOffDayForExemptions.value = offDay
-  newExemptionDate.value = null
-  newExemptionReason.value = ''
-  exemptionsDialogVisible.value = true
-  await loadExemptions()
-}
+const deleteOffDay = async () => {
+  if (!offDayToDelete.value) return
 
-const loadExemptions = async () => {
-  if (!selectedOffDayForExemptions.value?.id) return
-  
-  isLoadingExemptions.value = true
   try {
-    const response = await RecurringOffDayExemptionsService.getExemptions(
-      selectedOffDayForExemptions.value.id
-    )
-    exemptions.value = response
+    await RecurringOffDaysService.deleteRecurringOffDay(offDayToDelete.value.id)
+    toast.add({
+      severity: 'success',
+      summary: t('success'),
+      detail: t('recurringOffDays.deleteSuccess'),
+      life: 3000
+    })
+    deleteDialogVisible.value = false
+    await loadOffDays()
   } catch (error) {
     toast.add({
       severity: 'error',
       summary: t('error'),
-      detail: t('recurringOffDays.loadExemptionsError'),
-      life: 3000
-    })
-    exemptions.value = []
-  } finally {
-    isLoadingExemptions.value = false
-  }
-}
-
-const addExemption = async () => {
-  if (!selectedOffDayForExemptions.value?.id || !newExemptionDate.value) return
-  
-  try {
-    // Format date properly - DatePicker returns Date object, API expects YYYY-MM-DD string
-    const formatDate = (date: any) => {
-      if (!date) return undefined
-      if (typeof date === 'string') return date
-      if (date instanceof Date) {
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const day = String(date.getDate()).padStart(2, '0')
-        return `${year}-${month}-${day}`
-      }
-      return date
-    }
-    
-    const request: CreateRecurringOffDayExemptionRequest = {
-      exemptionDate: formatDate(newExemptionDate.value),
-      reason: newExemptionReason.value || undefined
-    }
-    
-    await RecurringOffDayExemptionsService.createExemption(
-      selectedOffDayForExemptions.value.id,
-      request
-    )
-    
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('recurringOffDays.exemptionCreated'),
-      life: 3000
-    })
-    
-    newExemptionDate.value = null
-    newExemptionReason.value = ''
-    await loadExemptions()
-  } catch (error: any) {
-    const errorMessage = error?.body?.message || t('recurringOffDays.exemptionCreateError')
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: errorMessage,
-      life: 3000
-    })
-  }
-}
-
-const deleteExemption = async (exemption: RecurringOffDayExemptionResponse) => {
-  if (!selectedOffDayForExemptions.value?.id) return
-  
-  try {
-    await RecurringOffDayExemptionsService.deleteExemption(
-      selectedOffDayForExemptions.value.id,
-      exemption.id
-    )
-    
-    toast.add({
-      severity: 'success',
-      summary: t('success'),
-      detail: t('recurringOffDays.exemptionDeleted'),
-      life: 3000
-    })
-    
-    await loadExemptions()
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: t('error'),
-      detail: t('recurringOffDays.exemptionDeleteError'),
+      detail: t('recurringOffDays.deleteError'),
       life: 3000
     })
   }
@@ -821,164 +611,5 @@ onMounted(async () => {
   padding: var(--tt-view-padding);
 }
 
-@media (max-width: 768px) {
-  .schedule-view {
-    padding: var(--tt-view-padding-mobile);
-  }
-}
-
-@media (max-width: 480px) {
-  .schedule-view {
-    padding: var(--tt-view-padding-xs);
-  }
-}
-
-.compact-input-number {
-  max-width: 100%;
-}
-
-.working-hours-table {
-  table-layout: auto;
-}
-
-:deep(.col-weekday) {
-  min-width: 100px;
-}
-
-:deep(.col-active) {
-  width: 60px;
-  text-align: center;
-}
-
-:deep(.col-time) {
-  width: 110px;
-}
-
-:deep(.col-break) {
-  width: 110px;
-  min-width: 110px;
-}
-
-:deep(.col-hours) {
-  width: 90px;
-  min-width: 90px;
-}
-
-:deep(.p-datatable-tbody > tr > td) {
-  padding: 0.5rem 0.25rem !important;
-}
-
-:deep(.compact-input-number.p-inputnumber) {
-  width: 100% !important;
-}
-
-:deep(.compact-input-number .p-inputnumber-input) {
-  width: 100% !important;
-  min-width: 50px !important;
-  padding-left: 0.4rem !important;
-  padding-right: 0.4rem !important;
-}
-
-:deep(.compact-input-number .p-inputnumber-button) {
-  width: 1.75rem !important;
-  min-width: 1.75rem !important;
-  flex-shrink: 0 !important;
-}
-
-:deep(.time-input.p-inputtext) {
-  padding-left: 0.4rem !important;
-  padding-right: 0.4rem !important;
-  min-width: 0 !important;
-}
-
-/* Card title row with weekly sum */
-.card-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  gap: 1rem;
-}
-
-.weekly-sum-header {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  font-size: 1rem;
-  color: var(--tt-color-30-primary);
-}
-
-.weekly-sum-header strong {
-  font-weight: 600;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .card-title-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .weekly-sum-header {
-    font-size: 0.9rem;
-  }
-}
-
-/* Exemptions dialog styles */
-.exemptions-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.add-exemption-form {
-  padding: 1rem;
-  background: var(--tt-color-00-bg);
-  border-radius: 8px;
-  border: 1px solid var(--tt-color-10-border);
-}
-
-.add-exemption-form .form-row {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-end;
-}
-
-.add-exemption-form .field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.add-exemption-form .field.flex-grow {
-  flex: 1;
-}
-
-.add-exemption-form .field-button {
-  display: flex;
-  align-items: flex-end;
-  padding-bottom: 1px; /* Align with input border */
-}
-
-.add-exemption-form label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--tt-color-30-primary);
-}
-
-@media (max-width: 640px) {
-  .add-exemption-form .form-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .add-exemption-form .field-button {
-    margin-top: 0.5rem;
-  }
-  
-  .add-exemption-form .field-button .p-button {
-    width: 100%;
-  }
-}
+/* All other shared styles moved to CSS modules */
 </style>

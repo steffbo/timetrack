@@ -11,17 +11,14 @@ import cc.remer.timetrack.domain.workinghours.WorkingHours;
 import cc.remer.timetrack.exception.DuplicateEmailException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
-/**
- * Use case for creating a new user.
- */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class CreateUser {
 
@@ -29,33 +26,39 @@ public class CreateUser {
     private final WorkingHoursRepository workingHoursRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final GenerateInviteToken generateInviteToken;
 
-    /**
-     * Execute the create user use case.
-     *
-     * @param request the create user request
-     * @return the created user response
-     * @throws DuplicateEmailException if email already exists
-     */
+    public CreateUser(UserRepository userRepository,
+                      WorkingHoursRepository workingHoursRepository,
+                      PasswordEncoder passwordEncoder,
+                      UserMapper userMapper,
+                      @Lazy GenerateInviteToken generateInviteToken) {
+        this.userRepository = userRepository;
+        this.workingHoursRepository = workingHoursRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.userMapper = userMapper;
+        this.generateInviteToken = generateInviteToken;
+    }
+
     @Transactional
     public UserResponse execute(CreateUserRequest request) {
         log.info("Creating new user with email: {}", request.getEmail());
 
-        // Check if email already exists
         if (userRepository.existsByEmail(request.getEmail())) {
             log.warn("Email already exists: {}", request.getEmail());
             throw new DuplicateEmailException("Email bereits vergeben: " + request.getEmail());
         }
 
-        // Create user entity
-        GermanState state = GermanState.BERLIN; // Default state
+        GermanState state = GermanState.BERLIN;
         if (request.getState() != null) {
             state = GermanState.valueOf(request.getState().getValue());
         }
 
+        boolean hasPasword = request.getPassword() != null && !request.getPassword().isBlank();
+
         User user = User.builder()
                 .email(request.getEmail())
-                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .passwordHash(hasPasword ? passwordEncoder.encode(request.getPassword()) : null)
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .role(Role.valueOf(request.getRole().getValue()))
@@ -64,24 +67,23 @@ public class CreateUser {
                 .halfDayHolidaysEnabled(request.getHalfDayHolidaysEnabled() != null ? request.getHalfDayHolidaysEnabled() : false)
                 .build();
 
-        // Save user
         User savedUser = userRepository.save(user);
-        log.info("User created successfully with ID: {}", savedUser.getId());
+        log.info("User created with ID: {}", savedUser.getId());
 
-        // Create default working hours (Mon-Fri: 8h, Sat-Sun: 0h)
         createDefaultWorkingHours(savedUser);
-        log.debug("Default working hours created for user: {}", savedUser.getId());
 
-        return userMapper.toResponse(savedUser);
+        UserResponse response = userMapper.toResponse(savedUser);
+
+        if (!hasPasword) {
+            // Generate invite token and embed URL in response
+            String inviteUrl = generateInviteToken.generateUrl(savedUser.getId());
+            response.setInviteUrl(inviteUrl);
+            log.info("Invite token generated for pending user: {}", savedUser.getId());
+        }
+
+        return response;
     }
 
-    /**
-     * Create default working hours for a new user.
-     * Monday to Friday: 8 hours each
-     * Saturday and Sunday: 0 hours
-     *
-     * @param user the user to create working hours for
-     */
     private void createDefaultWorkingHours(User user) {
         for (short weekday = 1; weekday <= 7; weekday++) {
             boolean isWeekend = weekday == 6 || weekday == 7;

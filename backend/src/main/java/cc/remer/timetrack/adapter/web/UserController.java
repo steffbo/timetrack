@@ -3,10 +3,12 @@ package cc.remer.timetrack.adapter.web;
 import cc.remer.timetrack.api.UsersApi;
 import cc.remer.timetrack.api.model.AuthResponse;
 import cc.remer.timetrack.api.model.CreateUserRequest;
+import cc.remer.timetrack.api.model.InviteTokenResponse;
 import cc.remer.timetrack.api.model.UpdateUserRequest;
 import cc.remer.timetrack.api.model.UserResponse;
 import cc.remer.timetrack.usecase.user.CreateUser;
 import cc.remer.timetrack.usecase.user.DeleteUser;
+import cc.remer.timetrack.usecase.user.GenerateInviteToken;
 import cc.remer.timetrack.usecase.user.GetUser;
 import cc.remer.timetrack.usecase.user.ImpersonateUser;
 import cc.remer.timetrack.usecase.user.UpdateUser;
@@ -21,9 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * REST controller for user management operations.
- */
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -34,6 +33,7 @@ public class UserController implements UsersApi {
     private final UpdateUser updateUser;
     private final DeleteUser deleteUser;
     private final ImpersonateUser impersonateUser;
+    private final GenerateInviteToken generateInviteToken;
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
@@ -89,6 +89,14 @@ public class UserController implements UsersApi {
         log.info("POST /users/{}/impersonate - Impersonating user", id);
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         AuthResponse response = impersonateUser.execute(id, authentication);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<InviteTokenResponse> generateInviteToken(Long id) {
+        log.info("POST /users/{}/invite - Generating invite token", id);
+        InviteTokenResponse response = generateInviteToken.execute(id);
         return ResponseEntity.ok(response);
     }
 }

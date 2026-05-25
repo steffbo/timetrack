@@ -178,3 +178,4 @@ const formatMessageParts = (message: string): MessagePart[] => {
   padding: 0;
 }
 </style>
+

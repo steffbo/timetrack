@@ -79,7 +79,16 @@
     "undoPasswordReset": "Benutzer wiederhergestellt. Passwort wurde auf einen temporären Wert zurückgesetzt - Benutzer sollte es beim nächsten Login ändern.",
     "error": "Ein Fehler ist aufgetreten",
     "impersonate": "Als Benutzer anmelden",
-    "impersonating": "Du siehst die Ansicht von"
+    "impersonating": "Du siehst die Ansicht von",
+    "inviteUser": "Einladungslink generieren",
+    "inviteCopied": "Link kopiert",
+    "inviteLink": "Einladungslink",
+    "resetPasswordLink": "Passwort zurücksetzen",
+    "pending": "Ausstehend",
+    "expiresOn": "Gültig bis",
+    "copyLink": "Link kopieren",
+    "passwordOptionalHint": "(optional - leer lassen für Einladungslink)",
+    "passwordOptionalPlaceholder": "Leer lassen für Einladungslink"
   },
   "impersonation": {
     "viewing": "Du siehst die Ansicht von",
@@ -514,5 +523,15 @@
   "warning": "Warnung",
   "info": "Information",
   "filter": "Filtern",
-  "locale": "de-DE"
+  "locale": "de-DE",
+  "register": {
+    "title": "Registrierung abschließen",
+    "resetTitle": "Passwort zurücksetzen",
+    "confirmPassword": "Passwort bestätigen",
+    "passwordMismatch": "Passwörter stimmen nicht überein",
+    "invalidToken": "Dieser Einladungslink ist ungültig.",
+    "expiredToken": "Dieser Einladungslink ist abgelaufen.",
+    "submit": "Abschließen",
+    "error": "Ein Fehler ist aufgetreten"
+  }
 }

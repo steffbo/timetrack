@@ -312,4 +312,46 @@ class UserManagementIntegrationTest extends RepositoryTestBase {
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessageContaining("Benutzer nicht gefunden");
     }
+
+    @Test
+    @DisplayName("Creating user without password returns pending user with invite URL")
+    void testCreateUser_PendingWithInviteUrl() {
+        // Given
+        CreateUserRequest request = new CreateUserRequest();
+        request.setEmail("pending@test.local");
+        request.setFirstName("Pending");
+        request.setLastName("User");
+        request.setRole(CreateUserRequest.RoleEnum.USER);
+
+        // When
+        UserResponse response = createUser.execute(request);
+
+        // Then
+        assertThat(response.getPending()).isTrue();
+        assertThat(response.getInviteUrl()).isNotBlank();
+        assertThat(response.getInviteUrl()).contains("/register/");
+
+        // Verify user stored without password
+        User saved = userRepository.findById(response.getId()).orElseThrow();
+        assertThat(saved.getPasswordHash()).isNull();
+    }
+
+    @Test
+    @DisplayName("Creating user with password returns non-pending user without invite URL")
+    void testCreateUser_WithPassword_NotPending() {
+        // Given
+        CreateUserRequest request = new CreateUserRequest();
+        request.setEmail("withpw@test.local");
+        request.setPassword("password123");
+        request.setFirstName("Has");
+        request.setLastName("Password");
+        request.setRole(CreateUserRequest.RoleEnum.USER);
+
+        // When
+        UserResponse response = createUser.execute(request);
+
+        // Then
+        assertThat(response.getPending()).isFalse();
+        assertThat(response.getInviteUrl()).isNull();
+    }
 }

@@ -1,4 +1,4 @@
-# Claude Code Bootstrap - Time Tracking Application
+# Codex Bootstrap - Time Tracking Application
 
 ## 📋 Orientation Checklist (Read on Every Session)
 
@@ -56,10 +56,10 @@ docker-compose down            # Stop all services
 
 ## 🌐 Browser Testing with Chrome MCP
 
-Claude Code can interact with the running application via the Chrome DevTools MCP server, enabling automated browser testing and UI inspection.
+Codex can interact with the running application via the Chrome DevTools MCP server, enabling automated browser testing and UI inspection.
 
 ### Prerequisites
-- Chrome MCP server must be configured in Claude Code settings
+- Chrome MCP server must be configured in Codex settings
 - Frontend dev server running on `http://localhost:5173`
 - Backend server running on `http://localhost:8080`
 
@@ -67,7 +67,7 @@ Claude Code can interact with the running application via the Chrome DevTools MC
 
 **Navigate and Login**:
 ```
-Claude can navigate to http://localhost:5173/dashboard
+Codex can navigate to http://localhost:5173/dashboard
 Fill login form with credentials
 Take snapshots of the page structure
 Take screenshots of the UI
@@ -91,9 +91,9 @@ Take screenshots of the UI
 - Get request details: `get_network_request` by reqid
 
 ### Example Workflow
-1. Ask Claude to access the dashboard: "Access http://localhost:5173/dashboard"
-2. Claude will navigate, detect login redirect, and fill credentials
-3. Once logged in, Claude can take screenshots or inspect elements
+1. Ask Codex to access the dashboard: "Access http://localhost:5173/dashboard"
+2. Codex will navigate, detect login redirect, and fill credentials
+3. Once logged in, Codex can take screenshots or inspect elements
 4. Useful for verifying UI behavior, testing flows, or debugging issues
 
 ### Tips
@@ -159,7 +159,7 @@ Take screenshots of the UI
    # Examples:
    feat(backend): Add vacation balance API endpoints
    fix(frontend): Correct time-off date filtering
-   docs: Update CLAUDE.md with testing workflow
+   docs: Update AGENTS.md with testing workflow
    test(backend): Add integration tests for recurring off-days
    ```
 

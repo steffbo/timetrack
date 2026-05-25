@@ -14,7 +14,18 @@
         </div>
 
         <DataTable :value="users" :loading="isLoading">
-          <Column field="email" header="Email" />
+          <Column field="email" header="Email">
+            <template #body="{ data }">
+              <span>{{ data.email }}</span>
+              <Tag
+                v-if="data.pending"
+                :value="t('users.pending')"
+                severity="warn"
+                class="ml-2"
+                style="font-size: 0.7rem; padding: 0.1rem 0.4rem;"
+              />
+            </template>
+          </Column>
           <Column field="firstName" :header="t('profile.firstName')" />
           <Column field="lastName" :header="t('profile.lastName')" />
           <Column field="role" :header="t('profile.role')" />
@@ -35,6 +46,13 @@
                   v-tooltip.top="t('users.impersonate')"
                 />
                 <Button
+                  icon="pi pi-link"
+                  text
+                  severity="secondary"
+                  @click="generateInvite(data)"
+                  v-tooltip.top="data.pending ? t('users.inviteUser') : t('users.resetPasswordLink')"
+                />
+                <Button
                   icon="pi pi-pencil"
                   text
                   @click="openEditDialog(data)"
@@ -52,6 +70,7 @@
       </template>
     </Card>
 
+    <!-- Create/Edit user dialog -->
     <Dialog
       v-model:visible="dialogVisible"
       :header="isEdit ? t('users.editUser') : t('users.createUser')"
@@ -92,15 +111,18 @@
         </div>
 
         <div class="field">
-          <label for="user-password">{{ t('profile.password') }}</label>
+          <label for="user-password">
+            {{ t('profile.password') }}
+            <span v-if="!isEdit" class="optional-hint">{{ t('users.passwordOptionalHint') }}</span>
+          </label>
           <Password
             id="user-password"
             v-model="formData.password"
             :feedback="false"
             toggle-mask
-            :required="!isEdit"
+            :required="false"
             fluid
-            :placeholder="isEdit ? t('profile.passwordHint') : ''"
+            :placeholder="isEdit ? t('profile.passwordHint') : t('users.passwordOptionalPlaceholder')"
           />
         </div>
 
@@ -166,6 +188,27 @@
       </form>
     </Dialog>
 
+    <!-- Invite link dialog -->
+    <Dialog
+      v-model:visible="inviteDialogVisible"
+      :header="inviteDialogIsReset ? t('users.resetPasswordLink') : t('users.inviteLink')"
+      modal
+      :style="{ width: '90vw', maxWidth: '550px' }"
+    >
+      <div class="invite-dialog-content">
+        <p v-if="inviteExpiresAt" class="invite-expires">
+          {{ t('users.expiresOn') }}: {{ inviteExpiresAt }}
+        </p>
+        <div class="invite-url-row">
+          <InputText :value="inviteUrl" readonly fluid class="invite-url-field" />
+          <Button
+            icon="pi pi-copy"
+            @click="copyInviteUrl"
+            v-tooltip.top="t('users.copyLink')"
+          />
+        </div>
+      </div>
+    </Dialog>
   </div>
 </template>
 
@@ -182,6 +225,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Select from 'primevue/select'
 import Checkbox from 'primevue/checkbox'
+import Tag from 'primevue/tag'
 import apiClient from '@/api/client'
 import type { UserResponse, CreateUserRequest, UpdateUserRequest, AuthResponse } from '@/api/generated'
 import { UsersService } from '@/api/generated'
@@ -199,6 +243,12 @@ const users = ref<UserResponse[]>([])
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const editUserId = ref<number | null>(null)
+
+// Invite dialog state
+const inviteDialogVisible = ref(false)
+const inviteUrl = ref('')
+const inviteExpiresAt = ref('')
+const inviteDialogIsReset = ref(false)
 
 const formData = ref<CreateUserRequest & { password?: string }>({
   email: '',
@@ -268,6 +318,42 @@ function openEditDialog(user: UserResponse) {
   dialogVisible.value = true
 }
 
+function showInviteDialog(url: string, expiresAt: string | null | undefined, isReset: boolean) {
+  inviteUrl.value = url
+  inviteExpiresAt.value = expiresAt ? new Date(expiresAt).toLocaleDateString() : ''
+  inviteDialogIsReset.value = isReset
+  inviteDialogVisible.value = true
+}
+
+async function copyInviteUrl() {
+  try {
+    await navigator.clipboard.writeText(inviteUrl.value)
+    toast.add({
+      severity: 'success',
+      summary: t('users.inviteCopied'),
+      life: 2000
+    })
+  } catch {
+    toast.add({ severity: 'error', summary: t('users.error'), life: 3000 })
+  }
+}
+
+async function generateInvite(user: UserResponse) {
+  try {
+    const response = await apiClient.post<{ inviteUrl: string; expiresAt: string }>(
+      `/api/users/${user.id}/invite`
+    )
+    showInviteDialog(response.data.inviteUrl, response.data.expiresAt, !user.pending)
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: t('users.error'),
+      detail: getLocalizedErrorMessage(error, t, t('users.error')),
+      life: 5000
+    })
+  }
+}
+
 async function handleSave() {
   isSaving.value = true
   try {
@@ -293,12 +379,33 @@ async function handleSave() {
         life: 3000
       })
     } else {
-      await apiClient.post('/api/users', formData.value)
+      const createData: CreateUserRequest = {
+        email: formData.value.email,
+        firstName: formData.value.firstName,
+        lastName: formData.value.lastName,
+        role: formData.value.role,
+        active: formData.value.active,
+        state: formData.value.state,
+        halfDayHolidaysEnabled: formData.value.halfDayHolidaysEnabled
+      }
+      if (formData.value.password) {
+        createData.password = formData.value.password
+      }
+
+      const response = await apiClient.post<UserResponse>('/api/users', createData)
       toast.add({
         severity: 'success',
         summary: t('users.createSuccess'),
         life: 3000
       })
+
+      // If invite URL returned (pending user), open invite modal automatically
+      if (response.data.inviteUrl) {
+        dialogVisible.value = false
+        await loadUsers()
+        showInviteDialog(response.data.inviteUrl, null, false)
+        return
+      }
     }
 
     dialogVisible.value = false
@@ -332,7 +439,7 @@ async function deleteUser(user: UserResponse) {
         email: item.email!,
         firstName: item.firstName!,
         lastName: item.lastName!,
-        password: 'TempPassword123!', // Temporary password - user should reset
+        password: 'TempPassword123!',
         role: item.role!,
         active: item.active!,
         state: item.state!,
@@ -365,10 +472,8 @@ async function impersonateUser(user: UserResponse) {
       return
     }
 
-    // Use the generated API service
     const response = await UsersService.impersonateUser(user.id!)
 
-    // Store current admin token using correct keys
     const currentToken = localStorage.getItem('timetrack_access_token')
     const currentRefreshToken = localStorage.getItem('timetrack_refresh_token')
     if (currentToken) {
@@ -379,13 +484,11 @@ async function impersonateUser(user: UserResponse) {
       sessionStorage.setItem('impersonated_email', user.email!)
     }
 
-    // Set new token using correct keys
     localStorage.setItem('timetrack_access_token', response.accessToken)
     if (response.refreshToken) {
       localStorage.setItem('timetrack_refresh_token', response.refreshToken)
     }
 
-    // Force full page reload to clear all cached state
     window.location.replace('/dashboard')
   } catch (error: any) {
     toast.add({
@@ -399,7 +502,6 @@ async function impersonateUser(user: UserResponse) {
 </script>
 
 <style scoped>
-/* Using shared form and utility styles */
 .admin-users {
   padding: 0;
 }
@@ -420,5 +522,36 @@ async function impersonateUser(user: UserResponse) {
   justify-content: flex-end;
   gap: var(--tt-spacing-md);
   margin-top: var(--tt-card-gap);
+}
+
+.optional-hint {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color);
+  margin-left: 0.5rem;
+  font-weight: normal;
+}
+
+.invite-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tt-spacing-md);
+}
+
+.invite-expires {
+  margin: 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.invite-url-row {
+  display: flex;
+  gap: var(--tt-spacing-sm);
+  align-items: center;
+}
+
+.invite-url-field {
+  flex: 1;
+  font-family: monospace;
+  font-size: 0.8rem;
 }
 </style>

@@ -4,51 +4,44 @@
  */
 
 /* Make table columns more compact */
-.p-datatable {
+:deep(.p-datatable) {
   font-size: 0.95rem;
 }
 
-.p-datatable .p-datatable-thead > tr > th,
-.p-datatable .p-datatable-tbody > tr > td {
-  padding: 0.75rem 0.5rem; /* Reduced horizontal padding */
+:deep(.p-datatable .p-datatable-thead > tr > th),
+:deep(.p-datatable .p-datatable-tbody > tr > td) {
+  padding: 0.75rem 0.75rem;
 }
 
-.p-datatable .p-column-header-content {
+:deep(.p-datatable .p-column-header-content) {
   white-space: nowrap;
 }
 
 /* Reduce width of checkbox column */
-.p-datatable tbody td:has(.p-checkbox),
-.p-datatable thead th:has(.p-checkbox) {
-  width: 50px;
+:deep(.p-datatable tbody td:has(.p-checkbox)),
+:deep(.p-datatable thead th:has(.p-checkbox)) {
+  width: 80px;
   text-align: center;
 }
 
 /* Reduce width of time input columns */
-.p-datatable tbody td:has(input[type="time"]) {
-  width: 100px;
+:deep(.p-datatable tbody td:has(input[type="time"])) {
+  width: 140px;
 }
 
-/* Reduce width of InputNumber columns - default for general use */
-.p-datatable tbody td:has(.p-inputnumber) {
-  width: auto;
-  min-width: 60px;
-}
-
-.p-datatable .p-inputnumber-input {
-  width: 100%;
-  padding-left: 0.4rem;
-  padding-right: 0.4rem;
+/* Reduce width of hours column */
+:deep(.p-datatable tbody td:has(.p-inputnumber)) {
+  width: 120px;
 }
 
 /* Reduce width of actions column */
-.p-datatable tbody td:last-child {
-  width: 90px;
+:deep(.p-datatable tbody td:last-child) {
+  width: 100px;
   text-align: center;
 }
 
 /* Make Tag components more compact */
-.p-tag {
+:deep(.p-tag) {
   padding: 0.25rem 0.5rem;
   font-size: 0.85rem;
 }
@@ -90,10 +83,6 @@
 
 .row-bg-personal {
   background-color: var(--tt-row-bg-personal) !important;
-}
-
-.row-bg-education {
-  background-color: var(--tt-row-bg-education) !important;
 }
 
 .row-bg-recurring-off {

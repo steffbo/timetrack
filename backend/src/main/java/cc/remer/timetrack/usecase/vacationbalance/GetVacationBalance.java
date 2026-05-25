@@ -1,5 +1,11 @@
 package cc.remer.timetrack.usecase.vacationbalance;
 
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Year;
+
+import org.springframework.stereotype.Service;
+
 import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.adapter.persistence.VacationBalanceRepository;
 import cc.remer.timetrack.api.model.VacationBalanceResponse;
@@ -7,11 +13,6 @@ import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.vacationbalance.VacationBalance;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.time.Clock;
-import java.time.Year;
-import java.math.BigDecimal;
 
 /**
  * Use case to get vacation balance for a user and year.

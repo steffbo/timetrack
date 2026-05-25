@@ -79,7 +79,16 @@
     "undoPasswordReset": "User restored. Password has been reset to temporary value - user should change it on next login.",
     "error": "An error occurred",
     "impersonate": "Login as user",
-    "impersonating": "You're viewing as"
+    "impersonating": "You're viewing as",
+    "inviteUser": "Generate invite link",
+    "inviteCopied": "Link copied",
+    "inviteLink": "Invite link",
+    "resetPasswordLink": "Reset password link",
+    "pending": "Pending",
+    "expiresOn": "Expires on",
+    "copyLink": "Copy link",
+    "passwordOptionalHint": "(optional - leave empty for invite link)",
+    "passwordOptionalPlaceholder": "Leave empty to send invite link"
   },
   "impersonation": {
     "viewing": "You're viewing as",
@@ -514,5 +523,15 @@
   "warning": "Warning",
   "info": "Information",
   "filter": "Filter",
-  "locale": "en-US"
+  "locale": "en-US",
+  "register": {
+    "title": "Complete registration",
+    "resetTitle": "Reset password",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Passwords do not match",
+    "invalidToken": "This invite link is invalid.",
+    "expiredToken": "This invite link has expired.",
+    "submit": "Complete",
+    "error": "An error occurred"
+  }
 }

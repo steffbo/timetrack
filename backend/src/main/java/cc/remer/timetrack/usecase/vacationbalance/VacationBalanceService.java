@@ -1,5 +1,13 @@
 package cc.remer.timetrack.usecase.vacationbalance;
 
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import cc.remer.timetrack.adapter.persistence.TimeOffRepository;
 import cc.remer.timetrack.adapter.persistence.UserRepository;
 import cc.remer.timetrack.adapter.persistence.VacationBalanceRepository;
@@ -10,13 +18,6 @@ import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.vacationbalance.VacationBalance;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.LocalDate;
-import java.util.List;
 
 /**
  * Service to manage vacation balance calculations.

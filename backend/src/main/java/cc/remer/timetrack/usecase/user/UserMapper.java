@@ -31,6 +31,7 @@ public class UserMapper {
         response.setActive(user.getActive());
         response.setState(UserResponse.StateEnum.fromValue(user.getState().name()));
         response.setHalfDayHolidaysEnabled(user.getHalfDayHolidaysEnabled());
+        response.setPending(user.isPending());
         response.setCreatedAt(MapperUtils.toOffsetDateTime(user.getCreatedAt()));
         response.setUpdatedAt(MapperUtils.toOffsetDateTime(user.getUpdatedAt()));
 

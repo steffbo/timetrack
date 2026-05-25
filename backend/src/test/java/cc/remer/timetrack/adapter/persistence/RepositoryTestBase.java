@@ -10,6 +10,7 @@ import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.vacationbalance.VacationBalance;
 import cc.remer.timetrack.domain.workinghours.WorkingHours;
+import cc.remer.timetrack.adapter.persistence.InviteTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -48,6 +49,9 @@ public abstract class RepositoryTestBase {
 
     @Autowired
     protected UserRepository userRepository;
+
+    @Autowired(required = false)
+    protected InviteTokenRepository inviteTokenRepository;
 
     @Autowired(required = false)
     protected WorkingHoursRepository workingHoursRepository;

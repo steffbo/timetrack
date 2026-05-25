@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Admin Invite Links**: Admins can onboard users without setting passwords directly
+  - Create user without password → user created as pending, invite link generated automatically
+  - Invite link icon per row in user table → generates/regenerates invite or password-reset link
+  - Pending badge shown in email column for users awaiting invite completion
+  - Public `/register/:token` route: pre-fills email (read-only), name editable, set password → auto-login
+  - Same flow doubles as password-reset for already-registered users (different dialog title)
+  - One valid invite per user; regenerating invalidates the old token
+  - Invite tokens expire after 30 days; expired tokens return 410 Gone
+  - Backend: `invite_tokens` table, `GenerateInviteToken`, `RegisterWithInvite`, `GetInviteInfo` use cases
+  - 16 new integration tests (total: 235)
+
 ### Fixed
 - **Authentication Session Duration**: Extended refresh token lifetime from 7 days to 180 days (approximately 6 months)
   - Updated backend default JWT refresh expiration configuration

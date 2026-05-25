@@ -8,3 +8,4 @@ ALTER TABLE working_hours
 ALTER TABLE working_hours
     ADD CONSTRAINT chk_working_hours_break_minutes
     CHECK (break_minutes >= 0);
+

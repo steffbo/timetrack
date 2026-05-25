@@ -94,6 +94,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    @ExceptionHandler(InviteTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInviteTokenException(InviteTokenException ex) {
+        log.warn("Invite token error ({}): {}", ex.getReason(), ex.getMessage());
+        ErrorResponse error = createErrorResponse("INVITE_TOKEN_" + ex.getReason().name(), ex.getMessage());
+        HttpStatus status = ex.getReason() == InviteTokenException.Reason.EXPIRED
+                ? HttpStatus.GONE : HttpStatus.NOT_FOUND;
+        return ResponseEntity.status(status).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Unexpected error", ex);

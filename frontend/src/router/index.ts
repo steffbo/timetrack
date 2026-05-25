@@ -11,6 +11,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false }
   },
   {
+    path: '/register/:token',
+    name: 'register',
+    component: () => import('@/views/RegisterView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
     path: '/',
     redirect: '/dashboard',
     component: () => import('@/components/layout/AppLayout.vue'),
