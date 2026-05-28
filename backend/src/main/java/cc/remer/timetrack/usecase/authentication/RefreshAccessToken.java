@@ -6,14 +6,10 @@ import cc.remer.timetrack.adapter.security.JwtTokenProvider;
 import cc.remer.timetrack.adapter.security.UserPrincipal;
 import cc.remer.timetrack.api.model.AuthResponse;
 import cc.remer.timetrack.api.model.RefreshTokenRequest;
-import cc.remer.timetrack.api.model.UserResponse;
-import cc.remer.timetrack.config.JwtProperties;
 import cc.remer.timetrack.domain.user.RefreshToken;
 import cc.remer.timetrack.domain.user.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +24,7 @@ public class RefreshAccessToken {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final JwtTokenProvider tokenProvider;
-    private final JwtProperties jwtProperties;
+    private final AuthSessionService authSessionService;
 
     /**
      * Execute refresh token use case.
@@ -77,40 +73,10 @@ public class RefreshAccessToken {
             throw new IllegalArgumentException("Benutzerkonto ist inaktiv");
         }
 
-        // Create authentication
         UserPrincipal userPrincipal = UserPrincipal.create(user);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                userPrincipal,
-                null,
-                userPrincipal.getAuthorities()
-        );
-
-        // Generate new access token
-        String newAccessToken = tokenProvider.generateAccessToken(authentication);
 
         log.info("Access token refreshed successfully for user: {}", user.getEmail());
 
-        // Build response (keep same refresh token)
-        return buildAuthResponse(newAccessToken, refreshTokenValue, userPrincipal);
-    }
-
-    private AuthResponse buildAuthResponse(String accessToken, String refreshToken, UserPrincipal userPrincipal) {
-        AuthResponse response = new AuthResponse();
-        response.setAccessToken(accessToken);
-        response.setRefreshToken(refreshToken);
-        response.setTokenType("Bearer");
-        response.setExpiresIn(jwtProperties.getExpiration() / 1000);
-
-        UserResponse userResponse = new UserResponse();
-        userResponse.setId(userPrincipal.getId());
-        userResponse.setEmail(userPrincipal.getEmail());
-        userResponse.setRole(UserResponse.RoleEnum.fromValue(
-                userPrincipal.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "")
-        ));
-        userResponse.setActive(userPrincipal.isEnabled());
-
-        response.setUser(userResponse);
-
-        return response;
+        return authSessionService.refreshAccessToken(refreshTokenValue, userPrincipal);
     }
 }

@@ -35,6 +35,17 @@ public class UserPrincipal implements UserDetails {
      * @return UserPrincipal
      */
     public static UserPrincipal create(User user) {
+        return create(user, null);
+    }
+
+    /**
+     * Create UserPrincipal from User entity with optional impersonation metadata.
+     *
+     * @param user the user entity
+     * @param impersonatedBy the admin user ID when this principal is impersonated
+     * @return UserPrincipal
+     */
+    public static UserPrincipal create(User user, Long impersonatedBy) {
         Collection<GrantedAuthority> authorities = Collections.singletonList(
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
         );
@@ -46,7 +57,7 @@ public class UserPrincipal implements UserDetails {
                 .role(user.getRole())
                 .authorities(authorities)
                 .enabled(user.getActive())
-                .impersonatedBy(null)
+                .impersonatedBy(impersonatedBy)
                 .build();
     }
 
