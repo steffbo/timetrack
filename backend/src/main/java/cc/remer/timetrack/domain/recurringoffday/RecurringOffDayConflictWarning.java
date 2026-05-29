@@ -2,13 +2,13 @@ package cc.remer.timetrack.domain.recurringoffday;
 
 import cc.remer.timetrack.domain.user.User;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * Represents a warning when a work entry occurs on a recurring off-day.
@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "recurring_off_day_conflict_warnings")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -46,29 +47,41 @@ public class RecurringOffDayConflictWarning {
     @Column(name = "acknowledged_at")
     private LocalDateTime acknowledgedAt;
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Mark this warning as acknowledged by the user.
-     */
-    public void acknowledge() {
+    public void acknowledge(LocalDateTime now) {
         this.acknowledged = true;
-        this.acknowledgedAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.acknowledgedAt = now;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RecurringOffDayConflictWarning that = (RecurringOffDayConflictWarning) o;
+        return id != null && Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "RecurringOffDayConflictWarning{" +
+                "id=" + id +
+                ", userId=" + (user != null ? user.getId() : null) +
+                ", conflictDate=" + conflictDate +
+                ", timeEntryId=" + timeEntryId +
+                ", recurringOffDayId=" + recurringOffDayId +
+                ", acknowledged=" + acknowledged +
+                '}';
     }
 }

@@ -115,14 +115,12 @@ public class TimeEntry {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TimeEntry timeEntry = (TimeEntry) o;
-        return Objects.equals(id, timeEntry.id) &&
-                Objects.equals(user.getId(), timeEntry.user.getId()) &&
-                Objects.equals(clockIn, timeEntry.clockIn);
+        return id != null && Objects.equals(id, timeEntry.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, user != null ? user.getId() : null, clockIn);
+        return getClass().hashCode();
     }
 
     @Override

@@ -115,12 +115,12 @@ public class RecurringOffDay {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RecurringOffDay that = (RecurringOffDay) o;
-        return Objects.equals(id, that.id);
+        return id != null && Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return getClass().hashCode();
     }
 
     @Override

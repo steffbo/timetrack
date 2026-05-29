@@ -13,6 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 /**
@@ -25,6 +26,7 @@ public class AuthSessionService {
     private final JwtTokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProperties jwtProperties;
+    private final Clock clock;
 
     public AuthResponse issueNewSession(Authentication authentication) {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
@@ -57,7 +59,7 @@ public class AuthSessionService {
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(User.builder().id(userId).build())
                 .token(token)
-                .expiresAt(LocalDateTime.now().plusSeconds(jwtProperties.getRefreshExpiration() / 1000))
+                .expiresAt(LocalDateTime.now(clock).plusSeconds(jwtProperties.getRefreshExpiration() / 1000))
                 .build();
 
         refreshTokenRepository.save(refreshToken);

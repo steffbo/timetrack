@@ -13,6 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+
 /**
  * Use case for refreshing access token using refresh token.
  */
@@ -25,6 +28,7 @@ public class RefreshAccessToken {
     private final UserRepository userRepository;
     private final JwtTokenProvider tokenProvider;
     private final AuthSessionService authSessionService;
+    private final Clock clock;
 
     /**
      * Execute refresh token use case.
@@ -53,7 +57,7 @@ public class RefreshAccessToken {
                 });
 
         // Check if expired
-        if (refreshToken.isExpired()) {
+        if (refreshToken.isExpired(LocalDateTime.now(clock))) {
             log.error("Refresh token is expired");
             refreshTokenRepository.delete(refreshToken);
             throw new IllegalArgumentException("Refresh-Token ist abgelaufen");

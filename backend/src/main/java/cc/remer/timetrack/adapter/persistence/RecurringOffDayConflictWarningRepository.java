@@ -67,15 +67,6 @@ public interface RecurringOffDayConflictWarningRepository extends JpaRepository<
     boolean existsByUserIdAndConflictDate(Long userId, LocalDate conflictDate);
 
     /**
-     * Find warnings for a specific time entry.
-     *
-     * @param timeEntryId the time entry ID
-     * @return list of warnings for this time entry
-     */
-    @Query("SELECT w FROM RecurringOffDayConflictWarning w WHERE w.timeEntryId = :timeEntryId")
-    List<RecurringOffDayConflictWarning> findByTimeEntryId(@Param("timeEntryId") Long timeEntryId);
-
-    /**
      * Delete warnings for a specific time entry.
      *
      * @param timeEntryId the time entry ID

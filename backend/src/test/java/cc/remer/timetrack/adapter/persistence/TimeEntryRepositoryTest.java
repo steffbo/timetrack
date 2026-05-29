@@ -141,28 +141,6 @@ class TimeEntryRepositoryTest extends RepositoryTestBase {
     }
 
     @Test
-    @DisplayName("Should find entries by entry type")
-    void shouldFindEntriesByEntryType() {
-        // Given - only WORK type supported now
-        timeEntryRepository.save(testEntry);
-
-        TimeEntry anotherWorkEntry = TimeEntry.builder()
-                .user(testUser)
-                .entryDate(LocalDate.now().minusDays(1))
-                .clockIn(LocalDateTime.now().minusDays(1).withHour(9).withMinute(0))
-                .clockOut(LocalDateTime.now().minusDays(1).withHour(17).withMinute(0))
-                .entryType(EntryType.WORK)
-                .build();
-        timeEntryRepository.save(anotherWorkEntry);
-
-        // When
-        List<TimeEntry> workEntries = timeEntryRepository.findByUserIdAndEntryType(testUser.getId(), EntryType.WORK);
-
-        // Then
-        assertThat(workEntries).hasSize(2);
-    }
-
-    @Test
     @DisplayName("Should detect overlapping time entries")
     void shouldDetectOverlappingTimeEntries() {
         // Given

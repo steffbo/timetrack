@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -21,13 +22,14 @@ public class InviteTokenService {
 
     private final InviteTokenRepository inviteTokenRepository;
     private final EntityManager entityManager;
+    private final Clock clock;
 
     public InviteToken requireValidToken(String token) {
         InviteToken inviteToken = inviteTokenRepository.findByToken(token)
                 .orElseThrow(() -> new InviteTokenException(
                         InviteTokenException.Reason.NOT_FOUND, "Einladungslink nicht gefunden"));
 
-        if (inviteToken.isExpired()) {
+        if (inviteToken.isExpired(LocalDateTime.now(clock))) {
             throw new InviteTokenException(
                     InviteTokenException.Reason.EXPIRED, "Einladungslink ist abgelaufen");
         }
@@ -46,7 +48,7 @@ public class InviteTokenService {
         InviteToken inviteToken = InviteToken.builder()
                 .user(user)
                 .token(UUID.randomUUID().toString())
-                .expiresAt(LocalDateTime.now().plusDays(EXPIRY_DAYS))
+                .expiresAt(LocalDateTime.now(clock).plusDays(EXPIRY_DAYS))
                 .build();
 
         InviteToken savedToken = inviteTokenRepository.save(inviteToken);

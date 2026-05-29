@@ -114,14 +114,12 @@ public class WorkingHours {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         WorkingHours that = (WorkingHours) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(user.getId(), that.user.getId()) &&
-                Objects.equals(weekday, that.weekday);
+        return id != null && Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, user != null ? user.getId() : null, weekday);
+        return getClass().hashCode();
     }
 
     @Override

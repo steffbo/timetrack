@@ -8,7 +8,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,104 +92,6 @@ class UserRepositoryTest extends RepositoryTestBase {
         // Then
         assertThat(exists).isTrue();
         assertThat(notExists).isFalse();
-    }
-
-    @Test
-    @DisplayName("Should find users by role")
-    void shouldFindUsersByRole() {
-        // Given
-        userRepository.save(testUser);
-
-        User adminUser = User.builder()
-                .email("admin@example.com")
-                .passwordHash("$2a$10$hashedPassword")
-                .firstName("Admin")
-                .lastName("User")
-                .role(Role.ADMIN)
-                .active(true)
-                .state(GermanState.BERLIN)
-                .build();
-        userRepository.save(adminUser);
-
-        // When
-        List<User> regularUsers = userRepository.findByRole(Role.USER);
-        List<User> adminUsers = userRepository.findByRole(Role.ADMIN);
-
-        // Then
-        assertThat(regularUsers).hasSize(1);
-        assertThat(regularUsers.get(0).getEmail()).isEqualTo("test@example.com");
-        assertThat(adminUsers).hasSize(1);
-        assertThat(adminUsers.get(0).getEmail()).isEqualTo("admin@example.com");
-    }
-
-    @Test
-    @DisplayName("Should find users by active status")
-    void shouldFindUsersByActiveStatus() {
-        // Given
-        userRepository.save(testUser);
-
-        User inactiveUser = User.builder()
-                .email("inactive@example.com")
-                .passwordHash("$2a$10$hashedPassword")
-                .firstName("Inactive")
-                .lastName("User")
-                .role(Role.USER)
-                .active(false)
-                .state(GermanState.BERLIN)
-                .build();
-        userRepository.save(inactiveUser);
-
-        // When
-        List<User> activeUsers = userRepository.findByActive(true);
-        List<User> inactiveUsers = userRepository.findByActive(false);
-
-        // Then
-        assertThat(activeUsers).hasSize(1);
-        assertThat(activeUsers.get(0).getEmail()).isEqualTo("test@example.com");
-        assertThat(inactiveUsers).hasSize(1);
-        assertThat(inactiveUsers.get(0).getEmail()).isEqualTo("inactive@example.com");
-    }
-
-    @Test
-    @DisplayName("Should find users by role and active status")
-    void shouldFindUsersByRoleAndActiveStatus() {
-        // Given
-        userRepository.save(testUser);
-
-        User inactiveRegularUser = User.builder()
-                .email("inactive.user@example.com")
-                .passwordHash("$2a$10$hashedPassword")
-                .firstName("Inactive")
-                .lastName("Regular")
-                .role(Role.USER)
-                .active(false)
-                .state(GermanState.BERLIN)
-                .build();
-        userRepository.save(inactiveRegularUser);
-
-        User activeAdmin = User.builder()
-                .email("active.admin@example.com")
-                .passwordHash("$2a$10$hashedPassword")
-                .firstName("Active")
-                .lastName("Admin")
-                .role(Role.ADMIN)
-                .active(true)
-                .state(GermanState.BERLIN)
-                .build();
-        userRepository.save(activeAdmin);
-
-        // When
-        List<User> activeRegularUsers = userRepository.findByRoleAndActive(Role.USER, true);
-        List<User> inactiveRegularUsers = userRepository.findByRoleAndActive(Role.USER, false);
-        List<User> activeAdmins = userRepository.findByRoleAndActive(Role.ADMIN, true);
-
-        // Then
-        assertThat(activeRegularUsers).hasSize(1);
-        assertThat(activeRegularUsers.get(0).getEmail()).isEqualTo("test@example.com");
-        assertThat(inactiveRegularUsers).hasSize(1);
-        assertThat(inactiveRegularUsers.get(0).getEmail()).isEqualTo("inactive.user@example.com");
-        assertThat(activeAdmins).hasSize(1);
-        assertThat(activeAdmins.get(0).getEmail()).isEqualTo("active.admin@example.com");
     }
 
     @Test

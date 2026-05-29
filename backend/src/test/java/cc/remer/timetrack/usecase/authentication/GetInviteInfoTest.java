@@ -103,7 +103,7 @@ class GetInviteInfoTest extends RepositoryTestBase {
     @Test
     @DisplayName("Expired token throws EXPIRED")
     void getInviteInfo_expiredToken() {
-        InviteToken token = saveToken(pendingUser, LocalDateTime.now().minusDays(1));
+        InviteToken token = saveToken(pendingUser, LocalDateTime.of(2025, 7, 31, 10, 0));
 
         assertThatThrownBy(() -> getInviteInfo.execute(token.getToken()))
                 .isInstanceOf(InviteTokenException.class)

@@ -20,13 +20,4 @@ public interface VacationBalanceRepository extends JpaRepository<VacationBalance
      * @return optional vacation balance
      */
     Optional<VacationBalance> findByUserIdAndYear(Long userId, Integer year);
-
-    /**
-     * Check if vacation balance exists for a user and year.
-     *
-     * @param userId the user ID
-     * @param year the year
-     * @return true if exists
-     */
-    boolean existsByUserIdAndYear(Long userId, Integer year);
 }

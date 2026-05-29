@@ -118,7 +118,7 @@ class RegisterWithInviteTest extends RepositoryTestBase {
     @Test
     @DisplayName("Expired token rejected")
     void register_expiredToken() {
-        saveToken(pendingUser, "expired-token", LocalDateTime.now().minusHours(1));
+        saveToken(pendingUser, "expired-token", LocalDateTime.of(2025, 7, 31, 10, 0));
 
         RegisterWithInviteRequest req = new RegisterWithInviteRequest();
         req.setToken("expired-token");

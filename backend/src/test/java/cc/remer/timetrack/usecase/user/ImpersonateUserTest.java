@@ -6,6 +6,7 @@ import cc.remer.timetrack.adapter.security.UserPrincipal;
 import cc.remer.timetrack.api.model.AuthResponse;
 import cc.remer.timetrack.api.model.UserResponse;
 import cc.remer.timetrack.domain.user.GermanState;
+import cc.remer.timetrack.domain.user.RefreshToken;
 import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.exception.ForbiddenException;
@@ -15,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -62,10 +65,10 @@ class ImpersonateUserTest extends RepositoryTestBase {
         assertThat(response.getUser().getEmail()).isEqualTo(user.getEmail());
         assertThat(response.getUser().getRole()).isEqualTo(UserResponse.RoleEnum.USER);
 
-        assertThat(refreshTokenRepository.findByUserId(user.getId()))
+        assertThat(refreshTokensFor(user))
                 .singleElement()
                 .satisfies(token -> assertThat(token.getToken()).isEqualTo(response.getRefreshToken()));
-        assertThat(refreshTokenRepository.findByUserId(admin.getId())).isEmpty();
+        assertThat(refreshTokensFor(admin)).isEmpty();
     }
 
     @Test
@@ -87,5 +90,11 @@ class ImpersonateUserTest extends RepositoryTestBase {
     private Authentication authenticationFor(User user) {
         UserPrincipal principal = UserPrincipal.create(user);
         return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+    }
+
+    private List<RefreshToken> refreshTokensFor(User user) {
+        return refreshTokenRepository.findAll().stream()
+                .filter(token -> token.getUser().getId().equals(user.getId()))
+                .toList();
     }
 }

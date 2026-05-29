@@ -1,11 +1,9 @@
 package cc.remer.timetrack.adapter.persistence;
 
-import cc.remer.timetrack.domain.user.Role;
 import cc.remer.timetrack.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -29,29 +27,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return true if user exists
      */
     boolean existsByEmail(String email);
-
-    /**
-     * Find all users with a specific role.
-     *
-     * @param role the user role
-     * @return list of users with the specified role
-     */
-    List<User> findByRole(Role role);
-
-    /**
-     * Find all active users.
-     *
-     * @param active the active status
-     * @return list of users with the specified active status
-     */
-    List<User> findByActive(Boolean active);
-
-    /**
-     * Find all active users with a specific role.
-     *
-     * @param role the user role
-     * @param active the active status
-     * @return list of users matching the criteria
-     */
-    List<User> findByRoleAndActive(Role role, Boolean active);
 }

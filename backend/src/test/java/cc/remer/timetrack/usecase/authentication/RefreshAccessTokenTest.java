@@ -64,7 +64,7 @@ class RefreshAccessTokenTest extends RepositoryTestBase {
     @Test
     @DisplayName("Expired persisted refresh token is rejected and deleted")
     void execute_expiredPersistedRefreshToken() {
-        String refreshToken = saveRefreshToken(user, LocalDateTime.now().minusHours(1));
+        String refreshToken = saveRefreshToken(user, LocalDateTime.of(2025, 7, 31, 10, 0));
         RefreshTokenRequest request = new RefreshTokenRequest();
         request.setRefreshToken(refreshToken);
 

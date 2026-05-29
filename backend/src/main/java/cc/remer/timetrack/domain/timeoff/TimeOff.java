@@ -84,12 +84,12 @@ public class TimeOff {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TimeOff timeOff = (TimeOff) o;
-        return Objects.equals(id, timeOff.id);
+        return id != null && Objects.equals(id, timeOff.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return getClass().hashCode();
     }
 
     @Override

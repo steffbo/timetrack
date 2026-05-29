@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project uses integration tests with Testcontainers to provide a real PostgreSQL database environment for testing. With **219 integration tests** covering repositories, use cases, and API endpoints, the test suite ensures comprehensive coverage of all business logic.
+This project uses integration tests with Testcontainers to provide a real PostgreSQL database environment for testing. With **240 backend tests** covering repositories, use cases, and API endpoints, the test suite ensures comprehensive coverage of all business logic.
 
 ## Test Infrastructure
 
@@ -105,10 +105,10 @@ The main `SecurityConfig` is annotated with `@Profile("!test")` to exclude it fr
 - Only Spring context initialization: ~2-3 seconds
 
 ### Test Execution
-- 219 integration tests (including 61 utility tests) run efficiently
+- 240 backend tests (including 54 utility tests) run efficiently
 - Individual test methods: <100ms each
 - Total suite execution: ~30-40 seconds
-- With recent refactoring: 219 tests including ValidationUtils (39), MapperUtils (15), UserService (7)
+- With recent refactoring: 240 tests including ValidationUtils (39), MapperUtils (15), UserService (7)
 
 ## Troubleshooting
 

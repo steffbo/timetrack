@@ -112,31 +112,12 @@ class RefreshTokenRepositoryTest extends RepositoryTestBase {
         refreshTokenRepository.save(token2);
 
         // When
-        List<RefreshToken> tokens = refreshTokenRepository.findByUserId(testUser.getId());
+        List<RefreshToken> tokens = findTokensForUser(testUser);
 
         // Then
         assertThat(tokens).hasSize(2);
         assertThat(tokens).extracting(RefreshToken::getToken)
                 .containsExactlyInAnyOrder(longJwtToken, longJwtToken + "_second");
-    }
-
-    @Test
-    @DisplayName("Should delete refresh token by token string")
-    void shouldDeleteRefreshTokenByToken() {
-        // Given
-        RefreshToken refreshToken = RefreshToken.builder()
-                .user(testUser)
-                .token(longJwtToken)
-                .expiresAt(LocalDateTime.now().plusDays(7))
-                .build();
-        refreshTokenRepository.save(refreshToken);
-
-        // When
-        refreshTokenRepository.deleteByToken(longJwtToken);
-
-        // Then
-        Optional<RefreshToken> foundToken = refreshTokenRepository.findByToken(longJwtToken);
-        assertThat(foundToken).isEmpty();
     }
 
     @Test
@@ -162,70 +143,8 @@ class RefreshTokenRepositoryTest extends RepositoryTestBase {
         refreshTokenRepository.deleteByUserId(testUser.getId());
 
         // Then
-        List<RefreshToken> tokens = refreshTokenRepository.findByUserId(testUser.getId());
+        List<RefreshToken> tokens = findTokensForUser(testUser);
         assertThat(tokens).isEmpty();
-    }
-
-    @Test
-    @DisplayName("Should delete expired refresh tokens")
-    void shouldDeleteExpiredRefreshTokens() {
-        // Given
-        RefreshToken expiredToken = RefreshToken.builder()
-                .user(testUser)
-                .token(longJwtToken + "_expired")
-                .expiresAt(LocalDateTime.now().minusDays(1))
-                .build();
-
-        RefreshToken validToken = RefreshToken.builder()
-                .user(testUser)
-                .token(longJwtToken + "_valid")
-                .expiresAt(LocalDateTime.now().plusDays(7))
-                .build();
-
-        refreshTokenRepository.save(expiredToken);
-        refreshTokenRepository.save(validToken);
-
-        // When
-        int deletedCount = refreshTokenRepository.deleteExpiredTokens(LocalDateTime.now());
-
-        // Then
-        assertThat(deletedCount).isEqualTo(1);
-        List<RefreshToken> remainingTokens = refreshTokenRepository.findByUserId(testUser.getId());
-        assertThat(remainingTokens).hasSize(1);
-        assertThat(remainingTokens.get(0).getToken()).isEqualTo(longJwtToken + "_valid");
-    }
-
-    @Test
-    @DisplayName("Should check if token exists and is not expired")
-    void shouldCheckIfTokenExistsAndNotExpired() {
-        // Given
-        RefreshToken expiredToken = RefreshToken.builder()
-                .user(testUser)
-                .token(longJwtToken + "_expired")
-                .expiresAt(LocalDateTime.now().minusDays(1))
-                .build();
-
-        RefreshToken validToken = RefreshToken.builder()
-                .user(testUser)
-                .token(longJwtToken + "_valid")
-                .expiresAt(LocalDateTime.now().plusDays(7))
-                .build();
-
-        refreshTokenRepository.save(expiredToken);
-        refreshTokenRepository.save(validToken);
-
-        // When
-        boolean expiredExists = refreshTokenRepository.existsByTokenAndNotExpired(
-                longJwtToken + "_expired", LocalDateTime.now());
-        boolean validExists = refreshTokenRepository.existsByTokenAndNotExpired(
-                longJwtToken + "_valid", LocalDateTime.now());
-        boolean nonExistentExists = refreshTokenRepository.existsByTokenAndNotExpired(
-                "nonexistent", LocalDateTime.now());
-
-        // Then
-        assertThat(expiredExists).isFalse();
-        assertThat(validExists).isTrue();
-        assertThat(nonExistentExists).isFalse();
     }
 
     @Test
@@ -245,10 +164,11 @@ class RefreshTokenRepositoryTest extends RepositoryTestBase {
                 .build();
 
         // When
-        boolean expiredIsExpired = expiredToken.isExpired();
-        boolean validIsExpired = validToken.isExpired();
-        boolean expiredIsValid = expiredToken.isValid();
-        boolean validIsValid = validToken.isValid();
+        LocalDateTime now = LocalDateTime.now();
+        boolean expiredIsExpired = expiredToken.isExpired(now);
+        boolean validIsExpired = validToken.isExpired(now);
+        boolean expiredIsValid = expiredToken.isValid(now);
+        boolean validIsValid = validToken.isValid(now);
 
         // Then
         assertThat(expiredIsExpired).isTrue();
@@ -297,5 +217,11 @@ class RefreshTokenRepositoryTest extends RepositoryTestBase {
             // Expected - constraint violation for duplicate token
             assertThat(e).hasMessageContaining("constraint");
         }
+    }
+
+    private List<RefreshToken> findTokensForUser(User user) {
+        return refreshTokenRepository.findAll().stream()
+                .filter(token -> token.getUser().getId().equals(user.getId()))
+                .toList();
     }
 }

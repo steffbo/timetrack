@@ -2,8 +2,6 @@ package cc.remer.timetrack.adapter.persistence;
 
 import cc.remer.timetrack.domain.recurringoffday.RecurringOffDayExemption;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -15,14 +13,6 @@ import java.util.Optional;
  */
 @Repository
 public interface RecurringOffDayExemptionRepository extends JpaRepository<RecurringOffDayExemption, Long> {
-
-    /**
-     * Find all exemptions for a specific recurring off-day rule.
-     *
-     * @param recurringOffDayId the recurring off-day ID
-     * @return list of exemptions
-     */
-    List<RecurringOffDayExemption> findByRecurringOffDayId(Long recurringOffDayId);
 
     /**
      * Find all exemptions for a specific recurring off-day rule, ordered by date.
@@ -50,20 +40,6 @@ public interface RecurringOffDayExemptionRepository extends JpaRepository<Recurr
      * @return true if an exemption exists
      */
     boolean existsByRecurringOffDayIdAndExemptionDate(Long recurringOffDayId, LocalDate exemptionDate);
-
-    /**
-     * Find all exemptions for a user's recurring off-days on a specific date.
-     * Useful for checking if any of a user's recurring off-days are exempted on a given date.
-     *
-     * @param userId the user ID
-     * @param date the date to check
-     * @return list of exemptions
-     */
-    @Query("SELECT e FROM RecurringOffDayExemption e " +
-           "WHERE e.recurringOffDay.user.id = :userId " +
-           "AND e.exemptionDate = :date")
-    List<RecurringOffDayExemption> findByUserIdAndDate(
-            @Param("userId") Long userId, @Param("date") LocalDate date);
 
     /**
      * Delete all exemptions for a recurring off-day.

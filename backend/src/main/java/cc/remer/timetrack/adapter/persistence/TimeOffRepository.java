@@ -17,14 +17,6 @@ import java.util.List;
 public interface TimeOffRepository extends JpaRepository<TimeOff, Long> {
 
     /**
-     * Find all time off entries for a user.
-     *
-     * @param userId the user ID
-     * @return list of time off entries
-     */
-    List<TimeOff> findByUserId(Long userId);
-
-    /**
      * Find all time off entries for a user, ordered by start date descending.
      *
      * @param userId the user ID
@@ -63,16 +55,4 @@ public interface TimeOffRepository extends JpaRepository<TimeOff, Long> {
                                               @Param("timeOffType") TimeOffType timeOffType,
                                               @Param("yearStart") LocalDate yearStart,
                                               @Param("yearEnd") LocalDate yearEnd);
-
-    /**
-     * Find time off entry that contains a specific date.
-     *
-     * @param userId the user ID
-     * @param date the date
-     * @return list of time off entries (could be multiple overlapping)
-     */
-    @Query("SELECT t FROM TimeOff t WHERE t.user.id = :userId " +
-           "AND t.startDate <= :date AND t.endDate >= :date")
-    List<TimeOff> findByUserIdAndDate(@Param("userId") Long userId,
-                                       @Param("date") LocalDate date);
 }

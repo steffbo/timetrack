@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+
 /**
  * Use case for acknowledging a conflict warning.
  */
@@ -17,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AcknowledgeConflictWarning {
 
     private final RecurringOffDayConflictWarningRepository warningRepository;
+    private final Clock clock;
 
     /**
      * Acknowledge a warning for the authenticated user.
@@ -40,7 +44,7 @@ public class AcknowledgeConflictWarning {
         }
 
         // Mark as acknowledged
-        warning.acknowledge();
+        warning.acknowledge(LocalDateTime.now(clock));
         RecurringOffDayConflictWarning saved = warningRepository.save(warning);
 
         log.info("Warning {} acknowledged by user {}", warningId, user.getId());

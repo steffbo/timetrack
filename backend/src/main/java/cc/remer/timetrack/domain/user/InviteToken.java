@@ -37,12 +37,12 @@ public class InviteToken {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiresAt);
+    public boolean isExpired(LocalDateTime now) {
+        return now.isAfter(expiresAt);
     }
 
-    public boolean isValid() {
-        return !isExpired();
+    public boolean isValid(LocalDateTime now) {
+        return !isExpired(now);
     }
 
     @Override
@@ -50,11 +50,11 @@ public class InviteToken {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         InviteToken that = (InviteToken) o;
-        return Objects.equals(id, that.id) && Objects.equals(token, that.token);
+        return id != null && Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, token);
+        return getClass().hashCode();
     }
 }

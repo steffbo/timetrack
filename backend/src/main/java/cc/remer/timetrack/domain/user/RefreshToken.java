@@ -41,22 +41,12 @@ public class RefreshToken {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * Check if the refresh token is expired.
-     *
-     * @return true if the token is expired
-     */
-    public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiresAt);
+    public boolean isExpired(LocalDateTime now) {
+        return now.isAfter(expiresAt);
     }
 
-    /**
-     * Check if the refresh token is still valid.
-     *
-     * @return true if the token is not expired
-     */
-    public boolean isValid() {
-        return !isExpired();
+    public boolean isValid(LocalDateTime now) {
+        return !isExpired(now);
     }
 
     @Override
@@ -64,12 +54,12 @@ public class RefreshToken {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RefreshToken that = (RefreshToken) o;
-        return Objects.equals(id, that.id) && Objects.equals(token, that.token);
+        return id != null && Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, token);
+        return getClass().hashCode();
     }
 
     @Override
@@ -78,7 +68,6 @@ public class RefreshToken {
                 "id=" + id +
                 ", userId=" + (user != null ? user.getId() : null) +
                 ", expiresAt=" + expiresAt +
-                ", isExpired=" + isExpired() +
                 '}';
     }
 }
