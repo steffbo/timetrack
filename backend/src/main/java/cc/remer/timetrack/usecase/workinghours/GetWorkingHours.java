@@ -3,7 +3,6 @@ package cc.remer.timetrack.usecase.workinghours;
 import cc.remer.timetrack.adapter.persistence.WorkingHoursRepository;
 import cc.remer.timetrack.api.model.WorkingHoursResponse;
 import cc.remer.timetrack.domain.user.Role;
-import cc.remer.timetrack.domain.user.User;
 import cc.remer.timetrack.domain.workinghours.WorkingHours;
 import cc.remer.timetrack.exception.ForbiddenException;
 import cc.remer.timetrack.exception.UserNotFoundException;
@@ -37,15 +36,7 @@ public class GetWorkingHours {
     public WorkingHoursResponse execute(Long userId) {
         log.debug("Getting working hours for user ID: {}", userId);
 
-        User user = userService.getUserOrThrow(userId);
-
-        List<WorkingHours> workingHoursList = workingHoursRepository.findByUserId(userId);
-
-        if (workingHoursList.isEmpty()) {
-            throw new UserNotFoundException("Arbeitsstunden-Konfiguration nicht gefunden");
-        }
-
-        return mapper.toResponse(userId, workingHoursList);
+        return getExistingWorkingHours(userId);
     }
 
     /**
@@ -64,14 +55,17 @@ public class GetWorkingHours {
             throw new ForbiddenException("Keine Berechtigung, Arbeitsstunden anderer Benutzer anzuzeigen");
         }
 
-        User targetUser = userService.getUserOrThrow(targetUserId);
+        return getExistingWorkingHours(targetUserId);
+    }
 
-        List<WorkingHours> workingHoursList = workingHoursRepository.findByUserId(targetUserId);
+    private WorkingHoursResponse getExistingWorkingHours(Long userId) {
+        userService.getUserOrThrow(userId);
 
+        List<WorkingHours> workingHoursList = workingHoursRepository.findByUserId(userId);
         if (workingHoursList.isEmpty()) {
             throw new UserNotFoundException("Arbeitsstunden-Konfiguration nicht gefunden");
         }
 
-        return mapper.toResponse(targetUserId, workingHoursList);
+        return mapper.toResponse(userId, workingHoursList);
     }
 }

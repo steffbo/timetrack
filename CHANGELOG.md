@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Working Hours Refactor**: Clarified day-level update responsibilities without changing API behavior
+  - Shared validation, time parsing, break defaults, net-hour calculation, and entity mutation between bulk and single-day updates
+  - Reduced mapper API surface by removing an unused untyped update helper
+  - Added focused coverage for single-day working-hours updates
+
 - **Backend Persistence Refactor**: Cleaned up entity identity and repository boundaries without changing API behavior
   - Entity equality now avoids lazy relation access and uses persisted IDs consistently
   - Token expiry and warning acknowledgment now use the application clock for deterministic behavior

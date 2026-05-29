@@ -37,6 +37,9 @@ class WorkingHoursIntegrationTest extends RepositoryTestBase {
     @Autowired
     private UpdateWorkingHours updateWorkingHours;
 
+    @Autowired
+    private UpdateWorkingDay updateWorkingDay;
+
     private User testAdmin;
     private User testUser;
 
@@ -332,6 +335,63 @@ class WorkingHoursIntegrationTest extends RepositoryTestBase {
 
         WorkingDayConfig friday = findDay(response, 5);
         assertThat(friday.getHours()).isEqualTo(4.0);
+    }
+
+    @Test
+    @DisplayName("Should update a single working day with calculated net hours")
+    void shouldUpdateSingleWorkingDayWithCalculatedNetHours() {
+        // Given
+        UpdateWorkingDayConfig dayConfig = new UpdateWorkingDayConfig();
+        dayConfig.setWeekday(1);
+        dayConfig.setHours(0.0);
+        dayConfig.setIsWorkingDay(true);
+        dayConfig.setStartTime("09:00");
+        dayConfig.setEndTime("17:30");
+        dayConfig.setBreakMinutes(30);
+
+        // When
+        WorkingDayConfig response = updateWorkingDay.execute(testUser.getId(), 1, dayConfig);
+
+        // Then
+        assertThat(response.getWeekday()).isEqualTo(1);
+        assertThat(response.getHours()).isEqualTo(8.0);
+        assertThat(response.getStartTime()).isEqualTo("09:00");
+        assertThat(response.getEndTime()).isEqualTo("17:30");
+        assertThat(response.getBreakMinutes()).isEqualTo(30);
+
+        WorkingHours persisted = workingHoursRepository
+                .findByUserIdAndWeekday(testUser.getId(), (short) 1)
+                .orElseThrow();
+        assertThat(persisted.getHours()).isEqualByComparingTo("8.00");
+        assertThat(persisted.getBreakMinutes()).isEqualTo(30);
+    }
+
+    @Test
+    @DisplayName("Should use path weekday when updating a single working day")
+    void shouldUsePathWeekdayWhenUpdatingSingleWorkingDay() {
+        // Given
+        UpdateWorkingDayConfig dayConfig = new UpdateWorkingDayConfig();
+        dayConfig.setWeekday(1);
+        dayConfig.setHours(6.0);
+        dayConfig.setIsWorkingDay(true);
+
+        // When
+        WorkingDayConfig response = updateWorkingDay.execute(testUser.getId(), 3, dayConfig);
+
+        // Then
+        assertThat(response.getWeekday()).isEqualTo(3);
+        assertThat(response.getHours()).isEqualTo(6.0);
+        assertThat(response.getBreakMinutes()).isEqualTo(0);
+
+        WorkingHours monday = workingHoursRepository
+                .findByUserIdAndWeekday(testUser.getId(), (short) 1)
+                .orElseThrow();
+        WorkingHours wednesday = workingHoursRepository
+                .findByUserIdAndWeekday(testUser.getId(), (short) 3)
+                .orElseThrow();
+
+        assertThat(monday.getHours()).isEqualByComparingTo("8.00");
+        assertThat(wednesday.getHours()).isEqualByComparingTo("6.00");
     }
 
     private UpdateWorkingHoursRequest createUpdateRequest(double[] hours, boolean[] isWorkingDay) {

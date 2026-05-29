@@ -29,7 +29,7 @@ A modern time tracking API built with Spring Boot 4, Java 25, and PostgreSQL fol
 - **API Documentation:** OpenAPI 3.0 with Swagger UI
 - **Build Tool:** Maven
 - **Database Migrations:** Flyway
-- **Testing:** JUnit 5, Testcontainers (240 backend tests)
+- **Testing:** JUnit 5, Testcontainers (242 backend tests)
 
 ### Frontend
 - **Framework:** Vue 3 with Composition API
