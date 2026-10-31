@@ -1,0 +1,3 @@
+/timetrack
+/web/dist/*
+!/web/dist/index.html

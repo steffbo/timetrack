@@ -1,71 +1,26 @@
-# Stage 1: Build Frontend
 FROM node:20-alpine AS frontend-build
 WORKDIR /frontend
-
-# Configure npm to use public registry (override any local config)
 RUN npm config set registry https://registry.npmjs.org/
-
-# Copy frontend package files
 COPY frontend/package*.json ./
-
-# Install dependencies
 RUN npm ci
-
-# Copy OpenAPI spec (needed for API client generation)
-COPY openapi.yaml ../openapi.yaml
-
-# Copy frontend source
+COPY openapi.yaml /openapi.yaml
 COPY frontend/ ./
+RUN npm run generate-api && npm run build
 
-# Generate API client from OpenAPI spec
-RUN npm run generate-api
+FROM golang:1.25-alpine AS backend-build
+WORKDIR /src/backend
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+COPY backend/ ./
+COPY --from=frontend-build /frontend/dist ./web/dist
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /timetrack ./cmd/timetrack
 
-# Build frontend for production
-RUN npm run build
-
-# Stage 2: Build Backend
-FROM maven:3.9.11-eclipse-temurin-25-alpine AS backend-build
+FROM alpine:3.22
+RUN apk add --no-cache ca-certificates tzdata && addgroup -S timetrack && adduser -S timetrack -G timetrack
 WORKDIR /app
-
-# Copy pom.xml and download dependencies (cached layer)
-COPY backend/pom.xml .
-COPY backend/.mvn .mvn
-COPY backend/mvnw .
-RUN ./mvnw dependency:go-offline -B
-
-# Copy OpenAPI spec (needed for backend code generation)
-COPY openapi.yaml ../openapi.yaml
-
-# Copy source code and build
-COPY backend/src ./src
-RUN ./mvnw clean package -DskipTests
-
-# Stage 3: Runtime
-FROM eclipse-temurin:25-jre-alpine
-WORKDIR /app
-
-# Create non-root user
-RUN addgroup -S spring && adduser -S spring -G spring
-
-# Create directory for static files
-RUN mkdir -p /app/static && chown -R spring:spring /app/static
-
-# Copy jar from backend build stage
-COPY --from=backend-build /app/target/*.jar app.jar
-
-# Copy frontend dist files from frontend build stage to static resources
-# Spring Boot will serve these from classpath:/static/
-COPY --from=frontend-build --chown=spring:spring /frontend/dist /app/static
-
-# Switch to non-root user
-USER spring:spring
-
-# Expose port (8811 for production, can be overridden)
-EXPOSE 8811
-
-# Health check
+COPY --from=backend-build /timetrack ./timetrack
+USER timetrack:timetrack
+EXPOSE 8811 7080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8811/api/actuator/health || exit 1
-
-# Run application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ CMD wget --spider "http://localhost:${MANAGEMENT_PORT:-7080}/actuator/health" || exit 1
+ENTRYPOINT ["/app/timetrack"]

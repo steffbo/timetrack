@@ -21,13 +21,13 @@ This guide covers deploying the Time Tracking application to production at **zei
 Internet → Caddy (zeit.remer.cc) → Docker Compose
                                     ├── PostgreSQL (persistent volume)
                                     └── Timetrack App (single container)
-                                        ├── Spring Boot backend (port 8811)
-                                        └── Frontend static files (served by Spring Boot)
+                                        ├── Go backend (port 8811)
+                                        └── Embedded frontend files (served by the backend)
 ```
 
 **Key Design Decisions:**
 - **Single Docker image**: Frontend is built and bundled into the backend image
-- **Spring Boot serves everything**: Both API endpoints and static frontend files
+- **The Go backend serves everything**: Both API endpoints and static frontend files
 - **Caddy handles HTTPS**: Automatic SSL/TLS certificates via Let's Encrypt
 - **Manual deployment**: Pull images and restart containers manually (no automated CD)
 - **Persistent database**: PostgreSQL data stored in Docker volume
@@ -194,7 +194,7 @@ This will:
 - Start PostgreSQL container
 - Wait for PostgreSQL to be healthy
 - Start the application container
-- Run Flyway database migrations automatically
+- Apply embedded SQL migrations automatically
 
 ### 3. Verify Services are Running
 
@@ -315,7 +315,7 @@ sudo systemctl enable docker
 
 Consider setting up monitoring for:
 - Application uptime (e.g., UptimeRobot, Pingdom)
-- Server resources (CPU, memory, disk)
+- Server resources (CPU, disk; backend uses about 10–25 MB RSS, with 11 MiB idle and 23 MB peak under PDF export load)
 - Docker container health
 - Log aggregation
 
@@ -520,7 +520,7 @@ docker compose -f docker-compose.prod.yml up -d
    docker compose -f docker-compose.prod.yml exec app ls -la /app/static
    ```
 
-2. **Check Spring Boot is serving static content:**
+2. **Check the backend is serving static content:**
    ```bash
    curl -I http://localhost:8811/
    # Should return 200 OK with Content-Type: text/html
@@ -638,7 +638,7 @@ Regularly review logs for:
 ## Support and Documentation
 
 - **Application Documentation**: See `README.md` in the repository
-- **API Documentation**: Available at `/api/swagger-ui.html` (if enabled)
+- **API**: Defined by the repository `openapi.yaml`
 - **Development Guide**: See `CLAUDE.md` for development workflows
 - **GitHub Issues**: Report issues at https://github.com/stefan-remer/timetrack/issues
 

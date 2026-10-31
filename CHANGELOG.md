@@ -18,7 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Token expiry and warning acknowledgment now use the application clock for deterministic behavior
   - Removed unused repository methods and added focused persistence integration coverage
 
-### Added
+### Changed
+- **Backend runtime: Go**: The backend is a static binary with the frontend embedded; API, database, and environment configuration remain compatible. Runtime memory is about 11 MiB at idle, compared with about 358 MiB previously.
+
 - **Admin Invite Links**: Admins can onboard users without setting passwords directly
   - Create user without password → user created as pending, invite link generated automatically
   - Invite link icon per row in user table → generates/regenerates invite or password-reset link

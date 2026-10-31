@@ -1,54 +1,31 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# Go
+/backend/timetrack
+/backend/*.out
+/backend/coverage.*
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
+# Frontend build output and dependencies
+/frontend/node_modules/
+/frontend/dist/
+/node_modules/
 /dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
+# IDEs
+.idea/
 .vscode/
+*.swp
 
-### Application ###
-application-local.yml
-application-dev.yml
-logs/
+# Local configuration and logs
 .env
 .env.local
 .env.prod
+/logs/
+*.log
+*.pid
 docker-compose.prod.override.yml
 
-### Generated ###
-generated-sources/
-generated/
+# Generated API output
+/backend/internal/api/generated.go
+/frontend/src/api/generated/
 
-### macOS ###
+# OS files
 .DS_Store
-
-### Java ###
-*.log
-.pid files and log files
-*.log

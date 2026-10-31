@@ -20,19 +20,18 @@ services:
 
   app:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: timetrack-app
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/${DB_USERNAME:-timetrack}
       DB_USERNAME: ${DB_USERNAME:-timetrack}
       DB_PASSWORD: ${DB_PASSWORD:-timetrack}
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-must-be-at-least-256-bits-long-for-HS256}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-must-be-at-least-32-bytes}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
-      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-15552000000}
       SERVER_PORT: ${SERVER_PORT:-8080}
       MANAGEMENT_PORT: ${MANAGEMENT_PORT:-7080}
-      SPRINGDOC_ENABLED: ${SPRINGDOC_ENABLED:-false}  # Disable Swagger in production
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
     ports:
       - "${SERVER_PORT:-8080}:8080"

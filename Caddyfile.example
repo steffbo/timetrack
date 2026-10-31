@@ -3,8 +3,8 @@
 # Typically: /etc/caddy/Caddyfile or use Caddy's API
 
 zeit.remer.cc {
-    # Reverse proxy all requests to Spring Boot application
-    # Spring Boot serves both API endpoints and frontend static files
+    # Reverse proxy all requests to the application server
+    # The backend serves API endpoints and embedded frontend files
     reverse_proxy localhost:8811
 
     # Enable gzip compression

@@ -1,330 +1,85 @@
-# Time Tracking API
+# Time Tracking Application
 
-A modern time tracking API built with Spring Boot 4, Java 25, and PostgreSQL following an OpenAPI-first, use-case-driven architecture.
+A time tracking application with a Go HTTP backend, PostgreSQL database, and Vue 3 frontend.
+The API contract is defined by the root `openapi.yaml`.
 
 ## Features
 
-- 🔐 JWT-based authentication with automatic token refresh
-- 👥 User management with role-based access control (Admin/User)
-- ⏰ Time entry tracking (clock in/out with active session management)
-- 📅 Time-off tracking (vacation, sick, personal, public holidays)
-- 🔄 Recurring off-day patterns (weekly/monthly)
-- 🏖️ Vacation balance management with half-day holidays (Dec 24 & 31)
-- 🇩🇪 German public holidays (Berlin & Brandenburg)
-- ⚠️ Conflict warning system for recurring off-days
-- 📊 Dashboard with interactive calendar, statistics, and caching
-- 📄 PDF/CSV export for monthly reports
-- ⏳ Custom working hours per weekday with time ranges
-- 🌐 Bilingual interface (German & English)
-- 📝 OpenAPI/Swagger documentation
-- 🐳 Docker support with Docker Compose
+- JWT authentication, refresh tokens, user management and impersonation
+- Time entries, working hours, leave, public holidays and recurring off-days
+- Vacation balances, conflict warnings, dashboard calendar and PDF/CSV reports
+- German and English interface
+- Single container image with the frontend embedded in the backend binary
 
-## Tech Stack
+## Stack
 
-### Backend
-- **Framework:** Spring Boot 4
-- **Language:** Java 25
-- **Database:** PostgreSQL 17
-- **Authentication:** JWT (JSON Web Tokens)
-- **API Documentation:** OpenAPI 3.0 with Swagger UI
-- **Build Tool:** Maven
-- **Database Migrations:** Flyway
-- **Testing:** JUnit 5, Testcontainers (242 backend tests)
+- Backend: Go (version in `backend/go.mod`), `net/http`, pgx, PostgreSQL 17
+- Frontend: Vue 3, TypeScript, Vite, PrimeVue 4
+- API generation: oapi-codegen for Go and the existing frontend generator
+- Tests: Go testing and testcontainers-go
+- Deployment: Docker Compose and Caddy
 
-### Frontend
-- **Framework:** Vue 3 with Composition API
-- **Language:** TypeScript
-- **Build Tool:** Vite
-- **UI Library:** PrimeVue 4 (Aura theme)
-- **Routing:** Vue Router
-- **I18n:** vue-i18n (German & English)
-- **HTTP Client:** Axios with OpenAPI-generated client
+## Run locally
 
-### Infrastructure
-- **Containerization:** Docker & Docker Compose
-- **Reverse Proxy:** Caddy (production)
-- **CI/CD:** GitHub Actions
-
-## Prerequisites
-
-- Java 25 (JDK)
-- Docker & Docker Compose (for containerized setup)
-- Maven 3.9+ (if running locally without Docker)
-
-## Getting Started
-
-### 1. Clone the repository
-
-```bash
-git clone <repository-url>
-cd timetrack
-```
-
-### 2. Configure environment variables
-
-Copy the example environment file:
+Prerequisites: Go version from `backend/go.mod`; Node/npm for frontend work; Docker for PostgreSQL
+and integration tests.
 
 ```bash
 cp .env.example .env
-```
-
-Edit `.env` with your configuration:
-
-```properties
-# Database
-DB_URL=jdbc:postgresql://localhost:5432/timetrack
-DB_USERNAME=timetrack
-DB_PASSWORD=timetrack
-
-# Server
-SERVER_PORT=8080
-MANAGEMENT_PORT=7080  # Management endpoints (localhost only)
-
-# API Documentation (disable in production)
-SPRINGDOC_ENABLED=true  # Set to false in production
-
-# JWT (change in production!)
-JWT_SECRET=your-secret-key-change-this-in-production-must-be-at-least-256-bits-long-for-HS256
-JWT_EXPIRATION=86400000
-JWT_REFRESH_EXPIRATION=15552000000
-```
-
-### 3. Run with Docker Compose (Recommended)
-
-Start the application and database:
-
-```bash
-docker-compose up -d
-```
-
-The API will be available at:
-- **API Base:** http://localhost:8080/api
-- **Swagger UI:** http://localhost:8080/api/swagger-ui.html
-- **API Docs:** http://localhost:8080/api/v1/api-docs
-
-Management endpoints (localhost only):
-- **Health Check:** http://localhost:7080/actuator/health
-- **Metrics:** http://localhost:7080/actuator/metrics
-- **Info:** http://localhost:7080/actuator/info
-
-To view logs:
-
-```bash
-docker-compose logs -f app
-```
-
-To stop:
-
-```bash
-docker-compose down
-```
-
-To stop and remove volumes (database data):
-
-```bash
-docker-compose down -v
-```
-
-### 4. Run locally (Alternative)
-
-#### Start PostgreSQL
-
-```bash
-docker-compose up -d postgres
-```
-
-Or use your own PostgreSQL instance and update `.env` accordingly.
-
-#### Build and run the application
-
-```bash
+export PATH=$HOME/.local/go/bin:$HOME/go/bin:$PATH
+docker compose up -d postgres
 cd backend
-./mvnw clean install
-./mvnw spring-boot:run
+go run ./cmd/timetrack
 ```
 
-## Default Credentials
+The backend defaults to API port `8080`, management port `7080`, and frontend base URL
+`http://localhost:5173`. The database defaults are `timetrack` for both username and password,
+with database `timetrack` on localhost. Set `JWT_SECRET` to at least 32 UTF-8 bytes.
 
-A default admin user is created on first startup:
+For a complete local stack, run `docker compose up -d` from the repository root. The frontend
+is available on the configured API port and management health is at `/actuator/health` on
+`MANAGEMENT_PORT`.
 
-- **Email:** admin@timetrack.local
-- **Password:** admin1
-
-⚠️ **Change this password immediately in production!**
-
-## API Documentation
-
-### Swagger UI
-
-Interactive API documentation is available at:
-
-```
-http://localhost:8080/api/swagger-ui.html
-```
-
-### OpenAPI Specification
-
-The raw OpenAPI spec can be accessed at:
-
-```
-http://localhost:8080/api/v1/api-docs
-```
-
-### Authentication
-
-All endpoints (except login and refresh) require a JWT token.
-
-1. **Login:** `POST /api/v1/auth/login`
-   ```json
-   {
-     "email": "admin@timetrack.local",
-     "password": "admin1"
-   }
-   ```
-
-2. Use the returned `accessToken` in the `Authorization` header:
-   ```
-   Authorization: Bearer <your-access-token>
-   ```
-
-## Project Structure
-
-```
-timetrack/
-├── backend/                         # Spring Boot backend application
-│   ├── src/
-│   │   └── main/java/cc/remer/timetrack/
-│   │       ├── domain/              # Domain entities (User, TimeEntry, WorkingHours, etc.)
-│   │       ├── usecase/             # Business logic organized by use cases
-│   │       │   ├── authentication/  # Login, logout, token refresh
-│   │       │   ├── user/            # User management
-│   │       │   ├── workinghours/    # Working hours configuration
-│   │       │   ├── timeentry/       # Time tracking (clock in/out)
-│   │       │   ├── timeoff/         # Vacation & absence tracking
-│   │       │   ├── recurringoffday/ # Recurring patterns & conflict detection
-│   │       │   ├── vacationbalance/ # Vacation days calculation
-│   │       │   └── report/          # PDF/CSV export generation
-│   │       ├── adapter/
-│   │       │   ├── web/             # REST controllers
-│   │       │   ├── persistence/     # JPA repositories
-│   │       │   └── security/        # Security configuration
-│   │       ├── config/              # Application configuration
-│   │       ├── util/                # Utility classes (ValidationUtils, MapperUtils)
-│   │       └── exception/           # Exception handling
-│   ├── pom.xml
-│   └── Dockerfile
-├── frontend/                        # Vue 3 frontend application
-│   ├── src/
-│   │   ├── views/                   # 9 page components (Dashboard, Profile, etc.)
-│   │   ├── components/              # Reusable UI components
-│   │   ├── api/                     # OpenAPI-generated TypeScript client
-│   │   ├── i18n/                    # German & English translations
-│   │   ├── router/                  # Vue Router configuration
-│   │   └── composables/             # Shared logic (useAuth, etc.)
-│   └── package.json
-├── openapi.yaml                     # API specification (single source of truth)
-├── docker-compose.yml               # Development environment
-└── README.md
-```
+The environment variables consumed by the backend are `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`,
+`JWT_SECRET`, `JWT_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `SERVER_PORT`, `MANAGEMENT_PORT`,
+`APP_FRONTEND_BASE_URL`, `ALLOWED_ORIGINS`, `SPRING_PROFILES_ACTIVE`, `LOGGING_LEVEL_ROOT`,
+`LOGGING_LEVEL_APP`, and `LOGGING_LEVEL_CC_REMER_TIMETRACK`. The established
+`SPRING_PROFILES_ACTIVE` and `LOGGING_LEVEL_CC_REMER_TIMETRACK` names remain supported. Durations
+are milliseconds. `DB_URL` accepts `postgres://` and `postgresql://` URLs, including the existing
+`jdbc:postgresql://` form.
 
 ## Development
 
-### Code Generation
-
-API interfaces and models are generated from the OpenAPI specification during the Maven build:
+Run backend commands from `backend/`:
 
 ```bash
-cd backend
-./mvnw generate-sources
+go test ./...
+go vet ./...
+go run ./cmd/timetrack
+make generate
+make test
+make vet
+make build
 ```
 
-Generated code is located in `backend/target/generated-sources/openapi/`
+`make generate` regenerates the Go API bindings. Frontend commands and development instructions
+are in [frontend/README.md](frontend/README.md). See [backend/README.md](backend/README.md) for
+package structure, SQL conventions, handlers, configuration and testing details.
 
-### Database Migrations
+## Project layout
 
-Database schema is managed with Flyway. Migration scripts are in:
-
-```
-backend/src/main/resources/db/migration/
-```
-
-Migrations run automatically on application startup.
-
-### Testing
-
-Run all tests:
-
-```bash
-cd backend
-./mvnw test
-```
-
-Run integration tests (uses Testcontainers):
-
-```bash
-cd backend
-./mvnw verify
-```
-
-## Semantic Versioning
-
-This project uses semantic versioning with automated version bumping based on commit messages:
-
-- **MAJOR (X.0.0):** `BREAKING:` or `breaking:` - Breaking changes
-- **MINOR (0.X.0):** `feat:` or `feature:` - New features
-- **PATCH (0.0.X):** `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `style:` - Bug fixes and maintenance
-
-Example:
-```bash
-git commit -m "feat: Add monthly statistics endpoint"
+```text
+backend/       Go application, embedded SQL migrations, tests and Dockerfile
+frontend/      Vue application
+openapi.yaml   Shared API contract
 ```
 
 ## Deployment
 
-For comprehensive deployment instructions, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+See [DEPLOYMENT.md](DEPLOYMENT.md). The production container uses the Go backend and embedded SPA.
+The Go process typically uses about 10–25 MB RSS: 11 MiB idle and 23 MB peak under PDF export load.
 
-### Quick Production Overview
+## Default credentials
 
-The application is designed for production deployment at **zeit.remer.cc** with:
-
-- **Single Docker Image**: Frontend and backend bundled together
-- **GitHub Container Registry**: Automated image builds via GitHub Actions
-- **Caddy Reverse Proxy**: Automatic HTTPS with Let's Encrypt
-- **PostgreSQL**: Persistent database with Docker volumes
-- **Manual Deployment**: Pull images and restart containers on the server
-
-Key files:
-- `docker-compose.prod.yml` - Production Docker Compose configuration
-- `.env.example.prod` - Production environment template
-- `Caddyfile.example` - Caddy reverse proxy configuration
-- `DEPLOYMENT.md` - Complete deployment guide
-
-### CI/CD Pipeline
-
-GitHub Actions automatically:
-1. **CI Workflow** (`.github/workflows/ci.yml`): Runs tests on every push and PR
-2. **Docker Workflow** (`.github/workflows/docker.yml`): Builds and publishes Docker images to ghcr.io on main branch push
-
-### Environment Variables in Production
-
-Ensure you set secure values for:
-
-- `JWT_SECRET` - Use a strong, random secret (minimum 256 bits)
-- `DB_PASSWORD` - Use a strong database password
-- `ALLOWED_ORIGINS` - Restrict to your frontend domain
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Write/update tests
-4. Ensure all tests pass
-5. Submit a pull request
-
-## License
-
-[Your License Here]
-
-## Support
-
-For issues and questions, please create an issue in the repository.
+The initial administrator is `admin@timetrack.local` with password `admin1`. Change this password
+when deploying.
