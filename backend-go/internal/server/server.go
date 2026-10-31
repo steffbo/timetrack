@@ -2,6 +2,7 @@
 package server
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -40,5 +41,9 @@ func (s *Server) Router() http.Handler {
 		RequestErrorHandlerFunc: fail, ResponseErrorHandlerFunc: fail})
 	api.HandlerWithOptions(strict, api.StdHTTPServerOptions{BaseRouter: mux, ErrorHandlerFunc: badRequest})
 	mux.Handle("/", web.Handler())
+	// Spring falls through to its static resource handler and maps NoResourceFoundException to 500.
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		fail(w, r, fmt.Errorf("No static resource %s for request '%s'.", r.URL.Path[1:], r.URL.Path))
+	})
 	return s.cors(s.security(s.validate(compress(mux))))
 }
