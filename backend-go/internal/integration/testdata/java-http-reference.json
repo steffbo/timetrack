@@ -1,0 +1,74 @@
+{
+  "anonymous": {
+    "status": 401,
+    "body": {
+      "status": 401,
+      "error": "Unauthorized",
+      "path": "/api/users/me"
+    }
+  },
+  "logout anonymous": {
+    "status": 500,
+    "body": {
+      "code": "INTERNAL_ERROR",
+      "message": "Ein interner Fehler ist aufgetreten",
+      "details": "class java.lang.String cannot be cast to class cc.remer.timetrack.adapter.security.UserPrincipal (java.lang.String is in module java.base of loader 'bootstrap'; cc.remer.timetrack.adapter.security.UserPrincipal is in unnamed module of loader org.springframework.boot.loader.launch.LaunchedClassLoader @4617c264)"
+    }
+  },
+  "wrong password": {
+    "status": 401,
+    "body": {
+      "code": "INVALID_CREDENTIALS",
+      "message": "Ungültige Anmeldedaten",
+      "details": null
+    }
+  },
+  "missing fields": {
+    "status": 400,
+    "body": {
+      "code": "VALIDATION_ERROR",
+      "message": "Validierungsfehler",
+      "details": "email: must not be null, password: must not be null"
+    }
+  },
+  "invalid email": {
+    "status": 400,
+    "body": {
+      "code": "VALIDATION_ERROR",
+      "message": "Validierungsfehler",
+      "details": "email: must be a well-formed email address"
+    }
+  },
+  "missing invite": {
+    "status": 404,
+    "body": {
+      "code": "INVITE_TOKEN_NOT_FOUND",
+      "message": "Einladungslink nicht gefunden",
+      "details": null
+    }
+  },
+  "invalid refresh": {
+    "status": 400,
+    "body": {
+      "code": "INVALID_ARGUMENT",
+      "message": "Ungültiges Refresh-Token",
+      "details": null
+    }
+  },
+  "register invalid": {
+    "status": 400,
+    "body": {
+      "code": "VALIDATION_ERROR",
+      "message": "Validierungsfehler",
+      "details": "password: size must be between 6 and 2147483647, lastName: size must be between 1 and 100, firstName: size must be between 1 and 100"
+    }
+  },
+  "german validation": {
+    "status": 400,
+    "body": {
+      "code": "VALIDATION_ERROR",
+      "message": "Validierungsfehler",
+      "details": "password: darf nicht null sein, email: darf nicht null sein"
+    }
+  }
+}
