@@ -11,7 +11,10 @@ import (
 	"time"
 )
 
-//go:embed dist/*
+// all: is required, otherwise files starting with _ or . (e.g. Vite's
+// _plugin-vue_export-helper-*.js chunk) are silently left out.
+//
+//go:embed all:dist
 var assets embed.FS
 
 func Handler() http.Handler {
@@ -22,11 +25,6 @@ func Handler() http.Handler {
 			return
 		}
 		name := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
-		if strings.HasPrefix(name, "assets/") {
-			w.Header().Set("Cache-Control", "max-age=31536000, public, immutable")
-		} else {
-			w.Header().Set("Cache-Control", "no-cache, must-revalidate")
-		}
 		if name == "" || name == "." {
 			name = "index.html"
 		}
@@ -38,6 +36,11 @@ func Handler() http.Handler {
 		if err != nil {
 			http.NotFound(w, r)
 			return
+		}
+		if strings.HasPrefix(name, "assets/") {
+			w.Header().Set("Cache-Control", "max-age=31536000, public, immutable")
+		} else {
+			w.Header().Set("Cache-Control", "no-cache, must-revalidate")
 		}
 		http.ServeContent(w, r, name, time.Time{}, bytes.NewReader(data))
 	})
