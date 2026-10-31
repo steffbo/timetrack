@@ -109,7 +109,9 @@ func TestLoginSecurityLogout(t *testing.T) {
 	status, b = testutil.Request(t, srv.URL, "GET", "/api/users", session.AccessToken, nil)
 	errorCode(t, status, b, 500, "INTERNAL_ERROR", "Ein interner Fehler ist aufgetreten")
 	status, b = testutil.Request(t, srv.URL, "GET", "/api/users/me", session.RefreshToken, nil)
-	errorCode(t, status, b, 501, "NOT_IMPLEMENTED", "Not Implemented") // Java also accepts refresh JWTs as bearer JWTs.
+	if status != 200 {
+		t.Fatalf("refresh JWT should authenticate current user: %d %s", status, b)
+	} // Java accepts refresh JWTs as bearer JWTs.
 	status, b = testutil.Request(t, srv.URL, "POST", "/api/auth/logout", session.AccessToken, nil)
 	if status != 204 {
 		t.Fatalf("%d %s", status, b)
@@ -342,7 +344,7 @@ func sample(schema *openapi3.Schema) any {
 		return "sample"
 	}
 }
-func TestEveryNonAuthOperationIsStubbed(t *testing.T) {
+func TestPackageBOperationsAreImplemented(t *testing.T) {
 	harness.Reset(t)
 	pw := "password"
 	harness.User(t, "admin@test.local", domain.Admin, &pw)
@@ -351,11 +353,19 @@ func TestEveryNonAuthOperationIsStubbed(t *testing.T) {
 	spec, err := api.GetSwagger()
 	check(t, err)
 	count := 0
+	bOperations := map[string]bool{"GetAllUsers": true, "CreateUser": true, "GetCurrentUser": true,
+		"DeleteUser": true, "GetUserById": true, "UpdateUser": true, "ImpersonateUser": true,
+		"GenerateInviteToken": true, "GetWorkingHours": true, "UpdateWorkingHours": true,
+		"UpdateWorkingDay": true, "GetWorkingHoursByUserId": true, "GetVacationBalance": true,
+		"UpdateVacationBalance": true}
 	for path, item := range spec.Paths.Map() {
 		if strings.HasPrefix(path, "/api/auth/") {
 			continue
 		}
 		for method, operation := range item.Operations() {
+			if !bOperations[operation.OperationID] {
+				continue
+			}
 			count++
 			t.Run(operation.OperationID, func(t *testing.T) {
 				uri := path
@@ -377,11 +387,13 @@ func TestEveryNonAuthOperationIsStubbed(t *testing.T) {
 					body = sample(operation.RequestBody.Value.Content.Get("application/json").Schema.Value)
 				}
 				status, b := testutil.Request(t, srv.URL, method, uri, session.AccessToken, body)
-				errorCode(t, status, b, 501, "NOT_IMPLEMENTED", "Not Implemented")
+				if status == 501 {
+					t.Fatalf("%s %s remains unimplemented: %s", method, uri, b)
+				}
 			})
 		}
 	}
-	if count != 36 {
+	if count != len(bOperations) {
 		t.Fatal("operation count", count)
 	}
 }

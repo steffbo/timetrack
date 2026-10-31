@@ -179,26 +179,49 @@ func (s *Service) Register(ctx context.Context, r api.RegisterWithInviteRequest)
 	return
 }
 
-// GenerateInvite is ready for work package B; its HTTP endpoint remains a phase-one stub.
+// GenerateInvite issues an invite in its own transaction.
 func (s *Service) GenerateInvite(ctx context.Context, id int64) (out api.InviteTokenResponse, err error) {
 	err = db.Transaction(ctx, s.Pool, func(tx pgx.Tx) error {
-		if _, e := FindUser(ctx, tx, "id=$1", id); e != nil {
-			if errors.Is(e, pgx.ErrNoRows) {
-				return httpx.NotFound("USER_NOT_FOUND", fmt.Sprintf("Benutzer nicht gefunden: %d", id))
-			}
-			return e
-		}
-		if _, e := tx.Exec(ctx, `DELETE FROM invite_tokens WHERE user_id=$1`, id); e != nil {
-			return e
-		}
-		token := uuid.NewString()
-		expiry := clock.LocalTimestamp(s.Clock.Now()).AddDate(0, 0, 30)
-		_, e := tx.Exec(ctx, `INSERT INTO invite_tokens(user_id,token,expires_at)VALUES($1,$2,$3)`, id, token, expiry)
-		out = api.InviteTokenResponse{InviteUrl: s.FrontendBaseURL + "/register/" + token, ExpiresAt: expiry}
+		var e error
+		out, e = s.GenerateInviteWithQuerier(ctx, tx, id)
 		return e
 	})
 	return
 }
+
+// GenerateInviteWithQuerier issues an invite using the caller's transaction.
+func (s *Service) GenerateInviteWithQuerier(
+	ctx context.Context,
+	q db.Querier,
+	id int64,
+) (api.InviteTokenResponse, error) {
+	if _, err := FindUser(ctx, q, "id=$1", id); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return api.InviteTokenResponse{}, httpx.NotFound(
+				"USER_NOT_FOUND",
+				fmt.Sprintf("Benutzer nicht gefunden: %d", id),
+			)
+		}
+		return api.InviteTokenResponse{}, err
+	}
+	if _, err := q.Exec(ctx, `DELETE FROM invite_tokens WHERE user_id=$1`, id); err != nil {
+		return api.InviteTokenResponse{}, err
+	}
+	token := uuid.NewString()
+	expiry := clock.LocalTimestamp(s.Clock.Now()).AddDate(0, 0, 30)
+	_, err := q.Exec(
+		ctx,
+		`INSERT INTO invite_tokens(user_id,token,expires_at) VALUES($1,$2,$3)`,
+		id,
+		token,
+		expiry,
+	)
+	return api.InviteTokenResponse{
+		InviteUrl: s.FrontendBaseURL + "/register/" + token,
+		ExpiresAt: expiry,
+	}, err
+}
+
 func (s *Service) Impersonate(ctx context.Context, id int64) (out api.AuthResponse, err error) {
 	admin, ok := Current(ctx)
 	if !ok || admin.Role != domain.Admin {
