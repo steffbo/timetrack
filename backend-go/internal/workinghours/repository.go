@@ -286,3 +286,16 @@ func OwnOrAdmin(p auth.Principal, id int64) error {
 	}
 	return nil
 }
+
+// FindByUserID reads the configured days without requiring a non-empty schedule.
+func (r Repository) FindByUserID(ctx context.Context, id int64) ([]api.WorkingDayConfig, error) {
+	rows, err := r.rows(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]api.WorkingDayConfig, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, config(row))
+	}
+	return out, nil
+}

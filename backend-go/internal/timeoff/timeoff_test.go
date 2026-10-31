@@ -11,8 +11,8 @@ import (
 
 	"github.com/steffbo/timetrack/backend-go/internal/clock"
 	"github.com/steffbo/timetrack/backend-go/internal/domain"
+	"github.com/steffbo/timetrack/backend-go/internal/leavestore"
 	"github.com/steffbo/timetrack/backend-go/internal/testutil"
-	"github.com/steffbo/timetrack/backend-go/internal/timeoff"
 )
 
 var h *testutil.Harness
@@ -210,7 +210,7 @@ func TestShouldDeleteTimeOffEntry(t *testing.T) {
 	if status != 204 || len(b) != 0 {
 		t.Fatal(status, string(b))
 	}
-	found, err := timeoff.FindByID(context.Background(), h.Pool, id)
+	found, err := leavestore.FindByID(context.Background(), h.Pool, id)
 	if err != nil || found != nil {
 		t.Fatal(found, err)
 	}

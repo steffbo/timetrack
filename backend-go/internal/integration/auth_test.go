@@ -344,33 +344,19 @@ func sample(schema *openapi3.Schema) any {
 		return "sample"
 	}
 }
-func TestPackageBOperationsAreImplemented(t *testing.T) {
-	harness.Reset(t)
-	pw := "password"
-	harness.User(t, "admin@test.local", domain.Admin, &pw)
-	_, srv := harness.Server(t, fixed)
-	session := testutil.Login(t, srv.URL, "admin@test.local", pw)
+func TestNoOperationReturnsNotImplemented(t *testing.T) {
 	spec, err := api.GetSwagger()
 	check(t, err)
 	count := 0
-	bOperations := map[string]bool{"GetAllUsers": true, "CreateUser": true, "GetCurrentUser": true,
-		"DeleteUser": true, "GetUserById": true, "UpdateUser": true, "ImpersonateUser": true,
-		"GenerateInviteToken": true, "GetWorkingHours": true, "UpdateWorkingHours": true,
-		"UpdateWorkingDay": true, "GetWorkingHoursByUserId": true, "GetVacationBalance": true,
-		"UpdateVacationBalance": true}
 	for path, item := range spec.Paths.Map() {
-		if strings.HasPrefix(path, "/api/auth/") {
-			continue
-		}
 		for method, operation := range item.Operations() {
-			if !bOperations[operation.OperationID] {
-				continue
-			}
 			count++
 			t.Run(operation.OperationID, func(t *testing.T) {
-				if implementedC[operation.OperationID] {
-					t.Skip("implemented by package C, covered by its own tests")
-				}
+				harness.Reset(t)
+				pw := "password"
+				harness.User(t, "admin@test.local", domain.Admin, &pw)
+				_, srv := harness.Server(t, fixed)
+				session := testutil.Login(t, srv.URL, "admin@test.local", pw)
 				uri := path
 				query := url.Values{}
 				for _, ref := range operation.Parameters {
@@ -390,13 +376,13 @@ func TestPackageBOperationsAreImplemented(t *testing.T) {
 					body = sample(operation.RequestBody.Value.Content.Get("application/json").Schema.Value)
 				}
 				status, b := testutil.Request(t, srv.URL, method, uri, session.AccessToken, body)
-				if status == 501 {
+				if status == 501 || (status == 401 && !strings.HasPrefix(path, "/api/auth/")) {
 					t.Fatalf("%s %s remains unimplemented: %s", method, uri, b)
 				}
 			})
 		}
 	}
-	if count != len(bOperations) {
+	if count == 0 {
 		t.Fatal("operation count", count)
 	}
 }

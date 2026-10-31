@@ -8,46 +8,12 @@ import (
 	"github.com/steffbo/timetrack/backend-go/internal/domain"
 )
 
-func isoWeekday(t time.Time) int {
-	if w := int(t.Weekday()); w != 0 {
-		return w
-	}
-	return 7
-}
-
-// weeksBetween is ChronoUnit.WEEKS.between for dates: whole days divided by seven, truncated to zero.
-func weeksBetween(from, to time.Time) int {
-	return int((to.Unix() - from.Unix()) / 86400 / 7)
-}
-
-// AppliesToDate ports RecurringOffDayEvaluator.appliesToDate (ignores exemptions).
+// AppliesToDate adapts the persistence model to the shared recurrence evaluator.
 func AppliesToDate(r *RecurringOffDay, date time.Time) bool {
-	if !r.IsActive || date.Before(r.StartDate) {
-		return false
-	}
-	if r.EndDate != nil && date.After(*r.EndDate) {
-		return false
-	}
-	if isoWeekday(date) != r.Weekday {
-		return false
-	}
-	switch r.Pattern {
-	case domain.EveryNthWeek:
-		if r.ReferenceDate == nil || r.WeekInterval == nil || *r.WeekInterval < 1 {
-			return false
-		}
-		weeks := weeksBetween(*r.ReferenceDate, date)
-		return weeks >= 0 && weeks%*r.WeekInterval == 0
-	case domain.NthWeekdayOfMonth:
-		if r.WeekOfMonth == nil || *r.WeekOfMonth < 1 || *r.WeekOfMonth > 5 {
-			return false
-		}
-		if *r.WeekOfMonth == 5 { // last occurrence of the weekday in the month
-			return date.AddDate(0, 0, 7).Month() != date.Month()
-		}
-		return (date.Day()-1)/7+1 == *r.WeekOfMonth
-	}
-	return false
+	return (domain.RecurringRule{ID: r.ID, Active: r.IsActive, Pattern: r.Pattern,
+		Weekday: r.Weekday, StartDate: r.StartDate, EndDate: r.EndDate,
+		ReferenceDate: r.ReferenceDate, WeekInterval: r.WeekInterval,
+		WeekOfMonth: r.WeekOfMonth}).AppliesToDate(date)
 }
 
 // ExemptionLookup answers whether a rule is exempted on a date.

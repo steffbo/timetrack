@@ -1,5 +1,5 @@
-// Package timeoff ports time-off entries, the working-days calculator and vacation balance recalculation.
-package timeoff
+// Package leavestore owns time-off persistence, shared by leave and balance use cases.
+package leavestore
 
 import (
 	"context"
@@ -86,7 +86,8 @@ func FindByUserIDAndTypeAndYear(
 // Insert saves a new entry and fills ID and timestamps.
 func Insert(ctx context.Context, q db.Querier, t *TimeOff, now time.Time) error {
 	t.CreatedAt, t.UpdatedAt = now, now
-	return q.QueryRow(ctx, `INSERT INTO time_off (user_id,start_date,end_date,time_off_type,hours_per_day,notes,
+	return q.QueryRow(ctx, `INSERT INTO time_off
+ (user_id,start_date,end_date,time_off_type,hours_per_day,notes,
  confirmed,created_at,updated_at) VALUES($1,$2,$3,$4,$5::float8::numeric,$6,$7,$8,$8) RETURNING id`,
 		t.UserID, t.StartDate, t.EndDate, t.Type, t.HoursPerDay, t.Notes, t.Confirmed, now).Scan(&t.ID)
 }
@@ -104,4 +105,9 @@ func Update(ctx context.Context, q db.Querier, t *TimeOff, now time.Time) error 
 func Delete(ctx context.Context, q db.Querier, id int64) error {
 	_, err := q.Exec(ctx, `DELETE FROM time_off WHERE id=$1`, id)
 	return err
+}
+
+// FindByUserID reads all entries in persistence order for calendar consumers.
+func FindByUserID(ctx context.Context, q db.Querier, userID int64) ([]TimeOff, error) {
+	return list(ctx, q, `SELECT `+columns+` FROM time_off WHERE user_id=$1 ORDER BY id`, userID)
 }

@@ -251,3 +251,18 @@ func TestSummaryToleranceActiveAndMissingConfiguration(t *testing.T) {
 	_, err = s.Summary(ctx, uid, day(), day())
 	requireError(t, err, fmt.Sprintf("Keine Arbeitszeitkonfiguration gefunden für Benutzer: %d", uid))
 }
+
+func TestConflictOnInclusiveRuleEndDate(t *testing.T) {
+	s, _, uid, _ := setup(t)
+	_, err := h.Pool.Exec(ctx, `INSERT INTO recurring_off_days
+  (user_id,recurrence_pattern,weekday,week_interval,reference_date,start_date,end_date)
+  VALUES($1,'EVERY_NTH_WEEK',1,1,$2,$2,$2)`, uid, day())
+	check(t, err)
+	entry, err := s.Create(ctx, uid, api.CreateTimeEntryRequest{
+		ClockIn: day().Add(8 * time.Hour), ClockOut: day().Add(16 * time.Hour), EntryType: "WORK"})
+	check(t, err)
+	v := summary(t, s, uid, day(), day())[0]
+	if v.ConflictWarning == nil || *v.ConflictWarning.TimeEntryId != entry.ID {
+		t.Fatal("inclusive LocalDate end must match even with a time-of-day", v)
+	}
+}

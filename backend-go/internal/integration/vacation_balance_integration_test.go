@@ -458,3 +458,13 @@ func TestVacationBalanceShouldAllowAdminUpdatingAnyBalance(t *testing.T) {
 		t.Fatalf("response = %+v", response)
 	}
 }
+
+func TestVacationBalanceMissingUserUsesJavaIllegalArgument(t *testing.T) {
+	fixture := newVacationBalanceFixture(t)
+	missingID := fixture.user.ID + 1
+	_, err := fixture.balance.Balance(context.Background(), missingID, 2025)
+	requireError(t, err, "INVALID_ARGUMENT", "User not found with ID:")
+	_, err = fixture.balance.WorkingDays(context.Background(), missingID,
+		packageBClock.Now(), packageBClock.Now())
+	requireError(t, err, "INVALID_ARGUMENT", "User not found with ID:")
+}

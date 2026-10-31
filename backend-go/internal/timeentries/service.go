@@ -13,6 +13,7 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/steffbo/timetrack/backend-go/internal/api"
 	"github.com/steffbo/timetrack/backend-go/internal/clock"
+	"github.com/steffbo/timetrack/backend-go/internal/conflictwarnings"
 	"github.com/steffbo/timetrack/backend-go/internal/db"
 	"github.com/steffbo/timetrack/backend-go/internal/httpx"
 )
@@ -167,30 +168,17 @@ func (s Service) Delete(ctx context.Context, uid, id int64) error {
 		if err != nil {
 			return err
 		}
-		return repo.Delete(ctx, id) // FK ON DELETE CASCADE removes warnings atomically.
+		if err := repo.Delete(ctx, id); err != nil {
+			return err
+		}
+		(conflictwarnings.Detector{Clock: s.Clock}).CleanupForTimeEntry(ctx, tx, id)
+		return nil
 	})
 }
 func (s Service) detectConflict(ctx context.Context, q db.Querier, e Entry) error {
-	var exists bool
-	err := q.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM recurring_off_day_conflict_warnings
- WHERE user_id=$1 AND conflict_date=$2)`, e.UserID, e.EntryDate).Scan(&exists)
-	if err != nil || exists {
-		return err
-	}
-	c, err := LoadCalendar(ctx, q, e.UserID)
-	if err != nil {
-		return err
-	}
-	for _, rule := range c.Rules {
-		if rule.Applies(e.EntryDate) {
-			_, err = q.Exec(ctx, `INSERT INTO recurring_off_day_conflict_warnings
-   (user_id,conflict_date,time_entry_id,recurring_off_day_id,acknowledged,created_at,updated_at)
-   VALUES($1,$2,$3,$4,false,$5,$5)`, e.UserID, e.EntryDate, e.ID, rule.Response.Id,
-				clock.LocalTimestamp(s.Clock.Now()))
-			return err
-		}
-	}
-	return nil
+	_, err := (conflictwarnings.Detector{Clock: s.Clock}).DetectAndCreateIfNeeded(ctx, q,
+		conflictwarnings.TimeEntryRef{ID: e.ID, UserID: e.UserID, EntryDate: e.EntryDate})
+	return err
 }
 func (s Service) Summary(ctx context.Context, uid int64, start, end time.Time) (
 	[]api.DailySummaryResponse, error,
@@ -226,7 +214,6 @@ func (s Service) Summary(ctx context.Context, uid int64, start, end time.Time) (
 		}
 		for _, o := range c.TimeOff {
 			if Covers(o, d) {
-				o.Days = c.WorkingDays(o)
 				off = append(off, o)
 			}
 		}

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/timeoff"
+	"github.com/steffbo/timetrack/backend-go/internal/leavestore"
 )
 
 // Port of DomainRepositoryIntegrationTest.shouldFindTimeOffByOrderRangeAndTypeYear.
@@ -15,15 +15,16 @@ func TestShouldFindTimeOffByOrderRangeAndTypeYear(t *testing.T) {
 	ctx := context.Background()
 	vacation := e.insert(e.testUser, date(2026, 1, 10), date(2026, 1, 12), domain.Vacation, "Test time-off")
 	sick := e.insert(e.testUser, date(2026, 2, 1), date(2026, 2, 2), domain.Sick, "Sick")
-	ordered, err := timeoff.FindByUserIDOrderByStartDateDesc(ctx, h.Pool, e.testUser)
+	ordered, err := leavestore.FindByUserIDOrderByStartDateDesc(ctx, h.Pool, e.testUser)
 	if err != nil || len(ordered) != 2 || ordered[0].ID != sick || ordered[1].ID != vacation {
 		t.Fatal(ordered, err)
 	}
-	ranged, err := timeoff.FindByUserIDAndDateRange(ctx, h.Pool, e.testUser, date(2026, 1, 11), date(2026, 1, 20))
+	ranged, err := leavestore.FindByUserIDAndDateRange(
+		ctx, h.Pool, e.testUser, date(2026, 1, 11), date(2026, 1, 20))
 	if err != nil || len(ranged) != 1 || ranged[0].ID != vacation {
 		t.Fatal(ranged, err)
 	}
-	typed, err := timeoff.FindByUserIDAndTypeAndYear(ctx, h.Pool, e.testUser, domain.Vacation,
+	typed, err := leavestore.FindByUserIDAndTypeAndYear(ctx, h.Pool, e.testUser, domain.Vacation,
 		date(2026, 1, 1), date(2026, 12, 31))
 	if err != nil || len(typed) != 1 || typed[0].ID != vacation {
 		t.Fatal(typed, err)
@@ -120,5 +121,56 @@ func TestVacationBalanceIsRecalculated(t *testing.T) {
 		"timeOffType": "VACATION"})
 	if used, remaining, ok := balance(2031); !ok || used != 0 || remaining != 30 {
 		t.Fatal(used, remaining, ok)
+	}
+}
+
+// Both CRUD and GET must use the same calculator, preserving Java's multi-year
+// overlap semantics (the entire absence contributes to each overlapping year).
+func TestSharedBalanceRecalculationAndStableRead(t *testing.T) {
+	e := setup(t)
+	e.defaultWorkingHours(e.testUser)
+	_, entry, b := e.do("POST", "/api/time-off", e.testTok, map[string]any{
+		"startDate": "2025-12-30", "endDate": "2026-01-02", "timeOffType": "VACATION"})
+	if entry["days"] != 3.0 {
+		t.Fatal(string(b))
+	}
+	ctx := context.Background()
+	for _, year := range []int{2025, 2026} {
+		var used float64
+		err := h.Pool.QueryRow(ctx, `SELECT used_days::float8 FROM vacation_balance
+   WHERE user_id=$1 AND year=$2`, e.testUser, year).Scan(&used)
+		if err != nil || used != 3 {
+			t.Fatal(used, err)
+		}
+		// Give the existing, unchanged row an observable timestamp older than the clock.
+		_, err = h.Pool.Exec(ctx, `UPDATE vacation_balance SET updated_at='2029-01-01'
+   WHERE user_id=$1 AND year=$2`, e.testUser, year)
+		if err != nil {
+			t.Fatal(err)
+		}
+		status, balance, b := e.do("GET", fmt.Sprintf("/api/vacation-balance?year=%d", year), e.testTok, nil)
+		if status != 200 || balance["usedDays"] != 3.0 || balance["plannedDays"] != 3.0 ||
+			balance["remainingDays"] != 27.0 || balance["updatedAt"] != "2029-01-01T00:00:00Z" {
+			t.Fatal(string(b))
+		}
+
+		status, balance, b = e.do("PUT", "/api/vacation-balance", e.testTok,
+			map[string]any{"userId": e.testUser, "year": year})
+		if status != 200 || balance["updatedAt"] != "2029-01-01T00:00:00Z" {
+			t.Fatal(string(b))
+		}
+	}
+	// A non-vacation mutation does not recalculate storage in Java; GET does.
+	e.do("POST", "/api/time-off", e.testTok, map[string]any{
+		"startDate": "2025-12-30", "endDate": "2025-12-30", "timeOffType": "SICK"})
+	var stored float64
+	err := h.Pool.QueryRow(ctx, `SELECT used_days::float8 FROM vacation_balance
+  WHERE user_id=$1 AND year=2025`, e.testUser).Scan(&stored)
+	if err != nil || stored != 3 {
+		t.Fatal(stored, err)
+	}
+	_, balance, b := e.do("GET", "/api/vacation-balance?year=2025", e.testTok, nil)
+	if balance["usedDays"] != 2.0 || balance["plannedDays"] != 2.0 {
+		t.Fatal(string(b))
 	}
 }

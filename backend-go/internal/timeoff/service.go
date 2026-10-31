@@ -14,6 +14,9 @@ import (
 	"github.com/steffbo/timetrack/backend-go/internal/db"
 	"github.com/steffbo/timetrack/backend-go/internal/domain"
 	"github.com/steffbo/timetrack/backend-go/internal/httpx"
+	"github.com/steffbo/timetrack/backend-go/internal/leavestore"
+	"github.com/steffbo/timetrack/backend-go/internal/users"
+	"github.com/steffbo/timetrack/backend-go/internal/vacationbalance"
 )
 
 // Service holds the time-off use cases.
@@ -30,16 +33,19 @@ func NotFound(id int64) *httpx.Error {
 }
 
 func (s Service) recalculate(ctx context.Context, q db.Querier, userID int64, start, end time.Time) error {
-	return RecalculateVacationBalanceForDateRange(ctx, q, userID, start, end, s.Clock.Now())
+	return vacationbalance.RecalculateVacationBalanceForDateRange(ctx, q, userID, start, end, s.Clock.Now())
 }
 
-// toResponse is TimeOffMapper.toResponse; days are calculated excluding the entry itself.
-func (s Service) toResponse(ctx context.Context, q db.Querier, t *TimeOff) (api.TimeOffResponse, error) {
-	var state domain.GermanState
-	if err := q.QueryRow(ctx, `SELECT state FROM users WHERE id=$1`, t.UserID).Scan(&state); err != nil {
+// ToResponse is TimeOffMapper.toResponse; days are calculated excluding the entry itself.
+func ToResponse(ctx context.Context, q db.Querier, t *leavestore.TimeOff) (api.TimeOffResponse, error) {
+	user, found, err := (users.Repository{Q: q}).FindByID(ctx, t.UserID)
+	if err != nil {
 		return api.TimeOffResponse{}, err
 	}
-	days, err := WorkingDays(ctx, q, t.UserID, state, t.StartDate, t.EndDate, t.ID)
+	if !found {
+		return api.TimeOffResponse{}, pgx.ErrNoRows
+	}
+	days, err := vacationbalance.WorkingDays(ctx, q, t.UserID, user.State, t.StartDate, t.EndDate, t.ID)
 	if err != nil {
 		return api.TimeOffResponse{}, err
 	}
@@ -54,19 +60,19 @@ func (s Service) toResponse(ctx context.Context, q db.Querier, t *TimeOff) (api.
 func (s Service) List(
 	ctx context.Context, userID int64, start, end *openapi_types.Date,
 ) ([]api.TimeOffResponse, error) {
-	var entries []TimeOff
+	var entries []leavestore.TimeOff
 	var err error
 	if start != nil && end != nil {
-		entries, err = FindByUserIDAndDateRange(ctx, s.Pool, userID, start.Time, end.Time)
+		entries, err = leavestore.FindByUserIDAndDateRange(ctx, s.Pool, userID, start.Time, end.Time)
 	} else {
-		entries, err = FindByUserIDOrderByStartDateDesc(ctx, s.Pool, userID)
+		entries, err = leavestore.FindByUserIDOrderByStartDateDesc(ctx, s.Pool, userID)
 	}
 	if err != nil {
 		return nil, err
 	}
 	out := make([]api.TimeOffResponse, 0, len(entries))
 	for i := range entries {
-		resp, err := s.toResponse(ctx, s.Pool, &entries[i])
+		resp, err := ToResponse(ctx, s.Pool, &entries[i])
 		if err != nil {
 			return nil, err
 		}
@@ -95,12 +101,12 @@ func (s Service) Create(
 		if !exists {
 			return httpx.NotFound("USER_NOT_FOUND", "Benutzer nicht gefunden")
 		}
-		entry := TimeOff{UserID: userID, StartDate: req.StartDate.Time, EndDate: req.EndDate.Time,
+		entry := leavestore.TimeOff{UserID: userID, StartDate: req.StartDate.Time, EndDate: req.EndDate.Time,
 			Type: domain.TimeOffType(req.TimeOffType), HoursPerDay: req.HoursPerDay, Notes: req.Notes}
 		if req.Confirmed != nil {
 			entry.Confirmed = *req.Confirmed
 		}
-		if err := Insert(ctx, tx, &entry, s.now()); err != nil {
+		if err := leavestore.Insert(ctx, tx, &entry, s.now()); err != nil {
 			return err
 		}
 		if entry.Type == domain.Vacation {
@@ -110,14 +116,14 @@ func (s Service) Create(
 			}
 		}
 		var err error
-		resp, err = s.toResponse(ctx, tx, &entry)
+		resp, err = ToResponse(ctx, tx, &entry)
 		return err
 	})
 	return resp, err
 }
 
-func owned(ctx context.Context, q db.Querier, userID, id int64) (*TimeOff, error) {
-	entry, err := FindByID(ctx, q, id)
+func owned(ctx context.Context, q db.Querier, userID, id int64) (*leavestore.TimeOff, error) {
+	entry, err := leavestore.FindByID(ctx, q, id)
 	if err != nil {
 		return nil, err
 	}
@@ -159,15 +165,15 @@ func (s Service) Update(
 		if req.Confirmed != nil {
 			entry.Confirmed = *req.Confirmed
 		}
-		if err = Update(ctx, tx, entry, s.now()); err != nil {
+		if err = leavestore.Update(ctx, tx, entry, s.now()); err != nil {
 			return err
 		}
 		if oldType == domain.Vacation || entry.Type == domain.Vacation {
-			earliest := utcDate(oldStartYear, time.January, 1)
+			earliest := time.Date(oldStartYear, time.January, 1, 0, 0, 0, 0, time.UTC)
 			if entry.StartDate.Before(earliest) {
 				earliest = entry.StartDate
 			}
-			latest := utcDate(oldEndYear, time.December, 31)
+			latest := time.Date(oldEndYear, time.December, 31, 0, 0, 0, 0, time.UTC)
 			if entry.EndDate.After(latest) {
 				latest = entry.EndDate
 			}
@@ -175,7 +181,7 @@ func (s Service) Update(
 				return err
 			}
 		}
-		resp, err = s.toResponse(ctx, tx, entry)
+		resp, err = ToResponse(ctx, tx, entry)
 		return err
 	})
 	return resp, err
@@ -188,7 +194,7 @@ func (s Service) Delete(ctx context.Context, userID, id int64) error {
 		if err != nil {
 			return err
 		}
-		if err = Delete(ctx, tx, id); err != nil {
+		if err = leavestore.Delete(ctx, tx, id); err != nil {
 			return err
 		}
 		if entry.Type == domain.Vacation {

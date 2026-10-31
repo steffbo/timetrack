@@ -4,10 +4,17 @@ import (
 	"context"
 	"time"
 
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/jackc/pgx/v5"
+
 	"github.com/steffbo/timetrack/backend-go/internal/api"
+	"github.com/steffbo/timetrack/backend-go/internal/conflictwarnings"
 	"github.com/steffbo/timetrack/backend-go/internal/db"
 	"github.com/steffbo/timetrack/backend-go/internal/domain"
+	"github.com/steffbo/timetrack/backend-go/internal/leavestore"
+	"github.com/steffbo/timetrack/backend-go/internal/recurringoffdays"
+	"github.com/steffbo/timetrack/backend-go/internal/timeoff"
+	"github.com/steffbo/timetrack/backend-go/internal/users"
+	"github.com/steffbo/timetrack/backend-go/internal/workinghours"
 )
 
 type WorkingDay struct {
@@ -16,16 +23,15 @@ type WorkingDay struct {
 }
 type Rule struct {
 	Response   api.RecurringOffDayResponse
-	Pattern    domain.RecurringRule
-	Exemptions map[string]bool
+	Pattern    recurringoffdays.RecurringOffDay
+	Exemptions recurringoffdays.ExemptionLookup
 }
 
 func (r Rule) Applies(date time.Time) bool {
-	return r.Pattern.AppliesToDateWithExemptions(date, r.Exemptions[date.Format(time.DateOnly)])
+	return recurringoffdays.AppliesToDateWithExemptions(&r.Pattern, date, r.Exemptions)
 }
 
-// CalendarData contains the private read-model used by package A's summaries and reports.
-// No dependency on another porting package's repositories is required.
+// CalendarData composes the owning repositories for summaries and reports.
 type CalendarData struct {
 	Working  map[int]WorkingDay
 	TimeOff  []api.TimeOffResponse
@@ -52,156 +58,69 @@ func (c CalendarData) Recurring(date time.Time) bool {
 func Covers(o api.TimeOffResponse, date time.Time) bool {
 	return !date.Before(o.StartDate.Time) && !date.After(o.EndDate.Time)
 }
-func (c CalendarData) WorkingDays(o api.TimeOffResponse) float64 {
-	var days float64
-	for d := o.StartDate.Time; !d.After(o.EndDate.Time); d = d.AddDate(0, 0, 1) {
-		wh := c.Working[(int(d.Weekday())+6)%7+1]
-		if !wh.Working || (domain.GermanPublicHolidays{}).IsPublicHoliday(d, c.State) {
-			continue
-		}
-		excluded := false
-		for _, other := range c.TimeOff {
-			if other.Id != o.Id && other.TimeOffType != "VACATION" && Covers(other, d) {
-				excluded = true
-				break
-			}
-		}
-		if excluded || (o.TimeOffType == "VACATION" && c.Recurring(d)) {
-			continue
-		}
-		if c.HalfDays && d.Month() == 12 && (d.Day() == 24 || d.Day() == 31) {
-			days += 0.5
-		} else {
-			days++
-		}
-	}
-	return days
-}
 
 // LoadCalendar performs only reads of the other domains' tables. Time off is loaded
 // for all dates so the response days count covers an entire multi-month absence.
 func LoadCalendar(ctx context.Context, q db.Querier, uid int64) (CalendarData, error) {
 	c := CalendarData{Working: map[int]WorkingDay{}, TimeOff: []api.TimeOffResponse{}, Rules: []Rule{}}
-	err := q.QueryRow(ctx, `SELECT state,half_day_holidays_enabled FROM users WHERE id=$1`, uid).
-		Scan(&c.State, &c.HalfDays)
+	user, found, err := (users.Repository{Q: q}).FindByID(ctx, uid)
 	if err != nil {
 		return c, err
 	}
-	rows, err := q.Query(ctx, `SELECT weekday,is_working_day,COALESCE(hours,0)::float8
- FROM working_hours WHERE user_id=$1`, uid)
+	if !found {
+		return c, pgx.ErrNoRows
+	}
+	c.State, c.HalfDays = user.State, user.HalfDayHolidaysEnabled
+	days, err := (workinghours.Repository{Q: q}).FindByUserID(ctx, uid)
 	if err != nil {
 		return c, err
 	}
-	for rows.Next() {
-		var day int
-		var wh WorkingDay
-		if err = rows.Scan(&day, &wh.Working, &wh.Hours); err != nil {
-			rows.Close()
+	for _, day := range days {
+		c.Working[day.Weekday] = WorkingDay{Working: day.IsWorkingDay, Hours: day.Hours}
+	}
+	rules, err := recurringoffdays.FindByUserID(ctx, q, uid)
+	if err != nil {
+		return c, err
+	}
+	ids := make([]int64, len(rules))
+	for i := range rules {
+		ids[i] = rules[i].ID
+	}
+	exemptions, err := recurringoffdays.LoadExemptions(ctx, q, ids)
+	if err != nil {
+		return c, err
+	}
+	for i := range rules {
+		c.Rules = append(c.Rules, Rule{Response: recurringoffdays.ToResponse(&rules[i]),
+			Pattern: rules[i], Exemptions: exemptions})
+	}
+	entries, err := leavestore.FindByUserID(ctx, q, uid)
+	if err != nil {
+		return c, err
+	}
+	for i := range entries {
+		response, err := timeoff.ToResponse(ctx, q, &entries[i])
+		if err != nil {
 			return c, err
 		}
-		c.Working[day] = wh
+		c.TimeOff = append(c.TimeOff, response)
 	}
-	err = rows.Err()
-	rows.Close()
-	if err != nil {
-		return c, err
-	}
-	rows, err = q.Query(ctx, `SELECT id,user_id,recurrence_pattern,weekday,week_interval,reference_date,
- week_of_month,start_date,end_date,is_active,description,created_at,updated_at
- FROM recurring_off_days WHERE user_id=$1`, uid)
-	if err != nil {
-		return c, err
-	}
-	for rows.Next() {
-		var r Rule
-		var ref, end *time.Time
-		v := &r.Response
-		if err = rows.Scan(&v.Id, &v.UserId, &v.RecurrencePattern, &v.Weekday, &v.WeekInterval, &ref,
-			&v.WeekOfMonth, &v.StartDate.Time, &end, &v.IsActive, &v.Description,
-			&v.CreatedAt, &v.UpdatedAt); err != nil {
-			rows.Close()
-			return c, err
-		}
-		if ref != nil {
-			v.ReferenceDate = &openapi_types.Date{Time: *ref}
-		}
-		if end != nil {
-			v.EndDate = &openapi_types.Date{Time: *end}
-		}
-		r.Pattern = domain.RecurringRule{ID: v.Id, Active: v.IsActive,
-			Pattern: domain.RecurrencePattern(v.RecurrencePattern),
-			Weekday: v.Weekday, StartDate: v.StartDate.Time, EndDate: end, ReferenceDate: ref,
-			WeekInterval: v.WeekInterval, WeekOfMonth: v.WeekOfMonth}
-		r.Exemptions = map[string]bool{}
-		c.Rules = append(c.Rules, r)
-	}
-	err = rows.Err()
-	rows.Close()
-	if err != nil {
-		return c, err
-	}
-	rows, err = q.Query(ctx, `SELECT e.recurring_off_day_id,e.exemption_date
- FROM recurring_off_day_exemptions e JOIN recurring_off_days r ON r.id=e.recurring_off_day_id
- WHERE r.user_id=$1`, uid)
-	if err != nil {
-		return c, err
-	}
-	for rows.Next() {
-		var id int64
-		var d time.Time
-		if err = rows.Scan(&id, &d); err != nil {
-			rows.Close()
-			return c, err
-		}
-		for i := range c.Rules {
-			if c.Rules[i].Response.Id == id {
-				c.Rules[i].Exemptions[d.Format(time.DateOnly)] = true
-			}
-		}
-	}
-	err = rows.Err()
-	rows.Close()
-	if err != nil {
-		return c, err
-	}
-	rows, err = q.Query(ctx, `SELECT id,user_id,start_date,end_date,time_off_type,hours_per_day::float8,
- notes,confirmed,created_at,updated_at FROM time_off WHERE user_id=$1`, uid)
-	if err != nil {
-		return c, err
-	}
-	for rows.Next() {
-		var o api.TimeOffResponse
-		if err = rows.Scan(&o.Id, &o.UserId, &o.StartDate.Time, &o.EndDate.Time, &o.TimeOffType, &o.HoursPerDay,
-			&o.Notes, &o.Confirmed, &o.CreatedAt, &o.UpdatedAt); err != nil {
-			rows.Close()
-			return c, err
-		}
-		c.TimeOff = append(c.TimeOff, o)
-	}
-	err = rows.Err()
-	rows.Close()
-	return c, err
+	return c, nil
 }
 
 func warnings(ctx context.Context, q db.Querier, uid int64, start, end time.Time) (
 	map[string]*api.RecurringOffDayConflictWarningResponse, error) {
-	rows, err := q.Query(ctx, `SELECT w.id,w.user_id,w.conflict_date,w.time_entry_id,w.recurring_off_day_id,
- r.description,w.acknowledged,w.acknowledged_at,w.created_at,w.updated_at
- FROM recurring_off_day_conflict_warnings w LEFT JOIN recurring_off_days r ON r.id=w.recurring_off_day_id
- WHERE w.user_id=$1 AND w.conflict_date BETWEEN $2 AND $3 ORDER BY w.conflict_date DESC`, uid, start, end)
+	entries, err := conflictwarnings.FindByUserIDAndDateRange(ctx, q, uid, start, end)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 	out := map[string]*api.RecurringOffDayConflictWarningResponse{}
-	for rows.Next() {
-		w := new(api.RecurringOffDayConflictWarningResponse)
-		if err = rows.Scan(&w.Id, &w.UserId, &w.ConflictDate.Time, &w.TimeEntryId, &w.RecurringOffDayId,
-			&w.RecurringOffDayDescription, &w.Acknowledged, &w.AcknowledgedAt,
-			&w.CreatedAt, &w.UpdatedAt); err != nil {
+	for i := range entries {
+		response, err := conflictwarnings.ToResponse(ctx, q, &entries[i])
+		if err != nil {
 			return nil, err
 		}
-		out[w.ConflictDate.String()] = w
+		out[response.ConflictDate.String()] = &response
 	}
-	return out, rows.Err()
+	return out, nil
 }
