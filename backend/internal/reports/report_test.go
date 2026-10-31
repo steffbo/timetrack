@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/reports"
-	"github.com/steffbo/timetrack/backend-go/internal/testutil"
-	te "github.com/steffbo/timetrack/backend-go/internal/timeentries"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/reports"
+	"github.com/steffbo/timetrack/backend/internal/testutil"
+	te "github.com/steffbo/timetrack/backend/internal/timeentries"
 )
 
 var h *testutil.Harness

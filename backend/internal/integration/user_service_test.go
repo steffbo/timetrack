@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/users"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/users"
 )
 
 type countingUserQuerier struct {

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/domain"
 )
 
 func has(t *testing.T, days []time.Time, date string, want bool) {
@@ -20,7 +20,7 @@ func has(t *testing.T, days []time.Time, date string, want bool) {
 	}
 }
 
-// PublicHolidaysIntegrationTest: five Java calculator tests; no database reads occur.
+// Public holiday calculation cases do not require database reads.
 func TestShouldGetPublicHolidaysForBerlin(t *testing.T) {
 	days := (domain.GermanPublicHolidays{}).GetPublicHolidays(2025, domain.Berlin)
 	if len(days) < 10 {

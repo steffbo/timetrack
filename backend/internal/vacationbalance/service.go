@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/leavestore"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/leavestore"
 )
 
 // defaultAnnualAllowanceDays is VacationBalanceService.DEFAULT_ANNUAL_ALLOWANCE_DAYS.

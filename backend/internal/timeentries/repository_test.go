@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	te "github.com/steffbo/timetrack/backend-go/internal/timeentries"
+	te "github.com/steffbo/timetrack/backend/internal/timeentries"
 )
 
-// TimeEntryRepositoryTest: all nine Java cases.
+// Repository tests cover all nine query cases.
 func TestShouldSaveAndFindTimeEntryById(t *testing.T) {
 	_, r, uid, _ := setup(t)
 	e := completed(t, r, uid, day(), 8)

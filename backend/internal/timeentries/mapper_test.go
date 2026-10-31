@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func TestLocalOffsetJavaDSTResolution(t *testing.T) {
+func TestLocalOffsetDSTResolution(t *testing.T) {
 	old := time.Local
 	berlin, err := time.LoadLocation("Europe/Berlin")
 	if err != nil {
@@ -37,7 +37,7 @@ func TestHoursTruncateWholeMinutesBeforeBreaks(t *testing.T) {
 		t.Fatal(got)
 	}
 }
-func TestJavaLocalDateTimeDiagnosticFormatting(t *testing.T) {
+func TestLocalDateTimeDiagnosticFormatting(t *testing.T) {
 	for _, tc := range []struct {
 		nano int
 		want string
@@ -45,7 +45,7 @@ func TestJavaLocalDateTimeDiagnosticFormatting(t *testing.T) {
 		{0, "2025-01-01T08:00"}, {123000000, "2025-01-01T08:00:00.123"},
 		{123400000, "2025-01-01T08:00:00.123400"}, {123400001, "2025-01-01T08:00:00.123400001"},
 	} {
-		got := javaDateTime(time.Date(2025, 1, 1, 8, 0, 0, tc.nano, time.UTC))
+		got := formatDateTime(time.Date(2025, 1, 1, 8, 0, 0, tc.nano, time.UTC))
 		if got != tc.want {
 			t.Fatal(got, tc.want)
 		}

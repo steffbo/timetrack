@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/domain"
 )
 
-// RecurringOffDay mirrors the Java entity; dates are UTC midnight values.
+// RecurringOffDay stores date-only values at UTC midnight.
 type RecurringOffDay struct {
 	ID, UserID    int64
 	Pattern       domain.RecurrencePattern
@@ -27,7 +27,7 @@ type RecurringOffDay struct {
 	UpdatedAt     time.Time
 }
 
-// Exemption mirrors RecurringOffDayExemption.
+// Exemption stores a recurring off-day date exception.
 type Exemption struct {
 	ID, RecurringOffDayID int64
 	Date                  time.Time
@@ -71,7 +71,7 @@ func FindByID(ctx context.Context, q db.Querier, id int64) (*RecurringOffDay, er
 	return r, err
 }
 
-// FindByUserID is findByUserId (no defined order in Java; id order here).
+// FindByUserID returns rows ordered by ID.
 func FindByUserID(ctx context.Context, q db.Querier, userID int64) ([]RecurringOffDay, error) {
 	return queryRods(ctx, q, `SELECT `+rodColumns+
 		` FROM recurring_off_days WHERE user_id=$1 ORDER BY id`, userID)

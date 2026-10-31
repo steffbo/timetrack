@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func workingDaysJavaCase(
+func workingDaysCase(
 	t *testing.T,
 	start string,
 	end string,
@@ -42,7 +42,7 @@ func workingDaysJavaCase(
 }
 
 func TestWorkingDaysCalculatorDecember24AsHalfDay(t *testing.T) {
-	workingDaysJavaCase(
+	workingDaysCase(
 		t,
 		"2025-12-23",
 		"2025-12-27",
@@ -53,7 +53,7 @@ func TestWorkingDaysCalculatorDecember24AsHalfDay(t *testing.T) {
 }
 
 func TestWorkingDaysCalculatorDecember31AsHalfDay(t *testing.T) {
-	workingDaysJavaCase(
+	workingDaysCase(
 		t,
 		"2025-12-30",
 		"2026-01-02",
@@ -64,15 +64,15 @@ func TestWorkingDaysCalculatorDecember31AsHalfDay(t *testing.T) {
 }
 
 func TestWorkingDaysCalculatorOnlyDecember24(t *testing.T) {
-	workingDaysJavaCase(t, "2025-12-24", "2025-12-24", true, nil, 0.5)
+	workingDaysCase(t, "2025-12-24", "2025-12-24", true, nil, 0.5)
 }
 
 func TestWorkingDaysCalculatorOnlyDecember31(t *testing.T) {
-	workingDaysJavaCase(t, "2025-12-31", "2025-12-31", true, nil, 0.5)
+	workingDaysCase(t, "2025-12-31", "2025-12-31", true, nil, 0.5)
 }
 
 func TestWorkingDaysCalculatorHalfDayHolidaysDisabled(t *testing.T) {
-	workingDaysJavaCase(
+	workingDaysCase(
 		t,
 		"2025-12-23",
 		"2025-12-27",
@@ -83,15 +83,15 @@ func TestWorkingDaysCalculatorHalfDayHolidaysDisabled(t *testing.T) {
 }
 
 func TestWorkingDaysCalculatorDecember24OnWeekend(t *testing.T) {
-	workingDaysJavaCase(t, "2022-12-24", "2022-12-24", true, nil, 0)
+	workingDaysCase(t, "2022-12-24", "2022-12-24", true, nil, 0)
 }
 
 func TestWorkingDaysCalculatorDecember31OnWeekend(t *testing.T) {
-	workingDaysJavaCase(t, "2023-12-31", "2023-12-31", true, nil, 0)
+	workingDaysCase(t, "2023-12-31", "2023-12-31", true, nil, 0)
 }
 
 func TestWorkingDaysCalculatorDecember24AsPublicHoliday(t *testing.T) {
-	workingDaysJavaCase(
+	workingDaysCase(
 		t,
 		"2025-12-24",
 		"2025-12-24",
@@ -102,7 +102,7 @@ func TestWorkingDaysCalculatorDecember24AsPublicHoliday(t *testing.T) {
 }
 
 func TestWorkingDaysCalculatorBothHalfDayHolidaysInSamePeriod(t *testing.T) {
-	workingDaysJavaCase(
+	workingDaysCase(
 		t,
 		"2025-12-22",
 		"2025-12-31",
@@ -113,9 +113,9 @@ func TestWorkingDaysCalculatorBothHalfDayHolidaysInSamePeriod(t *testing.T) {
 }
 
 func TestWorkingDaysCalculatorRegularWeekWithoutHalfDayHolidays(t *testing.T) {
-	workingDaysJavaCase(t, "2025-10-20", "2025-10-24", true, nil, 5)
+	workingDaysCase(t, "2025-10-20", "2025-10-24", true, nil, 5)
 }
 
 func TestWorkingDaysCalculatorEmptyDateRange(t *testing.T) {
-	workingDaysJavaCase(t, "2025-12-31", "2025-12-24", true, nil, 0)
+	workingDaysCase(t, "2025-12-31", "2025-12-24", true, nil, 0)
 }

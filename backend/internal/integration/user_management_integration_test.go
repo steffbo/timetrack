@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/oapi-codegen/runtime/types"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/users"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/users"
 	"golang.org/x/crypto/bcrypt"
 )
 

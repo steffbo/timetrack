@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/auth"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
-	"github.com/steffbo/timetrack/backend-go/internal/timeoff"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/auth"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/timeoff"
 )
 
 func (s *Server) timeOff() timeoff.Service { return timeoff.Service{Pool: s.Pool, Clock: s.Clock} }

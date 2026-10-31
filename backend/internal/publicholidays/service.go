@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/domain"
 )
 
 func All() api.PublicHolidaysResponse {

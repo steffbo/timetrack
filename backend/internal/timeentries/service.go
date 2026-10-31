@@ -11,11 +11,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	openapi_types "github.com/oapi-codegen/runtime/types"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/conflictwarnings"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/conflictwarnings"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
 )
 
 type Service struct {
@@ -86,8 +86,8 @@ func (s Service) Create(ctx context.Context, uid int64, r api.CreateTimeEntryReq
 			}
 			if in.Before(*other.ClockOut) && end.After(other.ClockIn) {
 				return httpx.InvalidArgument(
-					"Time entry overlaps with existing entry from " + javaDateTime(other.ClockIn) +
-						" to " + javaDateTime(*other.ClockOut))
+					"Time entry overlaps with existing entry from " + formatDateTime(other.ClockIn) +
+						" to " + formatDateTime(*other.ClockOut))
 			}
 		}
 		entry := Entry{UserID: uid, EntryDate: in, ClockIn: in, ClockOut: &end,
@@ -103,7 +103,7 @@ func (s Service) Create(ctx context.Context, uid int64, r api.CreateTimeEntryReq
 	})
 	return
 }
-func javaDateTime(t time.Time) string {
+func formatDateTime(t time.Time) string {
 	if t.Nanosecond() == 0 && t.Second() == 0 {
 		return t.Format("2006-01-02T15:04")
 	}

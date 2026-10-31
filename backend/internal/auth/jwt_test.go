@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/domain"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Fixed fixtures generated using JJWT 0.12.6, Java 25, Keys.hmacShaKeyFor and JwtTokenProvider claims.
-func TestJavaJWTFixtures(t *testing.T) {
+// Fixed signed token fixtures cover the accepted JWT algorithms and claim format.
+func TestJWTCompatibilityFixtures(t *testing.T) {
 	now := time.Unix(1894708800, 0)
 	for _, tc := range []struct {
 		size  int
@@ -38,7 +38,7 @@ func TestJavaJWTFixtures(t *testing.T) {
 			claims.ImpersonatedBy == nil || *claims.ImpersonatedBy != 7 {
 			t.Fatal(claims)
 		}
-		// Generate, then verify independently with JJWT via scripts/interop/Reference.java.
+		// Generate and verify a token with the same claims.
 		p := Principal{ID: 42, Email: "java@test.local", Role: domain.Admin, ImpersonatedBy: claims.ImpersonatedBy}
 		generated, err := provider.Generate(p, 24*time.Hour)
 		if err != nil {
@@ -56,7 +56,7 @@ func TestJavaJWTFixtures(t *testing.T) {
 		}
 	}
 }
-func TestBcryptJavaMigrationHash(t *testing.T) {
+func TestStoredBcryptHash(t *testing.T) {
 	hash := "$2a$10$j6u7LLRjQfVQIlu4FJbQtulaQTGxqoSP.dEVQmEIr2rjocFyM3zOe"
 	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte("admin1")); err != nil {
 		t.Fatal(err)
@@ -81,7 +81,7 @@ func TestExportGoJWT(t *testing.T) {
 	}
 }
 
-func TestJjwtExpirationBoundary(t *testing.T) {
+func TestJWTExpirationBoundary(t *testing.T) {
 	now := time.Unix(1894708800, 0)
 	provider := Tokens{Secret: []byte(strings.Repeat("x", 32)), Clock: clock.Fixed{Time: now}}
 	token, err := provider.Generate(Principal{ID: 1, Email: "test@test.local", Role: domain.User}, time.Second)

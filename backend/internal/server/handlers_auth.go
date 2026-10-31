@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	"github.com/steffbo/timetrack/backend-go/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/api"
 )
 
 func (s *Server) Login(ctx context.Context, r api.LoginRequestObject) (api.LoginResponseObject, error) {

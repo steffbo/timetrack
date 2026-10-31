@@ -11,12 +11,12 @@ import (
 	"time"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
-	"github.com/steffbo/timetrack/backend-go/internal/recurringoffdays"
-	"github.com/steffbo/timetrack/backend-go/internal/testutil"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/recurringoffdays"
+	"github.com/steffbo/timetrack/backend/internal/testutil"
 )
 
 var h *testutil.Harness
@@ -45,7 +45,7 @@ type env struct {
 
 func date(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0, 0, 0, time.UTC) }
 
-// setup mirrors the Java @BeforeEach: a clean database with the test and the other user.
+// Each test starts with a clean database, test user and secondary user.
 func setup(t *testing.T) *env {
 	t.Helper()
 	h.Reset(t)
@@ -125,7 +125,7 @@ func TestShouldCreateRecurringOffDayWithNthWeekdayOfMonthPattern(t *testing.T) {
 
 func TestShouldFailToCreateWithInvalidWeekday(t *testing.T) {
 	e := setup(t)
-	// The Java test calls the use case directly (bean validation is bypassed).
+	// This test calls the service directly, bypassing HTTP validation.
 	one, date1, date2 := 4, openapi_types.Date{Time: date(2025, 1, 6)}, openapi_types.Date{Time: date(2025, 1, 1)}
 	_, err := recurringoffdays.Service{Pool: h.Pool, Clock: fixedClock}.Create(context.Background(), e.testUser,
 		api.CreateRecurringOffDayRequest{RecurrencePattern: api.CreateRecurringOffDayRequestRecurrencePatternEVERYNTHWEEK,

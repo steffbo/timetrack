@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/users"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/users"
 )
 
 func repositoryTestUser(t *testing.T) (packageBFixture, users.User) {

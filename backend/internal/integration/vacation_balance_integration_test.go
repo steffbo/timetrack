@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/auth"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/users"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/auth"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/users"
 )
 
 type vacationBalanceFixture struct {
@@ -459,7 +459,7 @@ func TestVacationBalanceShouldAllowAdminUpdatingAnyBalance(t *testing.T) {
 	}
 }
 
-func TestVacationBalanceMissingUserUsesJavaIllegalArgument(t *testing.T) {
+func TestVacationBalanceMissingUserReturnsValidationError(t *testing.T) {
 	fixture := newVacationBalanceFixture(t)
 	missingID := fixture.user.ID + 1
 	_, err := fixture.balance.Balance(context.Background(), missingID, 2025)

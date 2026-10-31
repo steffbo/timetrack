@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/conflictwarnings"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/testutil"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/conflictwarnings"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/testutil"
 )
 
 var h *testutil.Harness
@@ -87,7 +87,7 @@ func (e *env) do(method, path, token string) (int, []byte) {
 	return testutil.Request(e.t, e.url, method, path, token, nil)
 }
 
-// Port of DomainRepositoryIntegrationTest.shouldFindAcknowledgeAndDeleteConflictWarnings.
+// Conflict warning repository supports lookup, acknowledgment and deletion.
 func TestShouldFindAcknowledgeAndDeleteConflictWarnings(t *testing.T) {
 	e := setup(t)
 	ctx := context.Background()

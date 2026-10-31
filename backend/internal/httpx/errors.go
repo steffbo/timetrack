@@ -1,4 +1,4 @@
-// Package httpx centralizes the Java exception-to-JSON mapping.
+// Package httpx centralizes error-to-JSON mapping.
 package httpx
 
 import (
@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/clock"
 )
 
 type Error struct {
@@ -51,7 +51,7 @@ func JSON(w http.ResponseWriter, status int, v any) {
 	}
 }
 
-// EntryPoint models SecurityConfig.sendError and Spring Boot's production error attributes.
+// EntryPoint builds the established authentication error response.
 func EntryPoint(w http.ResponseWriter, r *http.Request, c clock.Clock) {
 	JSON(w, 401, map[string]any{"timestamp": c.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
 		"status": 401, "error": "Unauthorized", "path": r.URL.Path})

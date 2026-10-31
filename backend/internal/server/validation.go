@@ -15,11 +15,11 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers/legacy"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
 )
 
-// validate applies the constraints used by generated Java bean validation.
+// validate applies the API field constraints before decoding the request.
 func (s *Server) validate(next http.Handler) http.Handler {
 	spec, err := api.GetSwagger()
 	if err != nil {
@@ -166,7 +166,7 @@ func checkValue(field string, v any, schema *openapi3.Schema, details *[]string)
 	}
 }
 
-// Hibernate's English and German default messages; the frontend supports both locales.
+// English and German validation messages are supported by the frontend.
 func localizeValidation(r *http.Request, details string) string {
 	if !httpx.IsGerman(httpx.WithLocale(r.Context(), r.Header.Get("Accept-Language"))) {
 		return details
@@ -180,7 +180,7 @@ func localizeValidation(r *http.Request, details string) string {
 	details = strings.NewReplacer(pairs...).Replace(details)
 	details = regexp.MustCompile(`size must be between (\d+) and (\d+)`).ReplaceAllString(details,
 		"Größe muss zwischen $1 und $2 sein")
-	// The numeric range messages end with 'sein' in Hibernate's German bundle.
+	// The German numeric range messages end with 'sein'.
 	details = regexp.MustCompile(`(muss (?:größer|kleiner)-gleich [^,]+)`).ReplaceAllString(details, "$1 sein")
 	details = regexp.MustCompile(`must match ("[^"\n]*")`).ReplaceAllString(details, "muss mit $1 übereinstimmen")
 	return details

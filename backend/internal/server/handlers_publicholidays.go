@@ -3,8 +3,8 @@ package server
 import (
 	"context"
 
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/publicholidays"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/publicholidays"
 )
 
 func (s *Server) GetPublicHolidays(ctx context.Context, r api.GetPublicHolidaysRequestObject) (

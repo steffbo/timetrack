@@ -10,11 +10,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/config"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/migrate"
-	"github.com/steffbo/timetrack/backend-go/internal/server"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/config"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/migrate"
+	"github.com/steffbo/timetrack/backend/internal/server"
 )
 
 func main() {
@@ -53,7 +53,7 @@ func run() error {
 	case <-ctx.Done():
 	case err = <-failures:
 	}
-	// No Spring shutdown timeout is configured; allow in-flight requests to drain.
+	// Allow in-flight requests to drain during shutdown.
 	shutdown, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	e1 := api.Shutdown(shutdown)

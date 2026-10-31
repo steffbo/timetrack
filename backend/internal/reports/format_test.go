@@ -2,7 +2,7 @@ package reports
 
 import "testing"
 
-func TestJavaDecimalRounding(t *testing.T) {
+func TestDecimalRounding(t *testing.T) {
 	for _, tc := range []struct {
 		value float64
 		want  string

@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
-	"github.com/steffbo/timetrack/backend-go/internal/leavestore"
-	"github.com/steffbo/timetrack/backend-go/internal/recurringoffdays"
-	"github.com/steffbo/timetrack/backend-go/internal/users"
-	"github.com/steffbo/timetrack/backend-go/internal/workinghours"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/leavestore"
+	"github.com/steffbo/timetrack/backend/internal/recurringoffdays"
+	"github.com/steffbo/timetrack/backend/internal/users"
+	"github.com/steffbo/timetrack/backend/internal/workinghours"
 )
 
 // WorkingDays ports WorkingDaysCalculator.calculateWorkingDays for one user. The result is a multiple
-// of 0.5, exactly representable as float64, like the Java BigDecimal additions.
+// of 0.5, which is exactly representable as float64.
 // excludeID is the time-off entry to ignore (0 for none).
 func WorkingDays(
 	ctx context.Context, q db.Querier, userID int64, state domain.GermanState,

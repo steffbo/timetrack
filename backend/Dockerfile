@@ -8,10 +8,10 @@ COPY frontend/ ./
 RUN npm run generate-api && npm run build
 
 FROM golang:1.25-alpine AS backend-build
-WORKDIR /src/backend-go
-COPY backend-go/go.mod backend-go/go.sum ./
+WORKDIR /src/backend
+COPY backend/go.mod backend/go.sum ./
 RUN go mod download
-COPY backend-go/ ./
+COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./web/dist
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /timetrack ./cmd/timetrack
 

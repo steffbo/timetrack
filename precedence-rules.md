@@ -48,8 +48,8 @@ Regularly scheduled off-days take precedence over vacation when calculating avai
 ## Implementation Locations
 
 ### Backend
-- **File:** `backend/src/main/java/cc/remer/timetrack/domain/DayTypePrecedence.java`
-- **Usage:** `WorkingDaysCalculator` uses this enum to determine which days count as working days
+- **File:** `backend/internal/domain/types.go`
+- **Usage:** `DayTypePrecedence.Priority` and `HasHigherPriorityThan` expose the precedence order
 
 ### Frontend
 - **File:** `frontend/src/utils/dayTypePrecedence.ts`
@@ -81,7 +81,7 @@ Regularly scheduled off-days take precedence over vacation when calculating avai
 
 When changing precedence logic, ensure:
 
-1. **Backend Tests:** Verify `WorkingDaysCalculator` respects precedence for all combinations
+1. **Backend Tests:** Verify `WorkingDays` respects precedence for all combinations
 2. **Frontend Tests:** Verify calendar display matches expected colors for all combinations
 3. **Integration Tests:** Ensure API responses align with frontend expectations
 

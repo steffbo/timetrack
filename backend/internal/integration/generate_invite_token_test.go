@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/domain"
 )
 
 func TestGenerateInviteTokenCreatesTokenAndURL(t *testing.T) {

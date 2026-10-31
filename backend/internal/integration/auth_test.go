@@ -14,13 +14,13 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/auth"
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
-	"github.com/steffbo/timetrack/backend-go/internal/migrate"
-	"github.com/steffbo/timetrack/backend-go/internal/testutil"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/auth"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/migrate"
+	"github.com/steffbo/timetrack/backend/internal/testutil"
 )
 
 var harness *testutil.Harness
@@ -111,7 +111,7 @@ func TestLoginSecurityLogout(t *testing.T) {
 	status, b = testutil.Request(t, srv.URL, "GET", "/api/users/me", session.RefreshToken, nil)
 	if status != 200 {
 		t.Fatalf("refresh JWT should authenticate current user: %d %s", status, b)
-	} // Java accepts refresh JWTs as bearer JWTs.
+	} // Refresh JWTs are accepted as bearer credentials.
 	status, b = testutil.Request(t, srv.URL, "POST", "/api/auth/logout", session.AccessToken, nil)
 	if status != 204 {
 		t.Fatalf("%d %s", status, b)
@@ -420,7 +420,7 @@ func TestAuthJSONNullsAndCors(t *testing.T) {
 	}
 }
 
-func TestFlywayBaselineAndSchemaRows(t *testing.T) {
+func TestHistoryBaselineAndSchemaRows(t *testing.T) {
 	ctx := context.Background()
 	rows, err := harness.Pool.Query(ctx, `SELECT installed_rank,version,description,type,script,checksum,
  installed_by,installed_on,execution_time,success FROM flyway_schema_history WHERE version::int<=6`)
@@ -458,10 +458,10 @@ func TestFlywayBaselineAndSchemaRows(t *testing.T) {
 	check(t, migrate.Run(ctx, harness.Pool))
 }
 
-func TestJavaHTTPGoldenErrors(t *testing.T) {
+func TestHTTPCompatibilityErrorFixtures(t *testing.T) {
 	harness.Reset(t)
 	_, srv := harness.Server(t, fixed)
-	raw, err := os.ReadFile("testdata/java-http-reference.json")
+	raw, err := os.ReadFile("testdata/http-compatibility-errors.json")
 	check(t, err)
 	var fixtures map[string]struct {
 		Status int
@@ -496,7 +496,7 @@ func TestJavaHTTPGoldenErrors(t *testing.T) {
 			var got map[string]any
 			check(t, json.Unmarshal(b, &got))
 			delete(got, "timestamp")
-			// Hibernate violation iteration order is not deterministic; compare its comma-separated detail set.
+			// Validation violation order is not deterministic; compare the comma-separated detail set.
 			if tc.name == "register invalid" {
 				a := strings.Split(got["details"].(string), ", ")
 				b := strings.Split(want.Body["details"].(string), ", ")
@@ -508,7 +508,7 @@ func TestJavaHTTPGoldenErrors(t *testing.T) {
 			actual, _ := json.Marshal(got)
 			expected, _ := json.Marshal(want.Body)
 			if !bytes.Equal(actual, expected) {
-				t.Fatalf("got %s; Java %s", actual, expected)
+				t.Fatalf("got %s; reference %s", actual, expected)
 			}
 		})
 	}

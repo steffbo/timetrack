@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/recurringoffdays"
-	"github.com/steffbo/timetrack/backend-go/internal/testutil"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/recurringoffdays"
+	"github.com/steffbo/timetrack/backend/internal/testutil"
 )
 
-// Port of DomainRepositoryIntegrationTest.shouldFindRecurringOffDaysAndExemptions.
+// Recurring off-day repository loads rules and exemptions.
 func TestShouldFindRecurringOffDaysAndExemptions(t *testing.T) {
 	e := setup(t)
 	ctx := context.Background()
@@ -121,7 +121,7 @@ func TestEvaluator(t *testing.T) {
 			t.Fatal(day, got)
 		}
 	}
-	// A weekday differing from the reference weekday truncates negative week counts towards zero like Java.
+	// A weekday before the reference weekday truncates negative week counts toward zero.
 	wed := rule(domain.EveryNthWeek, 3, &one, nil, &ref)
 	if !recurringoffdays.AppliesToDate(wed, date(2025, 1, 8)) || !recurringoffdays.AppliesToDate(wed, date(2025, 1, 1)) {
 		t.Fatal("truncation")

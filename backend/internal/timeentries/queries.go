@@ -6,15 +6,15 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/conflictwarnings"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/leavestore"
-	"github.com/steffbo/timetrack/backend-go/internal/recurringoffdays"
-	"github.com/steffbo/timetrack/backend-go/internal/timeoff"
-	"github.com/steffbo/timetrack/backend-go/internal/users"
-	"github.com/steffbo/timetrack/backend-go/internal/workinghours"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/conflictwarnings"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/leavestore"
+	"github.com/steffbo/timetrack/backend/internal/recurringoffdays"
+	"github.com/steffbo/timetrack/backend/internal/timeoff"
+	"github.com/steffbo/timetrack/backend/internal/users"
+	"github.com/steffbo/timetrack/backend/internal/workinghours"
 )
 
 type WorkingDay struct {

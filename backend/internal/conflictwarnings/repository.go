@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/db"
 )
 
 // Warning mirrors RecurringOffDayConflictWarning; dates are UTC midnight values.

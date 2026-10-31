@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
 )
 
 func (s *Server) ManagementRouter() http.Handler {

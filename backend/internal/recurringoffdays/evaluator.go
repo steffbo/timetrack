@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/domain"
 )
 
 // AppliesToDate adapts the persistence model to the shared recurrence evaluator.
@@ -27,7 +27,7 @@ func AppliesToDateWithExemptions(r *RecurringOffDay, date time.Time, exempted Ex
 	return r.ID == 0 || !exempted(r.ID, date)
 }
 
-// Evaluator queries exemptions on demand, like the Spring bean.
+// Evaluator queries exemptions on demand.
 type Evaluator struct{ Q db.Querier }
 
 // IsExempted ports isExempted.

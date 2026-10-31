@@ -1,4 +1,4 @@
-// Package migrate applies the original SQL files using Flyway-compatible history and checksums.
+// Package migrate applies embedded SQL using the established history table and checksum format.
 package migrate
 
 import (
@@ -25,8 +25,7 @@ type Migration struct {
 	Checksum            int32
 }
 
-// Checksum follows Flyway ChecksumCalculator: UTF-8, first-line BOM removed, no line endings.
-// Source: github.com/flyway/flyway/.../internal/resolver/ChecksumCalculator.java
+// Checksum preserves the established CRC32 format: UTF-8, initial BOM removed, no line endings.
 func Checksum(b []byte) int32 {
 	s := strings.TrimPrefix(string(b), "\ufeff")
 	s = strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", ""), "\r", "")

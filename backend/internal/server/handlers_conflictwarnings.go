@@ -3,9 +3,9 @@ package server
 import (
 	"context"
 
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/auth"
-	"github.com/steffbo/timetrack/backend-go/internal/conflictwarnings"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/auth"
+	"github.com/steffbo/timetrack/backend/internal/conflictwarnings"
 )
 
 func (s *Server) conflictWarnings() conflictwarnings.Service {

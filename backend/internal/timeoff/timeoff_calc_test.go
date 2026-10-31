@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/leavestore"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/leavestore"
 )
 
-// Port of DomainRepositoryIntegrationTest.shouldFindTimeOffByOrderRangeAndTypeYear.
+// Time-off repository returns matching date ranges and types.
 func TestShouldFindTimeOffByOrderRangeAndTypeYear(t *testing.T) {
 	e := setup(t)
 	ctx := context.Background()
@@ -124,7 +124,7 @@ func TestVacationBalanceIsRecalculated(t *testing.T) {
 	}
 }
 
-// Both CRUD and GET must use the same calculator, preserving Java's multi-year
+// Both CRUD and GET use the same calculator for multi-year
 // overlap semantics (the entire absence contributes to each overlapping year).
 func TestSharedBalanceRecalculationAndStableRead(t *testing.T) {
 	e := setup(t)
@@ -160,7 +160,7 @@ func TestSharedBalanceRecalculationAndStableRead(t *testing.T) {
 			t.Fatal(string(b))
 		}
 	}
-	// A non-vacation mutation does not recalculate storage in Java; GET does.
+	// A non-vacation mutation does not recalculate storage; GET does.
 	e.do("POST", "/api/time-off", e.testTok, map[string]any{
 		"startDate": "2025-12-30", "endDate": "2025-12-30", "timeOffType": "SICK"})
 	var stored float64

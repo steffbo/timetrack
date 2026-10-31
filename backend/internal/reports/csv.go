@@ -17,7 +17,7 @@ func name(v *string) string {
 	return *v
 }
 
-// Java Formatter rounds the decimal representation half up; fmt's binary
+// Decimal formatting rounds half up; fmt's binary
 // rounding would turn e.g. 2.675 into 2.67 and 0.125 into 0.12.
 func decimal(v float64) string {
 	negative := v < 0 || (v == 0 && strings.HasPrefix(strconv.FormatFloat(v, 'f', -1, 64), "-"))

@@ -1,4 +1,4 @@
-// Package timeentries implements the Java time-entry repository and use cases.
+// Package timeentries implements time-entry persistence and use cases.
 package timeentries
 
 import (
@@ -7,9 +7,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	openapi_types "github.com/oapi-codegen/runtime/types"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/db"
 )
 
 type Entry struct {
@@ -34,14 +34,14 @@ func (e Entry) HoursWorked() *float64 {
 	if d == nil {
 		return nil
 	}
-	// Java Duration.toMinutes truncates toward zero before subtracting breaks.
+	// Duration minutes truncate toward zero before subtracting breaks.
 	hours := float64(int64(*d/time.Minute)-int64(e.BreakMinutes)) / 60
 	return &hours
 }
 func (e Entry) IsWorkEntry() bool { return e.EntryType == "WORK" }
 
 // localOffset follows LocalDateTime.atZone: choose the earlier instant in an
-// autumn overlap and shift a nonexistent spring wall time forward by the gap.
+// autumn overlap and shift a nonexistent local time forward by the daylight-saving gap.
 func localOffset(t time.Time) time.Time {
 	wall := clock.LocalTimestamp(t)
 	_, before := wall.Add(-24 * time.Hour).In(time.Local).Zone()

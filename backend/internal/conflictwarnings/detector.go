@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/recurringoffdays"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/recurringoffdays"
 )
 
 // TimeEntryRef carries the time entry fields the detector needs.
@@ -46,7 +46,7 @@ func (d Detector) DetectAndCreateIfNeeded(ctx context.Context, q db.Querier, e T
 	return nil, nil
 }
 
-// CleanupForTimeEntry deletes the warnings of a time entry; errors are ignored like in Java.
+// CleanupForTimeEntry deletes the warnings of a time entry; errors are ignored by design.
 func (d Detector) CleanupForTimeEntry(ctx context.Context, q db.Querier, timeEntryID int64) {
 	if timeEntryID != 0 {
 		_ = DeleteByTimeEntryID(ctx, q, timeEntryID)

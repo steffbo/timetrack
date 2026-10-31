@@ -5,9 +5,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/auth"
-	"github.com/steffbo/timetrack/backend-go/internal/reports"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/auth"
+	"github.com/steffbo/timetrack/backend/internal/reports"
 )
 
 func (s *Server) ExportMonthlyReport(ctx context.Context, r api.ExportMonthlyReportRequestObject) (

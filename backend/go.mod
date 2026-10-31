@@ -1,4 +1,4 @@
-module github.com/steffbo/timetrack/backend-go
+module github.com/steffbo/timetrack/backend
 
 go 1.25.0
 

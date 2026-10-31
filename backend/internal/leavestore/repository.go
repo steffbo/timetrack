@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/domain"
 )
 
-// TimeOff mirrors the Java entity; dates are UTC midnight values.
+// TimeOff stores date-only values at UTC midnight.
 type TimeOff struct {
 	ID, UserID  int64
 	StartDate   time.Time
@@ -66,7 +66,7 @@ func FindByUserIDOrderByStartDateDesc(ctx context.Context, q db.Querier, userID 
  ORDER BY start_date DESC, id`, userID)
 }
 
-// FindByUserIDAndDateRange is findByUserIdAndDateRange (overlap, no order defined in Java; id order here).
+// FindByUserIDAndDateRange selects overlaps ordered by ID.
 func FindByUserIDAndDateRange(
 	ctx context.Context, q db.Querier, userID int64, start, end time.Time,
 ) ([]TimeOff, error) {

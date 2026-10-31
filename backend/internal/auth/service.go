@@ -11,11 +11,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oapi-codegen/runtime/types"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -81,7 +81,7 @@ func (s *Service) Login(ctx context.Context, r api.LoginRequest) (out api.AuthRe
 		if u.PasswordHash == nil || bcrypt.CompareHashAndPassword([]byte(*u.PasswordHash), []byte(r.Password)) != nil {
 			return httpx.New(401, "INVALID_CREDENTIALS", "Ungültige Anmeldedaten")
 		}
-		// Spring Security 7 DaoAuthenticationProvider adds this authority on password authentication.
+		// Password authentication adds this authority to the authenticated principal.
 		u.Authorities = "ROLE_" + string(u.Role) + ",FACTOR_PASSWORD"
 		out, e = s.issue(ctx, tx, u.Principal)
 		return e
@@ -125,7 +125,7 @@ func (s *Service) Refresh(ctx context.Context, raw string) (out api.AuthResponse
 func (s *Service) Logout(ctx context.Context) error {
 	p, ok := Current(ctx)
 	if !ok {
-		return fmt.Errorf("%s", anonymousLogoutDetails)
+		return errors.New("logout requires an authenticated user")
 	}
 	_, err := s.Pool.Exec(ctx, `DELETE FROM refresh_tokens WHERE user_id=$1`, p.ID)
 	return err

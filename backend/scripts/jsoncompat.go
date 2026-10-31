@@ -1,4 +1,4 @@
-// Command jsoncompat adjusts generated response models to Jackson's null inclusion defaults.
+// Command jsoncompat adjusts generated response models to the API null serialization contract.
 package main
 
 import (

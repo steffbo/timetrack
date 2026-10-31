@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/auth"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/auth"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
 )
 
 func (s *Server) security(next http.Handler) http.Handler {
@@ -16,7 +16,7 @@ func (s *Server) security(next http.Handler) http.Handler {
 		r = r.WithContext(httpx.WithLocale(r.Context(), r.Header.Get("Accept-Language")))
 		if raw, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
 			if claims, err := s.Auth.Tokens.Parse(raw); err == nil {
-				// Java reloads by email, uses current DB authorities, and does not check active here.
+				// Reload the principal by email and use current database authorities.
 				if p, err := s.Auth.ByEmail(r.Context(), claims.Email); err == nil {
 					p.ImpersonatedBy = claims.ImpersonatedBy
 					r = r.WithContext(auth.WithPrincipal(r.Context(), p))
@@ -36,7 +36,7 @@ func (s *Server) roles(next api.StrictHandlerFunc, operation string) api.StrictH
 		switch operation {
 		case "GetAllUsers", "CreateUser", "DeleteUser", "ImpersonateUser", "GenerateInviteToken", "GetWorkingHoursByUserId":
 			if err := auth.RequireRole(ctx, domain.Admin); err != nil {
-				// @PreAuthorize's AccessDeniedException is caught by Java's generic exception handler.
+				// Authorization failures use the central unexpected-error mapping.
 				return nil, fmtAccessDenied{}
 			}
 		}
@@ -74,7 +74,7 @@ func (s *Server) cors(next http.Handler) http.Handler {
 				return
 			}
 		}
-		// Spring Security default response headers.
+		// Default security response headers.
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-XSS-Protection", "0")
 		w.Header().Set("X-Frame-Options", "DENY")

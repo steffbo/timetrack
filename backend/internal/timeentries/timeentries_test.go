@@ -10,17 +10,17 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/testutil"
-	te "github.com/steffbo/timetrack/backend-go/internal/timeentries"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/testutil"
+	te "github.com/steffbo/timetrack/backend/internal/timeentries"
 )
 
 var h *testutil.Harness
 var ctx = context.Background()
 
-// Monday: deterministic Java LocalDate.now replacement.
+// Monday: deterministic current-date input for tests.
 var now = time.Date(2030, 1, 14, 18, 0, 0, 0, time.UTC)
 
 func TestMain(m *testing.M) {
@@ -82,7 +82,7 @@ func summary(t *testing.T, s te.Service, uid int64, start, end time.Time) []api.
 }
 func day() time.Time { return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC) }
 
-// TimeEntryIntegrationTest: one named Go test per Java @Test, same domain assertions.
+// Time entry integration cases cover each domain assertion.
 func TestShouldClockInSuccessfully(t *testing.T) {
 	s, _, uid, _ := setup(t)
 	e, err := s.ClockIn(ctx, uid, ptr("Starting work"))

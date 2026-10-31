@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/testutil"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/testutil"
 )
 
-func TestUnknownAPIRouteReturnsJavaErrorBody(t *testing.T) {
+func TestUnknownAPIRouteReturnsEstablishedErrorBody(t *testing.T) {
 	harness.Reset(t)
 	pw := "password"
 	harness.User(t, "user@test.local", domain.User, &pw)

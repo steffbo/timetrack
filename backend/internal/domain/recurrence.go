@@ -3,7 +3,7 @@ package domain
 import "time"
 
 // RecurringRule is the shared, persistence-independent evaluator input.
-// Weekday follows Java DayOfWeek (Monday=1, Sunday=7).
+// Weekday numbers use Monday=1 through Sunday=7.
 type RecurringRule struct {
 	ID            int64
 	Active        bool
@@ -20,7 +20,7 @@ func dateOnly(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-// AppliesToDate mirrors RecurringOffDayEvaluator, including truncated whole weeks
+// AppliesToDate evaluates recurrence patterns, including truncated whole weeks
 // before the reference date and weekOfMonth=5 meaning the last occurrence.
 func (r RecurringRule) AppliesToDate(date time.Time) bool {
 	date = dateOnly(date)

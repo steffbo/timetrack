@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/leavestore"
-	"github.com/steffbo/timetrack/backend-go/internal/testutil"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/leavestore"
+	"github.com/steffbo/timetrack/backend/internal/testutil"
 )
 
 var h *testutil.Harness
@@ -39,7 +39,7 @@ type env struct {
 
 func date(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0, 0, 0, time.UTC) }
 
-// setup mirrors the Java @BeforeEach: a clean database with the test and the other user.
+// Each test starts with a clean database, test user and secondary user.
 func setup(t *testing.T) *env {
 	t.Helper()
 	h.Reset(t)

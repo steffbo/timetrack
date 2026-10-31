@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/testutil"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/testutil"
 )
 
 func TestHTTPContract(t *testing.T) {
@@ -176,13 +176,13 @@ func TestFailedPersistenceRollsBackAndUpdateDoesNotDetectConflicts(t *testing.T)
 		EntryType: "WORK"}
 	_, err := s.Create(ctx, uid, req)
 	if err == nil {
-		t.Fatal("equal times must fail database check as Java does")
+		t.Fatal("equal times must fail the database check")
 	}
 	if len(list(t, s, uid, nil, nil)) != 0 {
 		t.Fatal("transaction not rolled back")
 	}
 	e := completed(t, r, uid, day(), 8)
-	// Java UpdateTimeEntryUseCase deliberately does not call the detector or overlap query.
+	// Update deliberately does not call the conflict detector or overlap query.
 	_, err = h.Pool.Exec(ctx, `INSERT INTO recurring_off_days
  (user_id,recurrence_pattern,weekday,week_interval,reference_date,start_date)
  VALUES($1,'EVERY_NTH_WEEK',1,1,$2,$2)`, uid, day())

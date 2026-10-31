@@ -7,13 +7,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/auth"
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/db"
-	"github.com/steffbo/timetrack/backend-go/internal/domain"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
-	"github.com/steffbo/timetrack/backend-go/internal/users"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/auth"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/db"
+	"github.com/steffbo/timetrack/backend/internal/domain"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/users"
 )
 
 type Repository struct {
@@ -30,7 +30,7 @@ type balance struct {
 
 func (b balance) remaining(days float64) float64 { return b.Annual + b.Carry + b.Adjustment - days }
 
-// save mirrors Hibernate dirty checking for both recalculation and explicit updates.
+// save updates persisted values only when they differ from the stored values.
 func (b *balance) save(ctx context.Context, q db.Querier, now time.Time) error {
 	var updated time.Time
 	err := q.QueryRow(ctx, `UPDATE vacation_balance SET annual_allowance_days=$2,

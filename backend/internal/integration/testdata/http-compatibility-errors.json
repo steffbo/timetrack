@@ -12,7 +12,7 @@
     "body": {
       "code": "INTERNAL_ERROR",
       "message": "Ein interner Fehler ist aufgetreten",
-      "details": "class java.lang.String cannot be cast to class cc.remer.timetrack.adapter.security.UserPrincipal (java.lang.String is in module java.base of loader 'bootstrap'; cc.remer.timetrack.adapter.security.UserPrincipal is in unnamed module of loader org.springframework.boot.loader.launch.LaunchedClassLoader @4617c264)"
+      "details": "logout requires an authenticated user"
     }
   },
   "wrong password": {

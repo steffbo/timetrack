@@ -9,9 +9,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
-	"github.com/steffbo/timetrack/backend-go/internal/timeentries"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
+	"github.com/steffbo/timetrack/backend/internal/timeentries"
 )
 
 type DailyReportEntry struct {
@@ -153,8 +153,8 @@ func (s Service) PDF(ctx context.Context, uid int64, year, month int) ([]byte, e
 	return GeneratePDF(year, month, user, entries, true)
 }
 
-// CSV mirrors executeAsCsv: the Java caller supplies the user, possibly with null names.
-// Java exposes only PDF over HTTP; there is no CSV endpoint in the specification.
+// CSV report generation accepts the user record, including optional names.
+// The HTTP API exposes PDF reports; CSV is available to internal callers.
 func (s Service) CSV(ctx context.Context, uid int64, year, month int, user User) ([]byte, error) {
 	entries, err := s.Entries(ctx, uid, year, month)
 	if err != nil {

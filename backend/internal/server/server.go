@@ -7,12 +7,12 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/steffbo/timetrack/backend-go/internal/api"
-	"github.com/steffbo/timetrack/backend-go/internal/auth"
-	"github.com/steffbo/timetrack/backend-go/internal/clock"
-	"github.com/steffbo/timetrack/backend-go/internal/config"
-	"github.com/steffbo/timetrack/backend-go/internal/httpx"
-	"github.com/steffbo/timetrack/backend-go/web"
+	"github.com/steffbo/timetrack/backend/internal/api"
+	"github.com/steffbo/timetrack/backend/internal/auth"
+	"github.com/steffbo/timetrack/backend/internal/clock"
+	"github.com/steffbo/timetrack/backend/internal/config"
+	"github.com/steffbo/timetrack/backend/internal/httpx"
+	"github.com/steffbo/timetrack/backend/web"
 )
 
 type Server struct {
@@ -41,7 +41,7 @@ func (s *Server) Router() http.Handler {
 		RequestErrorHandlerFunc: fail, ResponseErrorHandlerFunc: fail})
 	api.HandlerWithOptions(strict, api.StdHTTPServerOptions{BaseRouter: mux, ErrorHandlerFunc: badRequest})
 	mux.Handle("/", web.Handler())
-	// Spring falls through to its static resource handler and maps NoResourceFoundException to 500.
+	// Unknown paths fall through to static resource lookup and return the established 500 response.
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, r, fmt.Errorf("No static resource %s for request '%s'.", r.URL.Path[1:], r.URL.Path))
 	})

@@ -16,7 +16,7 @@ type DateRange struct {
 	End   time.Time
 }
 
-// WorkingDays counts configured working days inclusively, applying Java's
+// WorkingDays counts configured working days inclusively, applying
 // precedence: schedule, public holiday, other leave, recurring off day.
 func WorkingDays(start, end time.Time, in WorkingDayInput) float64 {
 	if start.After(end) {
