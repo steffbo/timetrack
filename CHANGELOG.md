@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed unused repository methods and added focused persistence integration coverage
 
 ### Added
+- **Go Backend Port** (`backend-go/`, not yet deployed): Drop-in replacement for the Spring Boot backend
+  - Same API (oapi-codegen strict server from `openapi.yaml`), JWT secret/claims, BCrypt hashes and env vars
+  - Flyway-compatible migrator reuses `flyway_schema_history` (same CRC32 checksums, no second migration table)
+  - Single static binary with embedded SPA; health on `MANAGEMENT_PORT` at `/actuator/health`
+  - Monthly PDF report rebuilt with go-pdf/fpdf; extracted text matches the PDFBox report
+  - All Java integration tests ported (testcontainers-go, `postgres:17-alpine`)
+  - Verified against a prod DB copy: no migration re-run, logins work, responses match the Java backend
+  - Idle memory ~12 MiB instead of ~358 MiB (Java, prod)
+
 - **Admin Invite Links**: Admins can onboard users without setting passwords directly
   - Create user without password → user created as pending, invite link generated automatically
   - Invite link icon per row in user table → generates/regenerates invite or password-reset link
