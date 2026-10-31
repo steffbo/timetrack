@@ -358,6 +358,9 @@ func TestEveryNonAuthOperationIsStubbed(t *testing.T) {
 		for method, operation := range item.Operations() {
 			count++
 			t.Run(operation.OperationID, func(t *testing.T) {
+				if implementedC[operation.OperationID] {
+					t.Skip("implemented by package C, covered by its own tests")
+				}
 				uri := path
 				query := url.Values{}
 				for _, ref := range operation.Parameters {
