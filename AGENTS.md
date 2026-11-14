@@ -1,4 +1,4 @@
-# Codex Bootstrap - Time Tracking Application
+# Agent Bootstrap - Time Tracking Application
 
 ## Orientation checklist
 
