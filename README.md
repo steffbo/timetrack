@@ -76,7 +76,8 @@ openapi.yaml   Shared API contract
 
 ## Deployment
 
-See [DEPLOYMENT.md](DEPLOYMENT.md). The production container uses the Go backend and embedded SPA.
+Production runs in the homelab at `https://zeit.home.remer.cc`; the deploy steps are in the `Deploy`
+section of [AGENTS.md](AGENTS.md). The production container uses the Go backend and embedded SPA.
 The Go process typically uses about 10–25 MB RSS: 11 MiB idle and 23 MB peak under PDF export load.
 
 ## Default credentials

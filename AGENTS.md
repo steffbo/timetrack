@@ -62,5 +62,22 @@ Default credentials: `admin@timetrack.local` / `admin1`.
 - Backend guide and test strategy: `backend/README.md`
 - Frontend routes/views/translations: `frontend/src/`
 
-For deployment, see `DEPLOYMENT.md`. For browser inspection, use the configured browser tools
-against the local frontend and backend.
+For browser inspection, use the configured browser tools against the local frontend and backend.
+
+## Deploy
+
+Production runs at `https://zeit.home.remer.cc` (LAN and tailnet only) on `vm-infra-dev`. Push to `main`;
+the workflow `Docker - Build and Push` (`.github/workflows/docker.yml`) builds `ghcr.io/steffbo/timetrack`.
+Roll out with skill `homelab-app-deploy`:
+
+```bash
+cd ~/workspace/homelab/ansible && ansible-playbook playbooks/deploy-app.yml -e app=timetrack
+curl -s -o /dev/null -w '%{http_code}\n' -X POST https://zeit.home.remer.cc/api/auth/login \
+  -H 'Content-Type: application/json' -d '{"email":"x@y.z","password":"x"}'   # expect 401
+```
+
+The health endpoint is on management port 7080 and not routed through Caddy; every unknown path on the
+public URL returns the SPA with 200, so do not use `/health` as a check. Environment and compose file
+live in the homelab repo under `stacks/infra-dev/apps/timetrack/`. The frontend calls the API on its own
+origin; never put a domain into `frontend/.env.production`. The app holds real time records: ask before
+deploying and before any migration that rewrites data.
