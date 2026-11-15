@@ -21,7 +21,6 @@
 /logs/
 *.log
 *.pid
-docker-compose.prod.override.yml
 
 # Generated API output
 /backend/internal/api/generated.go
