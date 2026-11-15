@@ -26,7 +26,7 @@ import './styles/components/stat-cards.css'
 const ACCESS_TOKEN_KEY = 'timetrack_access_token'
 
 // Configure OpenAPI client to use authentication token
-OpenAPI.BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+OpenAPI.BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 OpenAPI.TOKEN = () => {
   const token = localStorage.getItem(ACCESS_TOKEN_KEY)
   return token || ''

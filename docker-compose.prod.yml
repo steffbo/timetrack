@@ -36,7 +36,7 @@ services:
       SPRING_PROFILES_ACTIVE: prod
 
       # CORS configuration (set to your domain)
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://zeit.remer.cc}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://zeit.home.remer.cc}
 
       # Logging
       LOGGING_LEVEL_ROOT: ${LOGGING_LEVEL_ROOT:-INFO}

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Login after domain change**: The production frontend now calls the API on its own origin instead of
+  the hard-coded `https://zeit.remer.cc`, so login works under `zeit.home.remer.cc`
+
 ### Changed
 - **Working Hours Refactor**: Clarified day-level update responsibilities without changing API behavior
   - Shared validation, time parsing, break defaults, net-hour calculation, and entity mutation between bulk and single-day updates
